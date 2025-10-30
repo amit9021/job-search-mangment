@@ -19,8 +19,8 @@ The Jobs module is the core of the job hunt tracking system. It manages job appl
 
 ### **Key Features**
 - Track job applications from discovery to offer
-- Multi-stage pipeline (Applied → Screening → Interview → Offer → Rejected/Accepted)
-- Heat scoring (0-3) based on activity and urgency
+- Multi-stage pipeline (Applied → HR → Tech → Offer → Rejected/Dormant)
+- Heat scoring (0-3) based on referral strength and outreach responses
 - CV tailoring score tracking
 - Status history timeline
 - Deadline management
@@ -48,8 +48,10 @@ model Job {
   role        String
   sourceUrl   String?                      // Job posting URL
   stage       JobStage  @default(APPLIED)
-  heat        Int       @default(0)        // 0-3 urgency score
+  heat        Int       @default(0)        // 0-3 relationship score
   deadline    DateTime?
+  archived    Boolean   @default(false)    // Soft delete flag
+  archivedAt  DateTime?
   lastTouchAt DateTime  @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -64,15 +66,16 @@ model Job {
   @@index([stage])
   @@index([heat])
   @@index([updatedAt])
+  @@index([archived])
 }
 
 enum JobStage {
-  APPLIED       // CV sent
-  SCREENING     // Phone screen / recruiter call
-  INTERVIEW     // Technical / onsite interviews
+  APPLIED       // CV sent, awaiting initial response
+  HR            // HR/recruiter screen stage
+  TECH          // Technical interviews stage
   OFFER         // Offer received
-  REJECTED      // Application rejected
-  ACCEPTED      // Offer accepted
+  REJECTED      // Application rejected at any stage
+  DORMANT       // Job inactive/archived (offer accepted or withdrawn)
 }
 ```
 
@@ -108,17 +111,14 @@ model JobStatusHistory {
 
 ### **Heat Scoring System**
 ```
-0 = Cold      - Just applied, no urgency
-1 = Warm      - Some activity, deadline >7 days away
-2 = Hot       - Active process, deadline 3-7 days
-3 = Critical  - Deadline <3 days OR interview scheduled
+0 = Cold      - No referral or outreach responses yet
+1 = Warm      - Any outreach response (positive/negative) or positive reply from a weak contact
+2 = Hot       - Positive outreach from a MEDIUM/STRONG contact
+3 = Critical  - Referral recorded (REFERRAL or SENT_CV)
 ```
 
-Heat auto-recalculates based on:
-- Days to deadline
-- Recent outreach activity
-- Application count
-- Current stage
+Heat auto-recalculates based on referral strength and outreach outcomes. Archived jobs are always cooled to 0.
+- Falls back to cold (0) when no signals are present
 
 ---
 
@@ -242,14 +242,13 @@ async getHistory(jobId: string)
 ```typescript
 private async recalculateHeat(jobId: string)
 ```
-- **Algorithm**:
-  1. Start with heat = 0
-  2. If deadline within 3 days → heat = 3
-  3. Else if deadline within 7 days → heat = 2
-  4. Else if has recent outreach (last 3 days) → heat = 1
-  5. Else if application count > 2 → heat = 1
-  6. If stage is INTERVIEW → heat = max(heat, 2)
-  7. If stage is OFFER → heat = 3
+- **Algorithm** (relationship-first):
+  1. If there is a referral with kind `REFERRAL` or `SENT_CV` → heat = 3 (critical)
+  2. Else if a POSITIVE outreach exists from a MEDIUM/STRONG contact → heat = 2 (hot)
+  3. Else if any POSITIVE outreach exists (WEAK contact) → heat = 1 (warm)
+  4. Else if any outreach has POSITIVE/NEGATIVE outcome → heat = 1 (response received)
+  5. Otherwise → heat = 0 (cold)
+- **Additional rule**: Archived jobs are forced to heat 0
 - **Auto-updates**: Job record with new heat value
 
 ---
@@ -332,8 +331,9 @@ List jobs with optional filters.
 **Query Parameters**:
 ```typescript
 {
-  stage?: 'APPLIED' | 'SCREENING' | 'INTERVIEW' | 'OFFER' | 'REJECTED' | 'ACCEPTED';
+  stage?: 'APPLIED' | 'HR' | 'TECH' | 'OFFER' | 'REJECTED' | 'DORMANT';
   heat?: 0 | 1 | 2 | 3;
+  includeArchived?: boolean; // defaults to false
 }
 ```
 
@@ -344,13 +344,15 @@ List jobs with optional filters.
     "id": "cm...",
     "company": "TechCorp",
     "role": "Senior Engineer",
-    "stage": "INTERVIEW",
+    "stage": "TECH",
     "heat": 2,
     "sourceUrl": "https://techcorp.com/careers/senior-engineer",
     "deadline": "2025-11-15T00:00:00.000Z",
     "lastTouchAt": "2025-10-28T10:00:00.000Z",
     "createdAt": "2025-10-20T08:00:00.000Z",
-    "updatedAt": "2025-10-28T10:00:00.000Z"
+    "updatedAt": "2025-10-28T10:00:00.000Z",
+    "archived": false,
+    "archivedAt": null
   }
 ]
 ```
@@ -376,19 +378,23 @@ Create new job application.
     "channel": "EMAIL",
     "messageType": "intro_request",
     "personalizationScore": 90,
-    "content": "Hi John, saw you work at StartupXYZ..."
+    "content": "Hi John, saw you work at StartupXYZ...",
+    "createFollowUp": true,
+    "followUpNote": "Ping again in 3 days"
   }
 }
 ```
 
 **Response**: Created job object
 
+> **Note:** `contactId` must be a valid Contact cuid. When provided, the payload may also include `createFollowUp` (defaults to `true`) and an optional `followUpNote` for the auto-generated follow-up.
+
 **Business Logic**:
 1. Creates Job with stage=APPLIED
 2. Creates JobStatusHistory entry
 3. If `initialApplication` provided → creates JobApplication
-4. If `initialOutreach` provided → creates Outreach record
-5. Heat auto-calculated based on deadline
+4. If `initialOutreach` provided → creates Outreach record (and optional follow-up)
+5. Heat recalculated using referral/outreach rules (see below)
 
 ---
 
@@ -417,7 +423,7 @@ Update job stage.
 **Request Body**:
 ```json
 {
-  "stage": "INTERVIEW",
+  "stage": "TECH",
   "note": "Scheduled for Nov 5th, 2pm - 3 rounds"
 }
 ```
@@ -425,7 +431,7 @@ Update job stage.
 **Side Effects**:
 - Creates JobStatusHistory entry
 - Updates `job.lastTouchAt` and `updatedAt`
-- Recalculates heat (INTERVIEW → heat >= 2, OFFER → heat = 3)
+- Recalculates heat (TECH → heat >= 2, OFFER → heat = 3)
 
 ---
 
@@ -451,6 +457,45 @@ Log outreach attempt for job.
 
 ---
 
+#### **PATCH /jobs/:id**
+Update core job details (company, role, URL, deadline, linked company).
+
+**Request Body** (any subset):
+```json
+{
+  "company": "Acme Inc",
+  "role": "Staff SWE",
+  "sourceUrl": "https://acme.com/careers/staff-swe",
+  "deadline": "2025-12-01T00:00:00.000Z",
+  "companyId": "ck..."
+}
+```
+
+**Side Effects**:
+- Normalizes empty strings to `null`
+- Re-parses ISO deadlines
+- Touches `updatedAt`
+
+---
+
+#### **DELETE /jobs/:id**
+Archive or hard-delete a job.
+
+**Query Parameters**:
+- `hard=true` → remove the job and all related data (child rows + follow-ups).
+- _absent/false_ → soft delete (sets `stage=DORMANT`, `archived=true`, retains history).
+
+**Responses**:
+- Soft delete: `{ "success": true, "archived": true }`
+- Hard delete: `{ "success": true, "hardDeleted": true }`
+- On FK violation (hard delete): HTTP 409 with descriptive message.
+
+**Side Effects**:
+- Soft delete marks outstanding follow-ups dormant and recalculates heat to 0.
+- Hard delete cascades through applications, outreaches, history, follow-ups, notifications, and detaches referrals.
+
+---
+
 #### **GET /jobs/:id/history**
 Get status change timeline.
 
@@ -465,13 +510,13 @@ Get status change timeline.
   },
   {
     "id": "cm...",
-    "stage": "SCREENING",
+    "stage": "HR",
     "note": "Recruiter call scheduled for Oct 25",
     "timestamp": "2025-10-22T14:00:00.000Z"
   },
   {
     "id": "cm...",
-    "stage": "INTERVIEW",
+    "stage": "TECH",
     "note": "Scheduled for Nov 5th, 2pm - 3 rounds",
     "timestamp": "2025-10-28T10:00:00.000Z"
   }
@@ -488,7 +533,7 @@ Get status change timeline.
 **Purpose**: Main jobs listing (table or kanban view).
 
 **Features**:
-- Filter by stage (Applied/Screening/Interview/etc.)
+- Filter by stage (Applied/HR/Tech/etc.)
 - Filter by heat (0/1/2/3)
 - Sort by last updated
 - Click job → navigate to detail view
@@ -566,13 +611,13 @@ Get status change timeline.
 ### **Flow 2: Update Job Stage**
 1. User views job detail (or from jobs table)
 2. Clicks "Update Status" button
-3. Selects new stage (e.g., SCREENING → INTERVIEW)
+3. Selects new stage (e.g., HR → TECH)
 4. Enters note (e.g., "3 rounds scheduled for Nov 5")
 5. Clicks "Save"
 6. Backend:
    - Updates `job.stage`
    - Creates JobStatusHistory entry
-   - Recalculates heat (INTERVIEW → heat >= 2)
+   - Recalculates heat (TECH → heat >= 2)
    - Updates `lastTouchAt` and `updatedAt`
 7. UI refreshes, job shows new stage and heat
 
@@ -588,22 +633,19 @@ Get status change timeline.
 
 **Algorithm**:
 ```
-IF deadline in 0-3 days:
-  heat = 3 (CRITICAL)
-ELSE IF deadline in 4-7 days:
-  heat = 2 (HOT)
-ELSE IF has outreach in last 3 days:
-  heat = 1 (WARM)
-ELSE IF application count > 2:
-  heat = 1 (WARM)
+IF job has referral with kind in (REFERRAL, SENT_CV):
+  heat = 3
+ELSE IF job has outreach outcome = POSITIVE AND contact strength in (MEDIUM, STRONG):
+  heat = 2
+ELSE IF job has outreach outcome = POSITIVE:
+  heat = 1
+ELSE IF job has outreach outcome in (POSITIVE, NEGATIVE):
+  heat = 1
 ELSE:
-  heat = 0 (COLD)
+  heat = 0
 
-IF stage = INTERVIEW:
-  heat = max(heat, 2)  // Interviews are always at least HOT
-
-IF stage = OFFER:
-  heat = 3  // Offers are always CRITICAL
+IF job.archived = true:
+  heat = 0
 ```
 
 ---
@@ -614,9 +656,23 @@ IF stage = OFFER:
 3. Backend returns all JobStatusHistory entries
 4. UI displays timeline:
    - Oct 20: Applied (Job created)
-   - Oct 22: Screening (Recruiter call scheduled)
-   - Oct 28: Interview (3 rounds scheduled)
+   - Oct 22: HR (Recruiter call scheduled)
+   - Oct 28: Tech (3 rounds scheduled)
 5. User can see full progression
+
+---
+
+### **Flow 5: Archive vs Hard Delete**
+1. User opens job actions and chooses **Delete**.
+2. UI prompts for *Archive* (soft) or *Delete permanently* (hard).
+3. Soft delete:
+   - Backend transitions stage → DORMANT, sets `archived=true`, stamps `archivedAt`.
+   - Outstanding follow-ups marked dormant; heat recalculates to 0.
+   - Job is hidden from default listings (unless `includeArchived=true`).
+4. Hard delete:
+   - Backend removes dependent rows (applications, outreach, history, follow-ups, notifications) inside a transaction.
+   - Referrals referencing the job are detached.
+5. UI refreshes pipeline and displays toast feedback.
 
 ---
 
@@ -624,28 +680,15 @@ IF stage = OFFER:
 
 ### **Heat Recalculation Rules**
 
-#### **Deadline-Based**
-- **3 days or less** → Heat = 3 (CRITICAL)
-- **4-7 days** → Heat = 2 (HOT)
-- **8+ days** → Does not affect heat
+Heat focuses on relationship strength rather than deadlines:
 
-#### **Activity-Based**
-- **Recent outreach** (last 3 days) → Heat = 1 (WARM)
-- **Multiple applications** (>2) → Heat = 1 (WARM)
+1. **Referral priority (heat = 3)** – If any referral of kind `REFERRAL` or `SENT_CV` exists for the job.
+2. **Warm outreach (heat = 2)** – Positive outreach tied to a MEDIUM/STRONG contact.
+3. **Positive reply (heat = 1)** – Positive outreach from a WEAK contact.
+4. **Any response (heat = 1)** – Any outreach with a POSITIVE or NEGATIVE outcome.
+5. **Default (heat = 0)** – No referral or outreach responses.
 
-#### **Stage-Based**
-- **INTERVIEW** → Heat >= 2 (minimum HOT)
-- **OFFER** → Heat = 3 (always CRITICAL)
-- **APPLIED/SCREENING** → No stage boost
-
-#### **Combined**
-Heat is the **maximum** of all applicable rules.
-
-**Example**:
-- Deadline in 10 days (no boost)
-- 3 applications submitted (heat = 1)
-- Stage = INTERVIEW (heat = 2)
-- **Final Heat**: 2 (HOT)
+Archived jobs are automatically cooled to heat 0 regardless of previous signals.
 
 ---
 
@@ -654,8 +697,8 @@ Heat is the **maximum** of all applicable rules.
 **Trigger**: Job stage changes to specific values
 
 **Rules**:
-- **SCREENING** → Create follow-up for 3 days later ("Check in after screen")
-- **INTERVIEW** → Create follow-up for 1 day after interview date ("Send thank you note")
+- **HR** → Create follow-up for 3 days later ("Check in after screen")
+- **TECH** → Create follow-up for 1 day after interview date ("Send thank you note")
 
 **Implementation**: `followupsService.createForJob(jobId, dueAt, note)`
 
@@ -684,12 +727,12 @@ if (outcome === OutreachOutcome.POSITIVE && contactId) {
 ```prisma
 enum JobStage {
   APPLIED
-  SCREENING
-  INTERVIEW
+  HR
+  TECH
   TECHNICAL_TEST  // NEW STAGE
   OFFER
   REJECTED
-  ACCEPTED
+  DORMANT
 }
 ```
 
@@ -715,12 +758,12 @@ const schema = z.object({
 // frontend - JobsPage.tsx or wherever stages are displayed
 const stages = [
   'APPLIED',
-  'SCREENING',
+  'HR',
   'TECHNICAL_TEST',  // NEW
-  'INTERVIEW',
+  'TECH',
   'OFFER',
   'REJECTED',
-  'ACCEPTED'
+  'DORMANT'
 ];
 ```
 
@@ -735,27 +778,39 @@ const stages = [
 **Example**: Add boost for jobs at specific companies
 ```typescript
 private async recalculateHeat(jobId: string) {
-  const job = await this.prisma.job.findUnique({
-    where: { id: jobId },
-    include: { applications: true }
+  const referral = await this.prisma.referral.findFirst({
+    where: {
+      jobId,
+      kind: { in: [ReferralKind.REFERRAL, ReferralKind.SENT_CV] }
+    }
   });
-
-  let heat = 0;
-
-  // ... existing deadline logic ...
-
-  // NEW: Priority companies get heat boost
-  const priorityCompanies = ['Google', 'Meta', 'Anthropic'];
-  if (priorityCompanies.includes(job.company)) {
-    heat = Math.max(heat, 1);  // At least WARM
+  if (referral) {
+    await this.setHeat(jobId, 3);
+    return;
   }
 
-  // ... rest of logic ...
-
-  await this.prisma.job.update({
-    where: { id: jobId },
-    data: { heat }
+  const warmOutreach = await this.prisma.outreach.findFirst({
+    where: { jobId, outcome: OutreachOutcome.POSITIVE },
+    include: { contact: true }
   });
+  if (warmOutreach?.contact) {
+    const level = warmOutreach.contact.strength;
+    await this.setHeat(jobId, level === 'STRONG' || level === 'MEDIUM' ? 2 : 1);
+    return;
+  }
+
+  const anyResponse = await this.prisma.outreach.count({
+    where: {
+      jobId,
+      outcome: { in: [OutreachOutcome.POSITIVE, OutreachOutcome.NEGATIVE] }
+    }
+  });
+  if (anyResponse > 0) {
+    await this.setHeat(jobId, 1);
+    return;
+  }
+
+  await this.setHeat(jobId, 0);
 }
 ```
 
@@ -766,8 +821,9 @@ private async recalculateHeat(jobId: string) {
 #### Backend
 - [ ] Create job with initialApplication → JobApplication created
 - [ ] Create job with initialOutreach → Outreach created
-- [ ] Create job with deadline in 2 days → heat = 3
-- [ ] Update stage to INTERVIEW → heat >= 2
+- [ ] Positive outreach from MEDIUM/STRONG contact → heat escalates to 2
+- [ ] Referral (REFERRAL or SENT_CV) recorded → heat = 3
+- [ ] Update stage to TECH → heat recomputed without errors
 - [ ] Update stage to OFFER → heat = 3
 - [ ] Add application → lastTouchAt updated
 - [ ] Get history → returns chronological entries
@@ -786,7 +842,7 @@ private async recalculateHeat(jobId: string) {
 ### **Issue**: Heat not updating
 **Check**:
 1. Is `recalculateHeat()` being called after relevant events?
-2. Deadline format correct (ISO 8601 string)?
+2. Does the job have referral/outreach data matching heat rules?
 3. Database `heat` column updated?
 
 ### **Issue**: History not showing

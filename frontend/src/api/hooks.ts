@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import { z } from 'zod';
 import { useApi } from './ApiProvider';
 import { useSessionStore } from '../stores/session';
-import { z } from 'zod';
+import { useToast } from '../components/ToastProvider';
 
 const loginSchema = z.object({
   token: z.string(),
@@ -11,6 +13,78 @@ const loginSchema = z.object({
     username: z.string()
   })
 });
+
+export type ParsedApiError = {
+  message: string;
+  description?: string;
+  fieldErrors?: Record<string, string[]>;
+};
+
+export const parseApiError = (error: unknown): ParsedApiError => {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as Record<string, unknown> | undefined;
+    const details = (data?.details ?? {}) as Record<string, unknown>;
+    const errors = (details?.errors ?? {}) as Record<string, unknown>;
+    const fieldErrors = (errors?.fieldErrors ?? {}) as Record<string, string[]>;
+
+    let description: string | undefined;
+    const rawFormErrors = errors?.formErrors as unknown;
+    const formErrors = Array.isArray(rawFormErrors)
+      ? (rawFormErrors as Array<string | undefined>).filter((value): value is string => typeof value === 'string' && value.length > 0)
+      : [];
+
+    if (formErrors.length > 0) {
+      description = formErrors.join(', ');
+    } else if (typeof details?.message === 'string') {
+      description = details.message;
+    } else if (typeof details === 'string') {
+      description = details;
+    }
+
+    const message = typeof data?.message === 'string' ? data.message : error.message ?? 'Request failed';
+
+    return {
+      message,
+      description,
+      fieldErrors: Object.keys(fieldErrors).length > 0 ? fieldErrors : undefined
+    };
+  }
+
+  return { message: 'Unexpected error', description: undefined };
+};
+
+const getErrorToastContent = (parsed: ParsedApiError) => ({
+  title: parsed.message,
+  description: parsed.description
+});
+
+export type CreateJobMutationInput = {
+  company: string;
+  role: string;
+  sourceUrl?: string;
+  deadline?: string;
+  heat?: number;
+  initialApplication?: {
+    tailoringScore: number;
+    cvVersionId?: string;
+    dateSent?: string;
+  };
+  initialOutreach?: {
+    contactId?: string;
+    channel: string;
+    messageType: string;
+    personalizationScore: number;
+    outcome?: string;
+    content?: string;
+    createFollowUp?: boolean;
+    followUpNote?: string;
+  };
+};
+
+export type DeleteJobMutationInput = {
+  id: string;
+  hard?: boolean;
+};
 
 export const useLoginMutation = () => {
   const api = useApi();
@@ -62,12 +136,18 @@ export const useKpiWeekQuery = () => {
   });
 };
 
-export const useJobsQuery = (filters?: { stage?: string; heat?: number }) => {
+export const useJobsQuery = (filters?: { stage?: string; heat?: number; includeArchived?: boolean }) => {
   const api = useApi();
   return useQuery({
     queryKey: ['jobs', filters],
     queryFn: async () => {
-      const { data } = await api.get('/jobs', { params: filters });
+      const params = filters
+        ? {
+            ...filters,
+            includeArchived: filters.includeArchived ? 'true' : undefined
+          }
+        : undefined;
+      const { data } = await api.get('/jobs', { params });
       return data as Array<{
         id: string;
         company: string;
@@ -76,39 +156,161 @@ export const useJobsQuery = (filters?: { stage?: string; heat?: number }) => {
         heat: number;
         updatedAt: string;
         lastTouchAt: string;
+        sourceUrl?: string | null;
+        deadline?: string | null;
+        archived: boolean;
+        archivedAt?: string | null;
       }>;
     }
+  });
+};
+
+export const useJobDetailQuery = (id: string) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['jobs', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/jobs/${id}`);
+      return data as {
+        id: string;
+        company: string;
+        role: string;
+        stage: string;
+        heat: number;
+        sourceUrl?: string;
+        deadline?: string;
+        companyId?: string;
+        lastTouchAt: string;
+        createdAt: string;
+        updatedAt: string;
+        archived: boolean;
+        archivedAt?: string | null;
+      };
+    },
+    enabled: !!id
   });
 };
 
 export const useCreateJobMutation = () => {
   const api = useApi();
   const queryClient = useQueryClient();
+  const toast = useToast();
   return useMutation({
-    mutationFn: async (payload: {
-      company: string;
-      role: string;
-      sourceUrl?: string;
-      deadline?: string;
-      initialApplication?: {
-        tailoringScore: number;
-        cvVersionId?: string;
-        dateSent?: string;
+    mutationFn: async (payload: CreateJobMutationInput) => {
+      const { data } = await api.post('/jobs', payload);
+      return data as {
+        id: string;
+        company: string;
+        role: string;
+        stage: string;
+        heat: number;
+        archived: boolean;
       };
-      initialOutreach?: {
-        contactId?: string;
-        channel: string;
-        messageType: string;
-        personalizationScore: number;
-        outcome?: string;
-        content?: string;
-      };
-    }) => {
-      await api.post('/jobs', payload);
     },
-    onSuccess: () => {
+    onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      toast.success('Job created', `${job.company} added to the pipeline`);
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useUpdateJobMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: {
+      id: string;
+      company?: string;
+      role?: string;
+      sourceUrl?: string | null;
+      deadline?: string | null;
+      companyId?: string | null;
+    }) => {
+      const { data } = await api.patch(`/jobs/${id}`, payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    }
+  });
+};
+
+export const useDeleteJobMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id, hard }: DeleteJobMutationInput) => {
+      await api.delete(`/jobs/${id}`, {
+        params: hard ? { hard: 'true' } : undefined
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.id, 'history'] });
+      toast.success(variables.hard ? 'Job deleted' : 'Job archived');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useJobHistoryQuery = (id: string, options?: { enabled?: boolean }) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['jobs', id, 'history'],
+    enabled: !!id && (options?.enabled ?? true),
+    queryFn: async () => {
+      const { data } = await api.get(`/jobs/${id}/history`);
+      return data as {
+        id: string;
+        company: string;
+        role: string;
+        stage: string;
+        heat: number;
+        applications: Array<{
+          id: string;
+          dateSent: string;
+          tailoringScore: number;
+          cvVersionId?: string | null;
+        }>;
+        statusHistory: Array<{
+          id: string;
+          stage: string;
+          at: string;
+          note?: string | null;
+        }>;
+        outreaches: Array<{
+          id: string;
+          channel: string;
+          messageType: string;
+          personalizationScore: number;
+          outcome: string;
+          content?: string | null;
+          sentAt: string;
+          contact?: { id: string; name: string | null } | null;
+        }>;
+        followups: Array<{
+          id: string;
+          dueAt: string;
+          sentAt?: string | null;
+          attemptNo: number;
+          note?: string | null;
+        }>;
+      };
     }
   });
 };

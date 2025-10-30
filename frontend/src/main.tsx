@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import './index.css';
 import { ApiProvider } from './api/ApiProvider';
+import { ToastProvider } from './components/ToastProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ApiProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </ApiProvider>
       </QueryClientProvider>
     </BrowserRouter>

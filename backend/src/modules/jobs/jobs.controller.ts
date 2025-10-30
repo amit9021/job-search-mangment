@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   AddApplicationDto,
   CreateJobDto,
   CreateJobOutreachDto,
   ListJobsQueryDto,
-  UpdateJobStageDto
+  UpdateJobStageDto,
+  UpdateJobDto
 } from './dto';
 import { IdParamDto } from '../../common/dto/id-param.dto';
 import { JobsService } from './jobs.service';
@@ -15,16 +16,32 @@ export class JobsController {
 
   @Get()
   async list(@Query() query: ListJobsQueryDto) {
-    return this.jobsService.list(query.stage, query.heat);
+    return this.jobsService.list({
+      stage: query.stage,
+      heat: query.heat,
+      includeArchived: query.includeArchived
+    });
+  }
+
+  @Get(':id')
+  async getById(@Param() params: IdParamDto) {
+    return this.jobsService.getById(params.id);
   }
 
   @Post()
   async create(@Body() body: CreateJobDto) {
-    const job = await this.jobsService.create(body);
-    if (body.initialOutreach) {
-      await this.jobsService.recordJobOutreach(job.id, body.initialOutreach);
-    }
-    return job;
+    return this.jobsService.create(body);
+  }
+
+  @Patch(':id')
+  async update(@Param() params: IdParamDto, @Body() body: UpdateJobDto) {
+    return this.jobsService.update(params.id, body);
+  }
+
+  @Delete(':id')
+  async delete(@Param() params: IdParamDto, @Query('hard') hard?: string) {
+    const hardDelete = typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
+    return this.jobsService.delete(params.id, { hard: hardDelete });
   }
 
   @Post(':id/applications')

@@ -42,6 +42,8 @@ model Job {
   lastTouchAt DateTime          @default(now())
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+  archived    Boolean           @default(false)
+  archivedAt  DateTime?
 
   applications  JobApplication[]
   statusHistory JobStatusHistory[]
@@ -53,6 +55,7 @@ model Job {
   @@index([heat, updatedAt])
   @@index([deadline])
   @@index([companyId])
+  @@index([archived])
 }
 
 enum JobStage {
