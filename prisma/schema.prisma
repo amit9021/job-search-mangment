@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String?
+  linkedinUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contacts Contact[]
+  jobs     Job[]
+
+  @@index([name])
+}
+
+model Job {
+  id          String            @id @default(cuid())
+  company     String
+  companyId   String?
+  companyRef  Company?          @relation(fields: [companyId], references: [id])
+  role        String
+  sourceUrl   String?
+  heat        Int
+  deadline    DateTime?
+  stage       JobStage          @default(APPLIED)
+  lastTouchAt DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  applications  JobApplication[]
+  statusHistory JobStatusHistory[]
+  outreaches    Outreach[]
+  followups     FollowUp[]
+  referrals     Referral[]
+  notifications Notification[]
+
+  @@index([heat, updatedAt])
+  @@index([deadline])
+  @@index([companyId])
+}
+
+enum JobStage {
+  APPLIED
+  HR
+  TECH
+  OFFER
+  REJECTED
+  DORMANT
+}
+
+model JobApplication {
+  id             String   @id @default(cuid())
+  jobId          String
+  job            Job      @relation(fields: [jobId], references: [id])
+  dateSent       DateTime
+  tailoringScore Int
+  cvVersionId    String?
+}
+
+model JobStatusHistory {
+  id    String   @id @default(cuid())
+  jobId String
+  job   Job      @relation(fields: [jobId], references: [id])
+  stage JobStage
+  at    DateTime @default(now())
+  note  String?
+}
+
+model Contact {
+  id          String           @id @default(cuid())
+  name        String
+  companyId   String?
+  company     Company?         @relation(fields: [companyId], references: [id])
+  role        String?
+  strength    ContactStrength  @default(WEAK)
+  email       String?
+  phone       String?
+  linkedinUrl String?
+  githubUrl   String?
+  location    String?
+  tags        String[]         @default([])
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  outreaches    Outreach[]
+  referrals     Referral[]
+  reviews       CodeReview[]
+  eventLinks    EventContact[]
+  followups     FollowUp[]
+  notifications Notification[]
+
+  @@index([strength])
+  @@index([companyId])
+  @@index([name])
+}
+
+enum ContactStrength {
+  WEAK
+  MEDIUM
+  STRONG
+}
+
+model Outreach {
+  id                  String          @id @default(cuid())
+  jobId               String?
+  job                 Job?            @relation(fields: [jobId], references: [id])
+  contactId           String?
+  contact             Contact?        @relation(fields: [contactId], references: [id])
+  channel             OutreachChannel
+  messageType         String
+  personalizationScore Int
+  outcome             OutreachOutcome @default(NONE)
+  content             String?
+  sentAt              DateTime        @default(now())
+}
+
+enum OutreachChannel {
+  LINKEDIN
+  EMAIL
+  PHONE
+  OTHER
+}
+
+enum OutreachOutcome {
+  NONE
+  POSITIVE
+  NEGATIVE
+  NO_RESPONSE
+}
+
+model FollowUp {
+  id        String   @id @default(cuid())
+  jobId     String?
+  job       Job?     @relation(fields: [jobId], references: [id])
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+  dueAt     DateTime
+  sentAt    DateTime?
+  attemptNo Int
+  note      String?
+
+  @@index([dueAt])
+}
+
+model Referral {
+  id        String       @id @default(cuid())
+  contactId String
+  contact   Contact      @relation(fields: [contactId], references: [id])
+  jobId     String?
+  job       Job?         @relation(fields: [jobId], references: [id])
+  kind      ReferralKind
+  at        DateTime     @default(now())
+  note      String?
+}
+
+enum ReferralKind {
+  INTRO
+  REFERRAL
+  SENT_CV
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  repoUrl   String
+  stack     String?
+  spotlight Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  reviews CodeReview[]
+}
+
+model CodeReview {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  contactId    String
+  contact      Contact  @relation(fields: [contactId], references: [id])
+  requestedAt  DateTime @default(now())
+  reviewedAt   DateTime?
+  summary      String?
+  qualityScore Int?
+}
+
+model Event {
+  id                      String       @id @default(cuid())
+  name                    String
+  date                    DateTime
+  location                String?
+  topic                   String?
+  status                  EventStatus  @default(PLANNED)
+  targetsMinConversations Int?
+
+  eventContacts EventContact[]
+}
+
+enum EventStatus {
+  PLANNED
+  ATTENDED
+}
+
+model EventContact {
+  id            String   @id @default(cuid())
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id])
+  contactId     String
+  contact       Contact  @relation(fields: [contactId], references: [id])
+  followupDueAt DateTime?
+}
+
+model BoostTask {
+  id          String   @id @default(cuid())
+  title       String
+  impactScore Int
+  createdAt   DateTime @default(now())
+  doneAt      DateTime?
+}
+
+model MetricSnapshot {
+  id      String   @id @default(cuid())
+  date    DateTime @default(now())
+  kpiName String
+  value   Int
+}
+
+model Recommendation {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  kind       String
+  payload    Json
+  resolvedAt DateTime?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  kind      String
+  message   String
+  dueAt     DateTime
+  sentAt    DateTime?
+  jobId     String?
+  contactId String?
+  job       Job?      @relation(fields: [jobId], references: [id])
+  contact   Contact?  @relation(fields: [contactId], references: [id])
+}
