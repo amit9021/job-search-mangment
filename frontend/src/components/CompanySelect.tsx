@@ -23,7 +23,7 @@ export const CompanySelect = ({ value, onChange, placeholder = 'Search or create
 
   const handleSelect = (company: { id: string; name: string }) => {
     setSelectedDisplay(company.name);
-    onChange({ companyId: company.id });
+    onChange({ companyId: company.id, companyName: company.name });
     setIsOpen(false);
     setSearchTerm('');
   };
@@ -31,7 +31,7 @@ export const CompanySelect = ({ value, onChange, placeholder = 'Search or create
   const handleCreateNew = () => {
     if (searchTerm.trim()) {
       setSelectedDisplay(searchTerm);
-      onChange({ companyName: searchTerm.trim() });
+      onChange({ companyId: undefined, companyName: searchTerm.trim() });
       setIsOpen(false);
       setSearchTerm('');
     }
@@ -45,7 +45,7 @@ export const CompanySelect = ({ value, onChange, placeholder = 'Search or create
 
     // Clear selection when user starts typing
     if (newValue !== value) {
-      onChange({ companyName: newValue || undefined });
+      onChange({ companyId: undefined, companyName: newValue || undefined });
     }
   };
 

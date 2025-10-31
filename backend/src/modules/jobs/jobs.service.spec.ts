@@ -19,12 +19,17 @@ type PrismaMock = {
     deleteMany: jest.Mock;
   };
   outreach: {
+    findMany: jest.Mock;
     deleteMany: jest.Mock;
     findFirst: jest.Mock;
   };
   followUp: {
+    findMany: jest.Mock;
     deleteMany: jest.Mock;
     updateMany: jest.Mock;
+  };
+  contact: {
+    findMany: jest.Mock;
   };
   notification: {
     deleteMany: jest.Mock;
@@ -52,12 +57,17 @@ const createPrismaMock = (): PrismaMock => {
       deleteMany: jest.fn()
     },
     outreach: {
+      findMany: jest.fn().mockResolvedValue([]),
       deleteMany: jest.fn(),
       findFirst: jest.fn()
     },
     followUp: {
+      findMany: jest.fn().mockResolvedValue([]),
       deleteMany: jest.fn(),
       updateMany: jest.fn()
+    },
+    contact: {
+      findMany: jest.fn().mockResolvedValue([])
     },
     notification: {
       deleteMany: jest.fn()
@@ -76,13 +86,20 @@ describe('JobsService', () => {
   let prisma: PrismaMock;
   let followups: { markDormantForJob: jest.Mock };
   let outreach: { createJobOutreach: jest.Mock };
+  let contacts: { create: jest.Mock };
   let service: JobsService;
 
   beforeEach(() => {
     prisma = createPrismaMock();
     followups = { markDormantForJob: jest.fn() };
     outreach = { createJobOutreach: jest.fn().mockResolvedValue({ id: 'outreach_1' }) };
-    service = new JobsService(prisma as unknown as any, followups as any, outreach as any);
+    contacts = { create: jest.fn().mockResolvedValue({ id: 'contact_1', name: 'Jane' }) };
+    service = new JobsService(
+      prisma as unknown as any,
+      followups as any,
+      outreach as any,
+      contacts as any
+    );
     jest.spyOn(service, 'recalculateHeat').mockResolvedValue();
     jest.spyOn(service as unknown as { touchJob: (id: string) => Promise<void> }, 'touchJob').mockResolvedValue();
   });
@@ -135,6 +152,59 @@ describe('JobsService', () => {
       expect(prisma.jobApplication.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ tailoringScore: 75 }) }));
       expect(prisma.job.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'job_2' } }));
       expect(outreachSpy).toHaveBeenCalledWith('job_2', expect.objectContaining({ channel: 'EMAIL' }));
+    });
+  });
+
+  describe('recordJobOutreach', () => {
+    it('returns job snapshot including linked contacts', async () => {
+      prisma.job.findUnique
+        .mockResolvedValueOnce({ id: 'job_link', company: 'Acme', role: 'Engineer', stage: JobStage.APPLIED, heat: 1 })
+        .mockResolvedValueOnce({
+          id: 'job_link',
+          company: 'Acme',
+          role: 'Engineer',
+          stage: JobStage.APPLIED,
+          heat: 1,
+          archived: false
+        });
+
+      const outreachResponse = {
+        id: 'outreach_1',
+        contactId: 'contact_42',
+        contact: { id: 'contact_42', name: 'Jane Doe' }
+      };
+      outreach.createJobOutreach.mockResolvedValue(outreachResponse);
+
+      jest
+        .spyOn(service as unknown as { computeJobMetrics: (ids: string[]) => Promise<Map<string, any>> }, 'computeJobMetrics')
+        .mockResolvedValue(
+          new Map([
+            [
+              'job_link',
+              {
+                contactsCount: 1,
+                contacts: [{ id: 'contact_42', name: 'Jane Doe', role: 'Recruiter' }],
+                nextFollowUpAt: null
+              }
+            ]
+          ])
+        );
+
+      const result = await service.recordJobOutreach('job_link', {
+        contactId: 'contact_42',
+        channel: 'EMAIL',
+        messageType: 'intro_request',
+        personalizationScore: 70
+      } as any);
+
+      expect(outreach.createJobOutreach).toHaveBeenCalledWith(
+        'job_link',
+        expect.objectContaining({ contactId: 'contact_42', channel: 'EMAIL' })
+      );
+      expect(result.job.contactsCount).toBe(1);
+      expect(result.job.contacts[0]).toEqual(
+        expect.objectContaining({ id: 'contact_42', name: 'Jane Doe', role: 'Recruiter' })
+      );
     });
   });
 

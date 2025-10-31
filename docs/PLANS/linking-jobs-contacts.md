@@ -90,3 +90,11 @@
 - `docs/modules/JOBS_MODULE.md`: add sections describing table columns, Link Contact flow, and stage update dialog behavior with referenced endpoints.
 - `docs/modules/CONTACTS_MODULE.md`: document Link to Job flow, inline job creation, and outreach timeline updates.
 - `docs/fix-plan.md`: append a concise “What changed” entry referencing the new linking feature.
+
+---
+**Done Checklist**
+- [x] Job creation keeps contact optional and later linking works from jobs and contacts.
+- [x] Link Contact dialog from jobs supports existing/new contacts and updates counts + timelines.
+- [x] Link to Job dialog from contacts allows selecting or creating jobs and records outreach.
+- [x] Stage updates available in table and history modal with note persistence.
+- [x] Tooltips added for tailoring, personalization, and deadline inputs.

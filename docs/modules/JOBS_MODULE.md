@@ -288,10 +288,15 @@ export class JobsController {
 ```
 frontend/src/
 ├── pages/
-│   ├── JobsPage.tsx            # Main jobs table
+│   ├── JobsPage.tsx            # Pipeline + table toggle (Link Contact entry point)
 │   └── DashboardPage.tsx       # Shows heat breakdown
 ├── components/
-│   ├── JobWizardModal.tsx      # Create job with CV + outreach
+│   ├── JobWizardModal.tsx      # Create job with CV + outreach (inline contact creation)
+│   ├── JobHistoryModal.tsx     # Timeline + stage updates via dialog
+│   ├── JobListTable.tsx        # Tabular view (stage inline edit, contacts column)
+│   ├── LinkContactDialog.tsx   # Link job → contact via outreach
+│   ├── LinkJobDialog.tsx       # Link contact → job via outreach (supports inline job create)
+│   ├── UpdateJobStageDialog.tsx# Stage change modal collecting notes
 │   └── HeatBadge.tsx           # Visual heat indicator (0-3)
 └── api/
     └── hooks.ts                # React Query hooks
@@ -301,20 +306,29 @@ frontend/src/
 
 #### **React Query Hooks**
 ```typescript
-// List jobs with filters
+// List jobs with filters + search + pagination
 useJobsQuery(filters?: {
   stage?: string;
   heat?: number;
+  includeArchived?: boolean;
+  query?: string;
+  page?: number;
+  pageSize?: number;
 })
 
 // Mutations
-useCreateJobMutation()
+useCreateJobMutation();
+useCreateJobOutreachMutation();
+useUpdateJobStageMutation();
 ```
 
 #### **Local State** (JobsPage)
 ```typescript
 const [stageFilter, setStageFilter] = useState<JobStage | undefined>();
 const [heatFilter, setHeatFilter] = useState<number | undefined>();
+const [viewMode, setViewMode] = useState<'pipeline' | 'table'>('pipeline');
+const [linkJob, setLinkJob] = useState<JobSummary | null>(null); // opens LinkContactDialog
+const [stageJob, setStageJob] = useState<JobSummary | null>(null); // opens UpdateJobStageDialog
 ```
 
 ---
@@ -334,6 +348,9 @@ List jobs with optional filters.
   stage?: 'APPLIED' | 'HR' | 'TECH' | 'OFFER' | 'REJECTED' | 'DORMANT';
   heat?: 0 | 1 | 2 | 3;
   includeArchived?: boolean; // defaults to false
+  query?: string;            // fuzzy match on company/role
+  page?: number;             // optional pagination (1-indexed)
+  pageSize?: number;         // optional page size (<=200)
 }
 ```
 
@@ -352,7 +369,9 @@ List jobs with optional filters.
     "createdAt": "2025-10-20T08:00:00.000Z",
     "updatedAt": "2025-10-28T10:00:00.000Z",
     "archived": false,
-    "archivedAt": null
+    "archivedAt": null,
+    "contactsCount": 2,
+    "nextFollowUpAt": "2025-10-31T09:00:00.000Z"
   }
 ]
 ```
@@ -387,7 +406,7 @@ Create new job application.
 
 **Response**: Created job object
 
-> **Note:** `contactId` must be a valid Contact cuid. When provided, the payload may also include `createFollowUp` (defaults to `true`) and an optional `followUpNote` for the auto-generated follow-up.
+> **Note:** Provide either `contactId` (existing contact cuid) or `contactCreate` with `{ name, role?, email?, linkedinUrl?, companyName? }`. `createFollowUp` defaults to `true`, and `followUpNote` seeds the follow-up task.
 
 **Business Logic**:
 1. Creates Job with stage=APPLIED
@@ -433,6 +452,26 @@ Update job stage.
 - Updates `job.lastTouchAt` and `updatedAt`
 - Recalculates heat (TECH → heat >= 2, OFFER → heat = 3)
 
+**Response**:
+```json
+{
+  "job": {
+    "id": "job_1",
+    "company": "TechCorp",
+    "stage": "TECH",
+    "heat": 2,
+    "contactsCount": 2,
+    "nextFollowUpAt": "2025-11-01T09:00:00.000Z"
+  },
+  "history": {
+    "id": "hist_123",
+    "stage": "TECH",
+    "note": "Scheduled two technical rounds",
+    "at": "2025-10-30T15:30:00.000Z"
+  }
+}
+```
+
 ---
 
 #### **POST /jobs/:id/outreach**
@@ -446,14 +485,54 @@ Log outreach attempt for job.
   "messageType": "follow_up",
   "personalizationScore": 75,
   "outcome": "POSITIVE",
-  "content": "Thanks for connecting! Would love to chat about..."
+  "content": "Thanks for connecting! Would love to chat about...",
+  "createFollowUp": true,
+  "followUpNote": "Remind on Tuesday"
+}
+
+// or inline contact creation
+{
+  "contactCreate": {
+    "name": "Jamie Recruiter",
+    "role": "Talent Partner",
+    "email": "jamie@example.com",
+    "companyName": "Globex"
+  },
+  "channel": "EMAIL",
+  "messageType": "intro_request",
+  "personalizationScore": 80
 }
 ```
 
 **Side Effects**:
-- Creates Outreach record
+- Creates Outreach record and optional follow-up (3-day default)
 - Updates `job.lastTouchAt`
+- Auto-creates contact when `contactCreate` provided (re-uses CompaniesService findOrCreate)
 - If outcome=POSITIVE → may promote contact strength
+
+**Response**:
+```json
+{
+  "outreach": {
+    "id": "out_123",
+    "jobId": "job_1",
+    "contactId": "contact_1",
+    "channel": "EMAIL",
+    "messageType": "intro_request",
+    "personalizationScore": 80,
+    "sentAt": "2025-10-30T12:00:00.000Z",
+    "contact": { "id": "contact_1", "name": "Jamie Recruiter" }
+  },
+  "job": {
+    "id": "job_1",
+    "company": "Globex",
+    "stage": "APPLIED",
+    "contactsCount": 2,
+    "nextFollowUpAt": "2025-11-02T12:00:00.000Z"
+  }
+}
+```
+> **Tip:** Either `contactId` or `contactCreate` must be provided. `personalizationScore` defaults to 70 if omitted.
 
 ---
 
@@ -533,10 +612,12 @@ Get status change timeline.
 **Purpose**: Main jobs listing (table or kanban view).
 
 **Features**:
-- Filter by stage (Applied/HR/Tech/etc.)
-- Filter by heat (0/1/2/3)
-- Sort by last updated
-- Click job → navigate to detail view
+- Toggle between kanban pipeline and analytical table view.
+- Stage filters (Applied/HR/Tech/Offer plus archived toggle) and heat chips (0–3).
+- Pipeline cards show heat, last touch, and linked contact chips (clickable to open the Contact drawer).
+- Table columns: Company • Role • Stage (inline selector) • Heat • Contacts (chips + count) • Last touch • Next follow-up • Deadline • Source • Actions.
+- Row actions: Edit, History, Link contact, Delete (soft/hard).
+- `Link contact` button opens the two-tab dialog for selecting or creating contacts and logging outreach in one flow.
 
 **Props**: None (route component)
 
@@ -550,9 +631,11 @@ Get status change timeline.
 **Features**:
 - **Step 1**: Job details (company, role, URL, deadline)
 - **Step 2**: CV submission (tailoring score)
-- **Step 3**: Optional outreach (contact, channel, message)
-- Validation (Zod + react-hook-form)
-- Multi-step form with progressive disclosure
+- **Step 3**: Optional outreach (contact, channel, message, purpose)
+  - Validation (Zod + react-hook-form)
+  - Multi-step form with progressive disclosure
+- Contact picker supports typeahead search for existing contacts, inline creation with supplementary fields (email/role/LinkedIn), and keeps primary actions anchored in a sticky footer.
+- Outreach metadata now captures a “Purpose” (job opportunity, code review, check-in, referral, or other) and defaults to `JOB_OPPORTUNITY` for wizard-created outreach.
 
 **Props**: None (self-contained modal)
 
@@ -593,10 +676,10 @@ Get status change timeline.
 3. **Step 2**: Enters tailoring score (0-100)
    - Indicates how well CV matches job description
 4. **Step 3**: Optional outreach
-   - Selects contact from dropdown
-   - Chooses channel (Email/LinkedIn/etc.)
-   - Enters personalization score
-   - Writes message content
+   - Provide contact (paste existing Contact ID or type a new name — optional email/LinkedIn/role inputs appear for new contacts)
+   - Choose channel (Email/LinkedIn/etc.)
+   - Enter personalization score
+   - Add message content / follow-up note
 5. Clicks "Create Job"
 6. Backend:
    - Creates Job (stage=APPLIED, heat calculated from deadline)
@@ -609,14 +692,12 @@ Get status change timeline.
 ---
 
 ### **Flow 2: Update Job Stage**
-1. User views job detail (or from jobs table)
-2. Clicks "Update Status" button
-3. Selects new stage (e.g., HR → TECH)
-4. Enters note (e.g., "3 rounds scheduled for Nov 5")
-5. Clicks "Save"
-6. Backend:
+1. User hovers a pipeline card or table row and clicks the inline stage chip (or "Update stage" inside the history modal).
+2. Stage picker opens with options (Applied/HR/Tech/Offer/Rejected/Dormant) and an optional note field.
+3. User confirms the change; note is logged alongside the status update.
+4. Backend:
    - Updates `job.stage`
-   - Creates JobStatusHistory entry
+   - Creates JobStatusHistory entry (persisting the optional note)
    - Recalculates heat (TECH → heat >= 2)
    - Updates `lastTouchAt` and `updatedAt`
 7. UI refreshes, job shows new stage and heat
@@ -651,14 +732,19 @@ IF job.archived = true:
 ---
 
 ### **Flow 4: View Job History**
-1. User clicks job in table (or navigates to detail page)
-2. Frontend calls `GET /jobs/:id/history`
-3. Backend returns all JobStatusHistory entries
-4. UI displays timeline:
-   - Oct 20: Applied (Job created)
-   - Oct 22: HR (Recruiter call scheduled)
-   - Oct 28: Tech (3 rounds scheduled)
-5. User can see full progression
+1. User opens History from a pipeline card/table row.
+2. Frontend calls `GET /jobs/:id/history` and renders the modal header (company + role) plus linked contact chips.
+3. Chips are clickable; selecting one opens the relevant Contact drawer for deeper context.
+4. Backend returns status history, applications, outreach (with contact info), and follow-ups.
+5. UI timeline merges these entries chronologically, showing stage notes, outreach channel/type/personalization/purpose, and follow-up status (including which contact needs attention).
+6. Close modal or jump to `Update stage` from the modal toolbar; changes refresh the timeline instantly.
+
+---
+
+### **Flow 6: Inspect Linked Contacts**
+1. Pipeline cards and the Jobs table render chips for each linked contact (based on outreach history).
+2. Clicking a chip opens the Contact drawer for that person, showing full details and timeline.
+3. The Link Contact dialog automatically opens the contact drawer after a successful link so the user can verify the new association.
 
 ---
 
@@ -673,6 +759,29 @@ IF job.archived = true:
    - Backend removes dependent rows (applications, outreach, history, follow-ups, notifications) inside a transaction.
    - Referrals referencing the job are detached.
 5. UI refreshes pipeline and displays toast feedback.
+
+---
+
+### **Flow 6: Link Contact from Jobs (Outreach)**
+1. User clicks `Link contact` on job card or table row (JobsPage).
+2. `LinkContactDialog` opens with tabs:
+   - **Select existing**: type-ahead search (`/contacts?query=`) shows name/role/company; selecting preview highlights "Linking to" banner.
+   - **Create new**: lightweight form (name required, other fields optional, company prefilled from job).
+3. After choosing contact, user fills outreach mini-form (channel, message type, purpose badge, personalization score tooltip, optional note).
+4. Submits → `POST /jobs/:id/outreach` with either `contactId` or `contactCreate`.
+5. Backend logs outreach, auto-schedules follow-up (unless disabled), recomputes heat/contact count.
+6. UI toasts success, closes the dialog, refreshes Jobs list + job history, and immediately opens the linked Contact drawer so the user can verify the connection. The contact timeline picks up the new outreach via standard query invalidation.
+
+---
+
+### **Flow 7: Link Job from Contacts (Outreach + Inline Job)**
+1. Inside `ContactDrawer`, user presses `Link to job`.
+2. `LinkJobDialog` opens with tabs:
+   - **Select job**: search `/jobs?query=` (filters archived) to attach outreach to existing job.
+   - **Create job**: minimal job form (company, role required; optional URL/deadline) that reuses `POST /jobs` under the hood before logging outreach.
+3. After job is selected/created, the same outreach mini-form is shown (contact is pre-wired) with channel, message type, purpose, personalization, and notes.
+4. Submits → `POST /jobs/:jobId/outreach` (if new job created in step 2, dialog waits for createJob mutation to resolve).
+5. Backend logs outreach, returns updated job summary; UI invalidates contact detail, jobs list, and job history to sync counts & timelines.
 
 ---
 

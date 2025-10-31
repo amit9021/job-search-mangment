@@ -5,6 +5,18 @@
 - **DELETE /jobs/:id returns 500** – `JobsService.delete` (`backend/src/modules/jobs/jobs.service.ts:107-114`) calls `prisma.job.delete` without cascading deletions. When a job has applications, outreach, or status history (`prisma/schema.prisma` relations are `onDelete: Restrict`), Prisma raises `P2003` and Nest returns a 500.
 - **Frontend unable to add a Job or open full Job details consistently** – Because the create mutation fails, React Query (`frontend/src/api/hooks.ts:102-155`) caches an error state and the UI closes the modal with no toast. Subsequent attempts to open the edit modal rely on `useJobDetailQuery`, but missing records/400 responses leave the modal empty, so users perceive it as broken.
 
+## What Changed (2025-10-30)
+- Implemented cross-linking between jobs and contacts via outreach dialogs (existing or inline record creation), introduced a tabular jobs view with contacts count/next follow-up columns, and added stage update notes so both timelines stay in sync.
+- Extended JobWizardModal to accept contact IDs or ad-hoc names (with optional email/LinkedIn) so new contacts are created automatically when logging outreach.
+- Added a `New contact` CTA on the Contacts page with a create-mode drawer, plus success/error handling for both contact creation and updates.
+- Surfaced linked contacts on pipeline cards, the jobs table, and the job history modal, and mirrored the relationship from the contact drawer with a "Linked roles" chip list so users can confirm associations immediately after linking.
+
+## What Changed (2025-11-01)
+- Job history timeline now shows the exact contact tied to each follow-up and allows opening their drawer directly from the modal chips.
+- JobWizardModal contact picker supports autosuggest for existing contacts, inline creation that keeps the primary actions visible, and a new “Purpose” selector that tags outreach context.
+- Contact Drawer gains a danger zone (archive vs hard delete), outreach entries expose editable purpose badges, and follow-ups appear alongside outreach/referral/review history.
+- Contacts table lists linked jobs and next follow-up dates, making it easy to confirm which roles each person is attached to after linking from either direction.
+
 ## Root-Cause Hypotheses
 - DTO/validation mismatch between frontend JobWizard payload and backend CreateJobDto – The DTO expects ISO strings and enum-safe payloads while the wizard provides date-only strings and loosely typed outreach fields, leading to validation failures.
 - Zod/class-validator rules causing 400 on missing/invalid fields (e.g., date format, enum stage, numeric types) – Global `ZodValidationPipe` returns flattened error objects; without coercion the DTO rejects numeric strings and non-ISO dates, and the frontend does not parse the response.

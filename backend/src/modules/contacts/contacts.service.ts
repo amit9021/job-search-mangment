@@ -14,12 +14,15 @@ export class ContactsService {
     query?: string;
     strength?: ContactStrength;
     companyId?: string;
+    includeArchived?: boolean;
     page?: number;
     pageSize?: number;
   }) {
-    const { query, strength, companyId, page = 1, pageSize = 50 } = params || {};
+    const { query, strength, companyId, includeArchived = false, page = 1, pageSize = 50 } = params || {};
 
-    const where: any = {};
+    const where: any = {
+      ...(includeArchived ? {} : { archived: false })
+    };
 
     if (strength) {
       where.strength = strength;
@@ -48,16 +51,105 @@ export class ContactsService {
         company: true,
         outreaches: {
           orderBy: { sentAt: 'desc' },
-          take: 1
+          take: 1,
+          include: {
+            job: {
+              select: { id: true, company: true, role: true, stage: true }
+            }
+          }
+        },
+        followups: {
+          where: { sentAt: null },
+          orderBy: { dueAt: 'asc' },
+          take: 1,
+          include: {
+            job: {
+              select: { id: true, company: true, role: true, stage: true }
+            }
+          }
         }
       }
     });
 
-    // Compute lastTouchAt from latest outreach
-    return contacts.map(contact => ({
-      ...contact,
-      lastTouchAt: contact.outreaches[0]?.sentAt ?? contact.createdAt
-    }));
+    const contactIds = contacts.map((contact) => contact.id);
+
+    const outreachLinks = contactIds.length
+      ? await this.prisma.outreach.findMany({
+          where: {
+            contactId: { in: contactIds },
+            jobId: { not: null }
+          },
+          select: {
+            contactId: true,
+            job: {
+              select: { id: true, company: true, role: true, stage: true }
+            }
+          }
+        })
+      : [];
+
+    const referralLinks = contactIds.length
+      ? await this.prisma.referral.findMany({
+          where: {
+            contactId: { in: contactIds },
+            jobId: { not: null }
+          },
+          select: {
+            contactId: true,
+            job: {
+              select: { id: true, company: true, role: true, stage: true }
+            }
+          }
+        })
+      : [];
+
+    const linkedJobsByContact = new Map<
+      string,
+      Map<string, { id: string; company: string; role: string | null; stage: string }>
+    >();
+
+    const upsertJob = (
+      contactId: string,
+      job:
+        | {
+            id: string;
+            company: string;
+            role: string | null;
+            stage: string;
+          }
+        | null
+        | undefined
+    ) => {
+      if (!job) {
+        return;
+      }
+      if (!linkedJobsByContact.has(contactId)) {
+        linkedJobsByContact.set(contactId, new Map());
+      }
+      linkedJobsByContact.get(contactId)!.set(job.id, job);
+    };
+
+    outreachLinks.forEach((link) => {
+      upsertJob(link.contactId, link.job);
+    });
+    referralLinks.forEach((link) => {
+      upsertJob(link.contactId, link.job);
+    });
+
+    return contacts.map((contact) => {
+      const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort((a, b) =>
+        `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
+      );
+      const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
+      const nextFollowUp = contact.followups[0];
+
+      return {
+        ...contact,
+        linkedJobs,
+        lastTouchAt: lastTouchFromOutreach ?? contact.createdAt,
+        nextFollowUpAt: nextFollowUp?.dueAt ?? null
+      };
+    });
   }
 
   async create(data: {
@@ -93,7 +185,8 @@ export class ContactsService {
         location: data.location ?? null,
         tags: data.tags ?? [],
         notes: data.notes ?? null,
-        strength: data.strength ?? ContactStrength.WEAK
+        strength: data.strength ?? ContactStrength.WEAK,
+        archived: false
       },
       include: {
         company: true
@@ -113,16 +206,42 @@ export class ContactsService {
         },
         outreaches: {
           orderBy: { sentAt: 'desc' },
-          take: 20
+          take: 20,
+          include: {
+            job: {
+              select: {
+                id: true,
+                company: true,
+                role: true,
+                stage: true
+              }
+            }
+          }
         },
         reviews: {
           orderBy: { requestedAt: 'desc' },
           take: 20,
           include: { project: true }
+        },
+        followups: {
+          orderBy: { dueAt: 'desc' },
+          include: {
+            job: {
+              select: {
+                id: true,
+                company: true,
+                role: true,
+                stage: true
+              }
+            }
+          }
         }
       }
     });
     if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+    if (contact.archived) {
       throw new NotFoundException('Contact not found');
     }
 
@@ -142,12 +261,51 @@ export class ContactsService {
         type: 'review' as const,
         date: r.requestedAt,
         data: r
+      })),
+      ...contact.followups.map((f: any) => ({
+        type: 'followup' as const,
+        date: f.dueAt,
+        data: f
       }))
     ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 20);
 
+    const linkedJobsMap = new Map<
+      string,
+      { id: string; company: string; role: string | null; stage: string }
+    >();
+
+    contact.outreaches.forEach((outreach: any) => {
+      const job = outreach.job;
+      if (job && !linkedJobsMap.has(job.id)) {
+        linkedJobsMap.set(job.id, {
+          id: job.id,
+          company: job.company,
+          role: job.role,
+          stage: job.stage
+        });
+      }
+    });
+
+    contact.referrals.forEach((referral: any) => {
+      const job = referral.job;
+      if (job && !linkedJobsMap.has(job.id)) {
+        linkedJobsMap.set(job.id, {
+          id: job.id,
+          company: job.company,
+          role: job.role,
+          stage: job.stage
+        });
+      }
+    });
+
+    const linkedJobs = Array.from(linkedJobsMap.values()).sort((a, b) =>
+      `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
+    );
+
     return {
       ...contact,
-      timeline
+      timeline,
+      linkedJobs
     };
   }
 
@@ -197,6 +355,54 @@ export class ContactsService {
     });
   }
 
+  async delete(contactId: string, options: { hard?: boolean } = {}) {
+    if (options.hard) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.followUp.updateMany({
+          where: { contactId },
+          data: { contactId: null }
+        });
+        await tx.notification.updateMany({
+          where: { contactId },
+          data: { contactId: null }
+        });
+        await tx.outreach.updateMany({
+          where: { contactId },
+          data: { contactId: null }
+        });
+        await tx.referral.deleteMany({ where: { contactId } });
+        await tx.codeReview.deleteMany({ where: { contactId } });
+        await tx.eventContact.deleteMany({ where: { contactId } });
+        await tx.contact.delete({ where: { id: contactId } });
+      });
+      return { success: true, hardDeleted: true };
+    }
+
+    const contact = await this.prisma.contact.findUnique({ where: { id: contactId } });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    if (contact.archived) {
+      return { success: true, archived: true };
+    }
+
+    await this.prisma.contact.update({
+      where: { id: contactId },
+      data: {
+        archived: true,
+        archivedAt: new Date()
+      }
+    });
+
+    await this.prisma.followUp.updateMany({
+      where: { contactId, sentAt: null },
+      data: { note: 'Contact archived' }
+    });
+
+    return { success: true, archived: true };
+  }
+
   async promoteStrength(contactId: string, strength: ContactStrength) {
     const strengthOrder: ContactStrength[] = ['WEAK', 'MEDIUM', 'STRONG'];
     const contact = await this.prisma.contact.findUnique({ where: { id: contactId } });
@@ -214,6 +420,7 @@ export class ContactsService {
   async listNetworkStars() {
     return this.prisma.contact.findMany({
       where: {
+        archived: false,
         referrals: {
           some: {}
         }

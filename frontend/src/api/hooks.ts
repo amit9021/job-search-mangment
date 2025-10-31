@@ -71,6 +71,13 @@ export type CreateJobMutationInput = {
   };
   initialOutreach?: {
     contactId?: string;
+    contactCreate?: {
+      name: string;
+      role?: string;
+      email?: string;
+      linkedinUrl?: string;
+      companyName?: string;
+    };
     channel: string;
     messageType: string;
     personalizationScore: number;
@@ -136,15 +143,26 @@ export const useKpiWeekQuery = () => {
   });
 };
 
-export const useJobsQuery = (filters?: { stage?: string; heat?: number; includeArchived?: boolean }) => {
+export const useJobsQuery = (filters?: {
+  stage?: string;
+  heat?: number;
+  includeArchived?: boolean;
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}) => {
   const api = useApi();
   return useQuery({
     queryKey: ['jobs', filters],
     queryFn: async () => {
       const params = filters
         ? {
-            ...filters,
-            includeArchived: filters.includeArchived ? 'true' : undefined
+            stage: filters.stage,
+            heat: filters.heat,
+            includeArchived: filters.includeArchived ? 'true' : undefined,
+            query: filters.query && filters.query.trim().length > 0 ? filters.query.trim() : undefined,
+            page: filters.page,
+            pageSize: filters.pageSize
           }
         : undefined;
       const { data } = await api.get('/jobs', { params });
@@ -160,6 +178,13 @@ export const useJobsQuery = (filters?: { stage?: string; heat?: number; includeA
         deadline?: string | null;
         archived: boolean;
         archivedAt?: string | null;
+        contactsCount: number;
+        contacts: Array<{
+          id: string;
+          name: string | null;
+          role?: string | null;
+        }>;
+        nextFollowUpAt?: string | null;
       }>;
     }
   });
@@ -185,6 +210,13 @@ export const useJobDetailQuery = (id: string) => {
         updatedAt: string;
         archived: boolean;
         archivedAt?: string | null;
+        contactsCount: number;
+        contacts: Array<{
+          id: string;
+          name: string | null;
+          role?: string | null;
+        }>;
+        nextFollowUpAt?: string | null;
       };
     },
     enabled: !!id
@@ -205,11 +237,19 @@ export const useCreateJobMutation = () => {
         stage: string;
         heat: number;
         archived: boolean;
+        contactsCount: number;
+        contacts: Array<{
+          id: string;
+          name: string | null;
+          role?: string | null;
+        }>;
+        nextFollowUpAt?: string | null;
       };
     },
     onSuccess: (job) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Job created', `${job.company} added to the pipeline`);
     },
     onError: (error) => {
@@ -268,6 +308,140 @@ export const useDeleteJobMutation = () => {
   });
 };
 
+export type JobOutreachPayload = {
+  jobId: string;
+  contactId?: string;
+  contactCreate?: {
+    name: string;
+    role?: string;
+    email?: string;
+    linkedinUrl?: string;
+    companyName?: string;
+  };
+  channel: string;
+  messageType: string;
+  personalizationScore?: number;
+  outcome?: string;
+  content?: string;
+  context?: string;
+  createFollowUp?: boolean;
+  followUpNote?: string;
+};
+
+export const useCreateJobOutreachMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ jobId, ...payload }: JobOutreachPayload) => {
+      const { data } = await api.post(`/jobs/${jobId}/outreach`, payload);
+      return data as {
+        outreach: {
+          id: string;
+          jobId?: string | null;
+          contactId?: string | null;
+          channel: string;
+          messageType: string;
+          personalizationScore: number;
+          outcome: string;
+          content?: string | null;
+          context: string;
+          sentAt: string;
+          contact?: { id: string; name: string | null } | null;
+        };
+        job: {
+          id: string;
+          company: string;
+          role: string;
+          stage: string;
+          heat: number;
+          lastTouchAt: string;
+          updatedAt: string;
+          sourceUrl?: string | null;
+          deadline?: string | null;
+          archived: boolean;
+          contactsCount: number;
+          contacts: Array<{
+            id: string;
+            name: string | null;
+            role?: string | null;
+          }>;
+          nextFollowUpAt?: string | null;
+        };
+      };
+    },
+    onSuccess: (result, variables) => {
+      const outreach = result?.outreach;
+      const job = result?.job;
+
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+
+      const linkedContactId = outreach?.contactId ?? outreach?.contact?.id;
+      if (linkedContactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', linkedContactId] });
+      }
+
+      const contactName = outreach?.contact?.name ?? outreach?.contactId ?? 'contact';
+      const companyName = job?.company ?? '';
+      toast.success('Contact linked', companyName ? `${companyName} ↔ ${contactName}` : `Linked to ${contactName}`);
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useUpdateJobStageMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ jobId, stage, note }: { jobId: string; stage: string; note?: string }) => {
+      const { data } = await api.post(`/jobs/${jobId}/status`, { stage, note });
+      return data as {
+        job: {
+          id: string;
+          company: string;
+          role: string;
+          stage: string;
+          heat: number;
+          lastTouchAt: string;
+          updatedAt: string;
+          contactsCount: number;
+          contacts: Array<{
+            id: string;
+            name: string | null;
+            role?: string | null;
+          }>;
+          nextFollowUpAt?: string | null;
+        };
+        history: {
+          id: string;
+          stage: string;
+          at: string;
+          note?: string | null;
+        };
+      };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      toast.success('Stage updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
 export const useJobHistoryQuery = (id: string, options?: { enabled?: boolean }) => {
   const api = useApi();
   return useQuery({
@@ -309,6 +483,7 @@ export const useJobHistoryQuery = (id: string, options?: { enabled?: boolean }) 
           sentAt?: string | null;
           attemptNo: number;
           note?: string | null;
+          contact?: { id: string; name: string | null; role?: string | null } | null;
         }>;
       };
     }
@@ -319,6 +494,7 @@ export const useContactsQuery = (filters?: {
   query?: string;
   strength?: string;
   companyId?: string;
+  includeArchived?: boolean;
   page?: number;
   pageSize?: number;
 }) => {
@@ -343,6 +519,64 @@ export const useContactsQuery = (filters?: {
         lastTouchAt: string;
         createdAt: string;
         updatedAt: string;
+        archived: boolean;
+        archivedAt?: string | null;
+        linkedJobs: Array<{
+          id: string;
+          company: string;
+          role: string | null;
+          stage: string;
+        }>;
+        nextFollowUpAt?: string | null;
+      }>;
+    }
+  });
+};
+
+export const useContactSearchQuery = (query: string, options?: { enabled?: boolean; limit?: number }) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['contacts', 'search', query, options?.limit],
+    enabled: (options?.enabled ?? true) && query.trim().length >= 2,
+    queryFn: async () => {
+      const { data } = await api.get('/contacts', {
+        params: {
+          query: query.trim(),
+          pageSize: options?.limit ?? 10
+        }
+      });
+      return data as Array<{
+        id: string;
+        name: string;
+        company?: { id: string; name: string };
+        role?: string;
+        email?: string;
+        linkedinUrl?: string;
+      }>;
+    }
+  });
+};
+
+export const useJobSearchQuery = (query: string, options?: { enabled?: boolean; limit?: number }) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['jobs', 'search', query, options?.limit],
+    enabled: (options?.enabled ?? true) && query.trim().length >= 2,
+    queryFn: async () => {
+      const { data } = await api.get('/jobs', {
+        params: {
+          query: query.trim(),
+          includeArchived: 'false',
+          pageSize: options?.limit ?? 10
+        }
+      });
+      return data as Array<{
+        id: string;
+        company: string;
+        role: string;
+        stage: string;
+        deadline?: string | null;
+        contactsCount: number;
       }>;
     }
   });
@@ -527,9 +761,15 @@ export const useContactDetailQuery = (id: string) => {
         createdAt: string;
         updatedAt: string;
         timeline: Array<{
-          type: 'outreach' | 'referral' | 'review';
+          type: 'outreach' | 'referral' | 'review' | 'followup';
           date: string;
           data: any;
+        }>;
+        linkedJobs: Array<{
+          id: string;
+          company: string;
+          role: string | null;
+          stage: string;
         }>;
       };
     },
@@ -564,6 +804,29 @@ export const useCreateContactMutation = () => {
   });
 };
 
+export const useDeleteContactMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id, hard }: { id: string; hard?: boolean }) => {
+      await api.delete(`/contacts/${id}`, {
+        params: hard ? { hard: 'true' } : undefined
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', variables.id] });
+      toast.success(variables.hard ? 'Contact deleted' : 'Contact archived');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
 export const useUpdateContactMutation = () => {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -589,6 +852,46 @@ export const useUpdateContactMutation = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       queryClient.invalidateQueries({ queryKey: ['contacts', variables.id] });
+    }
+  });
+};
+
+export const useUpdateOutreachMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      context?: string;
+      outcome?: string;
+      content?: string;
+      messageType?: string;
+      personalizationScore?: number;
+    }) => {
+      const { id, ...rest } = payload;
+      const { data } = await api.patch(`/outreach/${id}`, rest);
+      return data as {
+        id: string;
+        job?: { id: string } | null;
+        contact?: { id: string } | null;
+        context: string;
+      };
+    },
+    onSuccess: (result) => {
+      if (result.contact?.id) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', result.contact.id] });
+      }
+      if (result.job?.id) {
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.job.id, 'history'] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Outreach updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
     }
   });
 };

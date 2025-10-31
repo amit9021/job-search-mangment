@@ -15,6 +15,7 @@ export const ContactsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'edit' | 'create'>('edit');
 
   const { data: contacts } = useContactsQuery({
     query: searchQuery || undefined,
@@ -23,13 +24,23 @@ export const ContactsPage = () => {
   const { data: stars } = useNetworkStarsQuery();
 
   const handleRowClick = (contactId: string) => {
+    setDrawerMode('edit');
     setSelectedContactId(contactId);
     setDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    setTimeout(() => setSelectedContactId(null), 300); // Wait for animation
+    setTimeout(() => {
+      setSelectedContactId(null);
+      setDrawerMode('edit');
+    }, 300); // Wait for animation
+  };
+
+  const handleAddContact = () => {
+    setDrawerMode('create');
+    setSelectedContactId(null);
+    setDrawerOpen(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -52,7 +63,7 @@ export const ContactsPage = () => {
           <h2 className="text-xl font-semibold text-slate-900">Networking bench</h2>
           <p className="text-sm text-slate-500">Track conversions and nudge warm supporters.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {filters.map((filter) => (
             <button
               key={filter.label}
@@ -66,6 +77,13 @@ export const ContactsPage = () => {
               {filter.label}
             </button>
           ))}
+          <button
+            onClick={handleAddContact}
+            className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
+          >
+            <span className="text-sm leading-none">+</span>
+            New contact
+          </button>
         </div>
       </header>
 
@@ -102,10 +120,12 @@ export const ContactsPage = () => {
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">Company</th>
               <th className="px-4 py-3 text-left">Role</th>
+              <th className="px-4 py-3 text-left">Jobs</th>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Phone</th>
               <th className="px-4 py-3 text-left">Strength</th>
               <th className="px-4 py-3 text-left">Last Touch</th>
+              <th className="px-4 py-3 text-left">Next Follow-up</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -146,6 +166,26 @@ export const ContactsPage = () => {
                 </td>
                 <td className="px-4 py-3 text-slate-500">{contact.role ?? '—'}</td>
                 <td className="px-4 py-3 text-slate-500 text-xs">
+                  {contact.linkedJobs && contact.linkedJobs.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {contact.linkedJobs.slice(0, 3).map((job) => (
+                        <span
+                          key={job.id}
+                          className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700"
+                        >
+                          <span className="font-medium">{job.company}</span>
+                          {job.role ? <span className="text-blue-500">— {job.role}</span> : null}
+                        </span>
+                      ))}
+                      {contact.linkedJobs.length > 3 && (
+                        <span className="text-[11px] text-slate-400">+{contact.linkedJobs.length - 3}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-slate-500 text-xs">
                   {contact.email ? (
                     <a
                       href={`mailto:${contact.email}`}
@@ -164,6 +204,9 @@ export const ContactsPage = () => {
                 </td>
                 <td className="px-4 py-3 text-slate-400 text-xs">
                   {formatDate(contact.lastTouchAt)}
+                </td>
+                <td className="px-4 py-3 text-slate-400 text-xs">
+                  {contact.nextFollowUpAt ? formatDate(contact.nextFollowUpAt) : '—'}
                 </td>
               </tr>
             ))}
@@ -195,8 +238,13 @@ export const ContactsPage = () => {
       {/* Contact Drawer */}
       <ContactDrawer
         contactId={selectedContactId}
+        mode={drawerMode}
         open={drawerOpen}
         onClose={handleCloseDrawer}
+        onCreated={(created) => {
+          setDrawerMode('edit');
+          setSelectedContactId(created.id);
+        }}
       />
     </div>
   );

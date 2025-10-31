@@ -22,8 +22,10 @@ The Contacts module manages your professional network in the job hunt system. It
 - Track relationship strength (Weak/Medium/Strong)
 - Categorize with tags
 - View timeline of all interactions (outreaches, referrals, reviews)
+- Timeline captures outreaches (with purpose), scheduled follow-ups, referrals, and reviews
 - Search across multiple fields
 - Auto-create companies on-the-fly
+- Archive or permanently delete contacts with confirmation guard rails
 
 ### **Why This Matters**
 Your network is critical in job hunting. This module helps you:
@@ -55,6 +57,8 @@ model Contact {
   tags        String[]         @default([])
 
   notes       String?
+  archived    Boolean          @default(false)
+  archivedAt  DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -139,13 +143,18 @@ async list(params?: {
   query?: string;        // Search across name, role, email, LinkedIn, GitHub
   strength?: ContactStrength;
   companyId?: string;    // Filter by company
+  includeArchived?: boolean; // Opt-in to include archived contacts
   page?: number;         // Default: 1
   pageSize?: number;     // Default: 50
 })
 ```
 - **Search**: Case-insensitive OR across 5 fields
 - **Pagination**: Skips (page - 1) * pageSize records
-- **Computed Field**: `lastTouchAt` = latest outreach.sentAt or contact.createdAt
+- **Computed Fields**:
+  - `linkedJobs`: distinct jobs connected via outreach/referral (company, role, stage)
+  - `lastTouchAt`: latest outreach or createdAt
+  - `nextFollowUpAt`: earliest pending follow-up due date (if any)
+- **Archival**: Excludes archived contacts unless `includeArchived=true`
 
 **2. create(data)**
 ```typescript
@@ -172,8 +181,9 @@ async create(data: {
 async getById(contactId: string)
 ```
 - **Returns**: Contact with full company details
-- **Timeline**: Unified array of outreaches, referrals, reviews (last 20, sorted by date)
-- **Includes**: Job details for referrals, project details for reviews
+- **Timeline**: Unified array of outreaches (with purpose + job), upcoming/completed follow-ups, referrals, and reviews (last 20, sorted desc)
+- **Includes**: Job details for outreach/referral events, project details for reviews
+- **Guard**: Archived contacts raise 404 to keep UI consistent
 
 **4. update(contactId, data)**
 ```typescript
@@ -189,7 +199,15 @@ async promoteStrength(contactId: string, strength: ContactStrength)
 - **One-Way**: Only promotes (WEAK → MEDIUM → STRONG), never demotes
 - **Use Case**: Auto-promote when contact provides referral
 
-**6. listNetworkStars()**
+**6. delete(contactId, options)**
+```typescript
+async delete(contactId: string, options: { hard?: boolean } = {})
+```
+- **Soft Delete (default)**: Sets `archived=true`, stamps `archivedAt`, updates open follow-ups with a dormancy note.
+- **Hard Delete**: Nulls optional FK references (outreach, followup, notification) and deletes dependent rows (referrals, reviews, event contacts) before removing the contact.
+- **Idempotent**: Archiving an already archived contact returns a success envelope without redundant writes.
+
+**7. listNetworkStars()**
 ```typescript
 async listNetworkStars()
 ```
@@ -248,7 +266,8 @@ frontend/src/
 ├── components/
 │   ├── CompanySelect.tsx       # Async searchable dropdown
 │   ├── TagsInput.tsx           # Token-based tags input
-│   ├── ContactDrawer.tsx       # Slide-over with Details + Timeline
+│   ├── ContactDrawer.tsx       # Slide-over with details, edit, timeline, link-to-job CTA
+│   ├── LinkJobDialog.tsx       # Contact → job linking (select or create job + outreach)
 │   └── StrengthBadge.tsx       # Visual strength indicator
 └── api/
     └── hooks.ts                # React Query hooks
@@ -273,6 +292,8 @@ useContactDetailQuery(id: string)
 // Mutations
 useCreateContactMutation()
 useUpdateContactMutation()
+useCreateJobMutation()             // Inline job creation from LinkJobDialog
+useCreateJobOutreachMutation()     // Log outreach linking contact ↔ job
 
 // Companies
 useCompaniesQuery(query?: string)
@@ -362,8 +383,33 @@ Get contact detail with timeline.
       "date": "2025-10-25T10:00:00.000Z",
       "data": {
         "channel": "EMAIL",
+        "messageType": "intro_request",
+        "personalizationScore": 85,
+        "context": "JOB_OPPORTUNITY",
         "outcome": "POSITIVE",
-        "content": "Asked about open positions"
+        "content": "Asked about open positions",
+        "job": {
+          "id": "job_123",
+          "company": "TechCorp",
+          "role": "Senior Engineer",
+          "stage": "HR"
+        }
+      }
+    },
+    {
+      "type": "followup",
+      "date": "2025-10-28T09:00:00.000Z",
+      "data": {
+        "attemptNo": 1,
+        "dueAt": "2025-10-28T09:00:00.000Z",
+        "sentAt": null,
+        "note": "Check on recruiter response",
+        "job": {
+          "id": "job_123",
+          "company": "TechCorp",
+          "role": "Senior Engineer",
+          "stage": "HR"
+        }
       }
     },
     {
@@ -423,6 +469,30 @@ Update contact.
 
 ---
 
+#### **DELETE /contacts/:id**
+Archive or permanently delete a contact.
+
+**Query Params**:
+- `hard=true` (optional) → permanent delete
+
+**Soft Delete Response**:
+```json
+{
+  "success": true,
+  "archived": true
+}
+```
+
+**Hard Delete Response**:
+```json
+{
+  "success": true,
+  "hardDeleted": true
+}
+```
+
+---
+
 #### **GET /contacts/stars**
 Get network stars (top referrers).
 
@@ -443,6 +513,21 @@ Get network stars (top referrers).
 
 ---
 
+#### **PATCH /outreach/:id**
+Update outreach metadata (e.g., purpose/context, outcome, notes).
+
+**Request Body (partial)**:
+```json
+{
+  "context": "CODE_REVIEW",
+  "content": "Sent portfolio for feedback"
+}
+```
+
+**Response**: Updated outreach record (includes `contact` and `job` references for cache invalidation).
+
+---
+
 ## 🧩 **Component Reference**
 
 ### **ContactsPage**
@@ -451,9 +536,9 @@ Get network stars (top referrers).
 **Purpose**: Main contacts listing with search and navigation.
 
 **Features**:
-- Search bar (searches name, email, role, LinkedIn, GitHub)
+- Search bar (name, email, role, LinkedIn, GitHub)
 - Strength filter buttons (All/Weak/Medium/Strong)
-- Enhanced table with 7 columns
+- Table shows linked jobs (chips) and next follow-up alongside core fields
 - Clickable rows → opens ContactDrawer
 - Network Stars section
 
@@ -483,11 +568,12 @@ Get network stars (top referrers).
   - Strength radio buttons
   - Validation (Zod + react-hook-form)
   - Save/Cancel buttons
+  - Linked job chips (company/role/stage) and danger zone actions (archive vs hard delete)
 - **Timeline Tab**:
-  - Chronological activity list
-  - Icons by type (outreach/referral/review)
-  - Relative dates
-  - Empty state
+  - Chronological activity list across outreach, follow-ups, referrals, and reviews
+  - Outreach entries display purpose and allow inline editing of the context enum
+  - Icons by type (outreach/referral/review/followup)
+  - Relative dates + empty state messaging
 
 ---
 
@@ -550,12 +636,19 @@ Get network stars (top referrers).
    - Type in search bar → filters contacts
    - Click strength filter → filters by WEAK/MEDIUM/STRONG
 
-### **Flow 2: Edit Contact**
+### **Flow 2: Create Contact**
+1. User clicks the `New contact` pill in the Contacts header.
+2. ContactDrawer opens in create mode with blank defaults (`strength = WEAK`).
+3. User fills in name, optional company (searches existing companies or seeds a new one), and any other fields.
+4. Submitting triggers `useCreateContactMutation()` → `POST /contacts`, shows a success toast, invalidates the contacts list, and immediately switches the drawer into edit mode for the newly created record.
+5. When a new company name is provided (no `companyId`), the backend calls `companiesService.findOrCreate` to attach or create the organization automatically.
+
+### **Flow 3: Edit Contact**
 1. User clicks contact row in table
 2. `handleRowClick()` sets `selectedContactId` and `drawerOpen=true`
 3. ContactDrawer opens (slide-in animation)
 4. `useContactDetailQuery(id)` fetches contact + timeline
-5. Form populates with contact data
+5. Form populates with contact data and the header surfaces a **Linked roles** chip list showing every job tied to the contact (stage badge included).
 6. User edits fields:
    - Types in CompanySelect → searches companies
    - Adds tags via TagsInput
@@ -567,24 +660,35 @@ Get network stars (top referrers).
    - Drawer closes
    - Table refreshes with new data
 
-### **Flow 3: Create Contact (Auto-Company)**
-1. User submits create contact form with `companyName: "NewCo"`
-2. Backend `create()` method:
-   - Calls `companiesService.findOrCreate("NewCo")`
-   - If exists: uses existing company ID
-   - If not: creates new company, returns ID
-   - Creates contact with `companyId`
-3. Response includes full contact + company object
-
 ### **Flow 4: View Timeline**
 1. User opens contact in drawer
 2. Clicks "Timeline" tab
 3. `useContactDetailQuery()` has fetched timeline array
 4. Timeline component maps over items:
-   - Outreach: shows channel, outcome
+   - Outreach: shows channel, personalization, message type, outcome, and job context plus a badge for “Purpose” (editable inline via dropdown).
+   - Follow-up: highlights the due/completed status, associated job, and any reminder note.
    - Referral: shows job company/role
    - Review: shows project, score
-5. Sorted by date DESC (most recent first)
+5. Sorted by date DESC (most recent first) with empty state messaging when no history exists.
+
+### **Flow 5: Delete or Archive Contact**
+1. User opens the contact drawer (edit mode).
+2. Scrolls to the **Danger zone** panel and clicks "Delete contact".
+3. Inline confirmation exposes two options:
+   - **Archive contact** → soft delete (`DELETE /contacts/:id`), keeps history but hides the record.
+   - **Delete permanently** → passes `hard=true`, cascading removal of dependent records.
+4. Mutation completes, toast confirms outcome, drawer closes, and the contacts table refreshes (archived records disappear unless explicitly requested via `includeArchived`).
+
+---
+
+### **Flow 5: Link Contact to Job**
+1. From ContactDrawer header, user clicks `Link to job`.
+2. `LinkJobDialog` opens with two paths:
+   - **Select job** tab: debounce search hits `/jobs?query=` and lists company/role/stage.
+   - **Create job** tab: minimal job form submits to `POST /jobs` before outreach.
+3. After job is chosen/created, outreach mini-form (channel, message type, personalization score tooltip, optional notes) is shown.
+4. Submit logs outreach via `POST /jobs/:jobId/outreach` (passes `contactId` plus optional follow-up note).
+5. Success toast, dialog slides above the drawer (higher z-index), closes cleanly, and React Query invalidates contact detail + jobs caches so timelines, linked role chips, and job contact counts refresh instantly.
 
 ---
 

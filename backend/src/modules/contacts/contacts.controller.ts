@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { IdParamDto } from '../../common/dto/id-param.dto';
 import { OutreachService } from '../outreach/outreach.service';
 import { ReferralsService } from '../referrals/referrals.service';
@@ -28,6 +28,7 @@ export class ContactsController {
       query: query.query,
       strength: query.strength,
       companyId: query.companyId,
+      includeArchived: query.includeArchived,
       page: query.page,
       pageSize: query.pageSize
     });
@@ -51,6 +52,13 @@ export class ContactsController {
   @Patch(':id')
   async update(@Param() params: IdParamDto, @Body() body: UpdateContactDto) {
     return this.contactsService.update(params.id, body as any);
+  }
+
+  @Delete(':id')
+  async delete(@Param() params: IdParamDto, @Query('hard') hard?: string) {
+    const hardDelete =
+      typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
+    return this.contactsService.delete(params.id, { hard: hardDelete });
   }
 
   @Post(':id/outreach')

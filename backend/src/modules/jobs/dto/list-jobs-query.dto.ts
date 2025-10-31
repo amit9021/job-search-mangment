@@ -23,10 +23,27 @@ const includeArchivedSchema = z.preprocess(
   z.boolean().optional()
 );
 
+const querySchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }
+    return value;
+  },
+  z.string().min(1).max(200).optional()
+);
+
 const schema = z.object({
   stage: z.nativeEnum(JobStage).optional(),
   heat: heatSchema,
-  includeArchived: includeArchivedSchema
+  includeArchived: includeArchivedSchema,
+  query: querySchema,
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(200).optional()
 });
 
 export class ListJobsQueryDto extends createZodDto(schema) {}

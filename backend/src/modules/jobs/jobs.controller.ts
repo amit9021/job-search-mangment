@@ -19,7 +19,10 @@ export class JobsController {
     return this.jobsService.list({
       stage: query.stage,
       heat: query.heat,
-      includeArchived: query.includeArchived
+      includeArchived: query.includeArchived,
+      query: query.query,
+      page: query.page,
+      pageSize: query.pageSize
     });
   }
 

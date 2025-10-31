@@ -1,4 +1,4 @@
-import { OutreachChannel, OutreachOutcome } from '@prisma/client';
+import { OutreachChannel, OutreachContext, OutreachOutcome } from '@prisma/client';
 import { z } from 'zod';
 import { createZodDto } from '../../../utils/create-zod-dto';
 
@@ -9,6 +9,7 @@ const schema = z.object({
   personalizationScore: z.number().min(0).max(100),
   outcome: z.nativeEnum(OutreachOutcome).optional(),
   content: z.string().optional(),
+  context: z.nativeEnum(OutreachContext).optional(),
   createFollowUp: z.boolean().default(true),
   followUpNote: z.string().optional()
 });

@@ -1,16 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OutreachOutcome } from '@prisma/client';
+import { OutreachChannel, OutreachContext, OutreachOutcome } from '@prisma/client';
 import dayjs from '../../utils/dayjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FollowupsService } from '../followups/followups.service';
 
 type OutreachInput = {
   contactId?: string;
-  channel: string;
+  channel: OutreachChannel | string;
   messageType: string;
-  personalizationScore: number;
+  personalizationScore?: number;
   outcome?: OutreachOutcome;
   content?: string | null;
+  context?: OutreachContext | string;
   createFollowUp?: boolean;
   followUpNote?: string;
 };
@@ -28,15 +29,26 @@ export class OutreachService {
       throw new NotFoundException('Job not found');
     }
 
+    const personalizationScore =
+      payload.personalizationScore !== undefined ? Math.round(payload.personalizationScore) : 70;
+    const channel =
+      typeof payload.channel === 'string'
+        ? (payload.channel.toUpperCase() as OutreachChannel)
+        : payload.channel;
+
     const outreach = await this.prisma.outreach.create({
       data: {
         jobId,
         contactId: payload.contactId ?? null,
-        channel: payload.channel,
+        channel,
         messageType: payload.messageType,
-        personalizationScore: payload.personalizationScore,
+        personalizationScore,
         outcome: payload.outcome ?? OutreachOutcome.NONE,
-        content: payload.content ?? null
+        content: payload.content ?? null,
+        context:
+          typeof payload.context === 'string'
+            ? (payload.context.toUpperCase() as OutreachContext)
+            : payload.context ?? OutreachContext.OTHER
       },
       include: { contact: true }
     });
@@ -61,15 +73,26 @@ export class OutreachService {
       throw new NotFoundException('Contact not found');
     }
 
+    const personalizationScore =
+      payload.personalizationScore !== undefined ? Math.round(payload.personalizationScore) : 70;
+    const channel =
+      typeof payload.channel === 'string'
+        ? (payload.channel.toUpperCase() as OutreachChannel)
+        : payload.channel;
+
     const outreach = await this.prisma.outreach.create({
       data: {
         contactId,
         jobId: null,
-        channel: payload.channel,
+        channel,
         messageType: payload.messageType,
-        personalizationScore: payload.personalizationScore,
+        personalizationScore,
         outcome: payload.outcome ?? OutreachOutcome.NONE,
-        content: payload.content ?? null
+        content: payload.content ?? null,
+        context:
+          typeof payload.context === 'string'
+            ? (payload.context.toUpperCase() as OutreachContext)
+            : payload.context ?? OutreachContext.OTHER
       }
     });
 
@@ -110,6 +133,48 @@ export class OutreachService {
       },
       orderBy: { sentAt: 'desc' },
       include: { job: true, contact: true }
+    });
+  }
+
+  async update(
+    id: string,
+    payload: {
+      context?: OutreachContext;
+      outcome?: OutreachOutcome;
+      content?: string;
+      messageType?: string;
+      personalizationScore?: number;
+    }
+  ) {
+    const outreach = await this.prisma.outreach.findUnique({ where: { id } });
+    if (!outreach) {
+      throw new NotFoundException('Outreach not found');
+    }
+
+    const updateData: any = {};
+    if (payload.context !== undefined) {
+      updateData.context = payload.context;
+    }
+    if (payload.outcome !== undefined) {
+      updateData.outcome = payload.outcome;
+    }
+    if (payload.content !== undefined) {
+      updateData.content = payload.content;
+    }
+    if (payload.messageType !== undefined) {
+      updateData.messageType = payload.messageType;
+    }
+    if (payload.personalizationScore !== undefined) {
+      updateData.personalizationScore = Math.min(
+        100,
+        Math.max(0, Math.round(payload.personalizationScore))
+      );
+    }
+
+    return this.prisma.outreach.update({
+      where: { id },
+      data: updateData,
+      include: { contact: true, job: true }
     });
   }
 }

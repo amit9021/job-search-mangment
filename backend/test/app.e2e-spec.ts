@@ -11,8 +11,9 @@ class MockPrismaService {
   outreach = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn() };
   followUp = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() };
   codeReview = { count: jest.fn(), findMany: jest.fn() };
-  job = { findMany: jest.fn(), groupBy: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn() };
-  contact = { count: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findUniqueOrThrow: jest.fn() };
+  job = { findMany: jest.fn(), groupBy: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() };
+  contact = { count: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn() };
+  company = { findFirst: jest.fn(), create: jest.fn() };
   event = { findMany: jest.fn(), count: jest.fn(), update: jest.fn(), create: jest.fn(), findUnique: jest.fn() };
   eventContact = { create: jest.fn() };
   boostTask = { findMany: jest.fn(), count: jest.fn() };
@@ -23,6 +24,7 @@ class MockPrismaService {
   outreachCreateResponse: any = null;
   $connect = jest.fn();
   $disconnect = jest.fn();
+  $transaction = jest.fn(async (callback: (tx: any) => Promise<any>) => callback(this));
 }
 
 describe('App e2e (happy path smoke tests)', () => {
@@ -141,5 +143,179 @@ describe('App e2e (happy path smoke tests)', () => {
       .set('Authorization', 'Bearer fake');
 
     expect(prisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /jobs creates a job without requiring contact', async () => {
+    const jobRecord = {
+      id: 'job_1',
+      company: 'Acme Corp',
+      role: 'Engineer',
+      stage: 'APPLIED',
+      heat: 0,
+      lastTouchAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      archived: false,
+      companyRef: null
+    };
+
+    prisma.job.create.mockResolvedValue(jobRecord);
+    prisma.jobStatusHistory.create.mockResolvedValue({ id: 'hist_1' });
+    prisma.job.findUnique.mockResolvedValue(jobRecord);
+    prisma.job.update.mockResolvedValue(jobRecord);
+    prisma.referral.findFirst.mockResolvedValue(null);
+    prisma.outreach.findFirst.mockResolvedValue(null);
+    prisma.outreach.count.mockResolvedValue(0);
+    prisma.outreach.findMany.mockResolvedValue([]);
+    prisma.followUp.findMany.mockResolvedValue([]);
+
+    const response = await request(app.getHttpServer())
+      .post('/jobs')
+      .set('Authorization', 'Bearer fake')
+      .send({ company: 'Acme Corp', role: 'Engineer' });
+
+    expect(response.status).toBe(201);
+    expect(prisma.job.create).toHaveBeenCalledWith(expect.any(Object));
+    expect(response.body).toEqual(expect.objectContaining({ company: 'Acme Corp', contactsCount: 0 }));
+  });
+
+  it('POST /jobs/:id/outreach with existing contact links job and contact', async () => {
+    const jobRecord = {
+      id: 'job_link',
+      company: 'Globex',
+      role: 'PM',
+      stage: 'APPLIED',
+      heat: 0,
+      lastTouchAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      archived: false,
+      companyRef: null
+    };
+
+    prisma.job.findUnique.mockResolvedValue(jobRecord);
+    prisma.job.update.mockResolvedValue(jobRecord);
+    prisma.outreach.create.mockResolvedValue({
+      id: 'out_1',
+      jobId: 'job_link',
+      contactId: 'contact_existing',
+      channel: 'EMAIL',
+      messageType: 'intro_request',
+      personalizationScore: 80,
+      outcome: 'NONE',
+      content: null,
+      sentAt: new Date().toISOString(),
+      contact: { id: 'contact_existing', name: 'Existing Contact' }
+    });
+    prisma.followUp.create.mockResolvedValue({ id: 'follow_1' });
+    prisma.referral.findFirst.mockResolvedValue(null);
+    prisma.outreach.findFirst.mockResolvedValue(null);
+    prisma.outreach.count.mockResolvedValue(0);
+    prisma.outreach.findMany.mockResolvedValue([{ jobId: 'job_link', contactId: 'contact_existing' }]);
+    prisma.followUp.findMany.mockResolvedValue([]);
+
+    const response = await request(app.getHttpServer())
+      .post('/jobs/job_link/outreach')
+      .set('Authorization', 'Bearer fake')
+      .send({
+        contactId: 'contact_existing',
+        channel: 'EMAIL',
+        messageType: 'intro_request',
+        personalizationScore: 80,
+        createFollowUp: true
+      });
+
+    expect(response.status).toBe(201);
+    expect(prisma.outreach.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ contactId: 'contact_existing' }) }));
+    expect(response.body.job).toEqual(expect.objectContaining({ id: 'job_link', contactsCount: 1 }));
+  });
+
+  it('POST /jobs/:id/outreach with contactCreate creates contact inline', async () => {
+    const jobRecord = {
+      id: 'job_new_contact',
+      company: 'Soylent',
+      role: 'AE',
+      stage: 'APPLIED',
+      heat: 0,
+      lastTouchAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      archived: false,
+      companyRef: null
+    };
+
+    prisma.job.findUnique.mockResolvedValue(jobRecord);
+    prisma.job.update.mockResolvedValue(jobRecord);
+    prisma.company.findFirst.mockResolvedValue(null);
+    prisma.company.create.mockResolvedValue({ id: 'company_1', name: 'Soylent' });
+    prisma.contact.create.mockResolvedValue({ id: 'contact_new', name: 'Jane New', companyId: 'company_1' });
+    prisma.outreach.create.mockResolvedValue({
+      id: 'out_new',
+      jobId: 'job_new_contact',
+      contactId: 'contact_new',
+      channel: 'LINKEDIN',
+      messageType: 'intro_request',
+      personalizationScore: 70,
+      outcome: 'NONE',
+      content: null,
+      sentAt: new Date().toISOString(),
+      contact: { id: 'contact_new', name: 'Jane New' }
+    });
+    prisma.followUp.create.mockResolvedValue({ id: 'follow_new' });
+    prisma.referral.findFirst.mockResolvedValue(null);
+    prisma.outreach.findFirst.mockResolvedValue(null);
+    prisma.outreach.count.mockResolvedValue(0);
+    prisma.outreach.findMany.mockResolvedValue([{ jobId: 'job_new_contact', contactId: 'contact_new' }]);
+    prisma.followUp.findMany.mockResolvedValue([]);
+
+    const response = await request(app.getHttpServer())
+      .post('/jobs/job_new_contact/outreach')
+      .set('Authorization', 'Bearer fake')
+      .send({
+        contactCreate: {
+          name: 'Jane New',
+          role: 'HR',
+          companyName: 'Soylent'
+        },
+        channel: 'LINKEDIN',
+        messageType: 'intro_request',
+        personalizationScore: 70
+      });
+
+    expect(response.status).toBe(201);
+    expect(prisma.contact.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Jane New' }) }));
+    expect(response.body.outreach.contact.name).toBe('Jane New');
+    expect(response.body.job.contactsCount).toBe(1);
+  });
+
+  it('POST /jobs/:id/status updates stage and note', async () => {
+    const jobRecord = {
+      id: 'job_stage',
+      company: 'Initech',
+      role: 'Analyst',
+      stage: 'APPLIED',
+      heat: 0,
+      lastTouchAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      archived: false,
+      companyRef: null
+    };
+
+    prisma.job.findUnique.mockResolvedValue(jobRecord);
+    prisma.job.update.mockResolvedValue({ ...jobRecord, stage: 'HR' });
+    prisma.jobStatusHistory.create.mockResolvedValue({ id: 'status_hist', stage: 'HR', note: 'scheduled HR', at: new Date().toISOString() });
+    prisma.followUp.updateMany.mockResolvedValue({ count: 0 });
+    prisma.referral.findFirst.mockResolvedValue(null);
+    prisma.outreach.findFirst.mockResolvedValue(null);
+    prisma.outreach.count.mockResolvedValue(0);
+    prisma.outreach.findMany.mockResolvedValue([]);
+    prisma.followUp.findMany.mockResolvedValue([]);
+
+    const response = await request(app.getHttpServer())
+      .post('/jobs/job_stage/status')
+      .set('Authorization', 'Bearer fake')
+      .send({ stage: 'HR', note: 'scheduled HR' });
+
+    expect(response.status).toBe(201);
+    expect(prisma.job.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ stage: 'HR' }) }));
+    expect(response.body.job).toEqual(expect.objectContaining({ id: 'job_stage', stage: 'HR' }));
+    expect(response.body.history).toEqual(expect.objectContaining({ note: 'scheduled HR' }));
   });
 });

@@ -99,6 +99,8 @@ model Contact {
   location    String?
   tags        String[]         @default([])
   notes       String?
+  archived    Boolean          @default(false)
+  archivedAt  DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -131,6 +133,7 @@ model Outreach {
   personalizationScore Int
   outcome             OutreachOutcome @default(NONE)
   content             String?
+  context             OutreachContext @default(OTHER)
   sentAt              DateTime        @default(now())
 }
 
@@ -146,6 +149,14 @@ enum OutreachOutcome {
   POSITIVE
   NEGATIVE
   NO_RESPONSE
+}
+
+enum OutreachContext {
+  JOB_OPPORTUNITY
+  CODE_REVIEW
+  CHECK_IN
+  REFERRAL_REQUEST
+  OTHER
 }
 
 model FollowUp {
