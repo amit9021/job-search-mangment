@@ -1,5 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
+import { differenceInCalendarDays } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -10,6 +11,7 @@ import {
   useUpdateContactMutation,
   useDeleteContactMutation,
   useUpdateOutreachMutation,
+  useDeleteOutreachMutation,
   parseApiError
 } from '../api/hooks';
 import { CompanySelect } from './CompanySelect';
@@ -42,10 +44,21 @@ const outreachContextLabels: Record<(typeof outreachContextOptions)[number], str
   OTHER: 'Other'
 };
 
+const outreachOutcomeOptions = ['NONE', 'NO_RESPONSE', 'POSITIVE', 'NEGATIVE'] as const;
+const outreachOutcomeLabels: Record<(typeof outreachOutcomeOptions)[number], string> = {
+  NONE: 'Not set',
+  NO_RESPONSE: 'No response yet',
+  POSITIVE: 'Positive',
+  NEGATIVE: 'Negative'
+};
+
 const isValidOutreachContext = (
   value: string
 ): value is (typeof outreachContextOptions)[number] =>
   outreachContextOptions.includes(value as (typeof outreachContextOptions)[number]);
+
+const humanizeMessageType = (value?: string | null) =>
+  value ? value.replace(/_/g, ' ') : '';
 
 type ContactFormValues = z.infer<typeof contactSchema>;
 
@@ -64,6 +77,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
   const createContact = useCreateContactMutation();
   const deleteContact = useDeleteContactMutation();
   const updateOutreach = useUpdateOutreachMutation();
+  const deleteOutreach = useDeleteOutreachMutation();
   const toast = useToast();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -90,6 +104,29 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
         context: editingContext.value
       });
       setEditingContext(null);
+    } catch {
+      // handled by toast
+    }
+  };
+
+  const handleDeleteOutreach = async (outreachId: string) => {
+    const confirmed = window.confirm(
+      'Remove this outreach? This will unlink the contact from the job.'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteOutreach.mutateAsync({ id: outreachId });
+    } catch {
+      // handled by toast
+    }
+  };
+
+  const handleOutcomeUpdate = async (outreachId: string, outcome: string) => {
+    try {
+      await updateOutreach.mutateAsync({ id: outreachId, outcome });
     } catch {
       // handled by toast
     }
@@ -269,14 +306,24 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    const now = new Date();
+    const daysAhead = differenceInCalendarDays(date, now);
+    if (daysAhead > 0) {
+      if (daysAhead === 1) return 'In 1 day';
+      if (daysAhead < 7) return `In ${daysAhead} days`;
+      if (daysAhead < 30) return `In ${Math.ceil(daysAhead / 7)} weeks`;
+      return date.toLocaleDateString();
+    }
+
+    const daysAgo = differenceInCalendarDays(now, date);
+    if (daysAgo === 0) return 'Today';
+    if (daysAgo === 1) return 'Yesterday';
+    if (daysAgo < 7) return `${daysAgo} days ago`;
+    if (daysAgo < 30) return `${Math.floor(daysAgo / 7)} weeks ago`;
     return date.toLocaleDateString();
   };
 
@@ -395,7 +442,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                               onClick={() => setLinkDialogOpen(true)}
                               className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                             >
-                              Link to job
+                              Add outreach
                             </button>
                           </div>
                         </>
@@ -637,9 +684,35 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                     <div className="space-y-2">
                                       <div className="flex flex-wrap gap-x-4 gap-y-1">
                                         <span>Channel: {item.data.channel}</span>
-                                        <span>Message: {item.data.messageType}</span>
+                                        <span>
+                                          Message:{' '}
+                                          {humanizeMessageType(item.data.messageType) ||
+                                            item.data.messageType ||
+                                            '—'}
+                                        </span>
                                         <span>Personalization: {item.data.personalizationScore}</span>
-                                        <span>Outcome: {item.data.outcome || 'Pending'}</span>
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                        <span className="font-medium text-slate-700">Outcome</span>
+                                        <select
+                                          value={item.data.outcome ?? 'NONE'}
+                                          onChange={(event) =>
+                                            handleOutcomeUpdate(item.data.id, event.target.value)
+                                          }
+                                          disabled={updateOutreach.isPending}
+                                          className="rounded-md border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100"
+                                        >
+                                          {outreachOutcomeOptions.map((option) => (
+                                            <option key={option} value={option}>
+                                              {outreachOutcomeLabels[option]}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {updateOutreach.isPending && (
+                                          <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                            Saving…
+                                          </span>
+                                        )}
                                       </div>
                                       {item.data.job && (
                                         <div className="text-xs text-slate-500">
@@ -701,6 +774,16 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                         </div>
                                       )}
                                       {item.data.content && <div className="text-xs text-slate-500">Note: {item.data.content}</div>}
+                                      <div className="flex flex-wrap items-center gap-3 pt-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteOutreach(item.data.id)}
+                                          disabled={deleteOutreach.isPending}
+                                          className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
+                                        >
+                                          Delete outreach
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                   {item.type === 'referral' && (
@@ -722,7 +805,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                         Status:{' '}
                                         {item.data.sentAt
                                           ? `Completed ${formatDate(item.data.sentAt as string)}`
-                                          : 'Open'}
+                                          : `Due ${formatDate(item.data.dueAt as string)}`}
                                       </div>
                                       {item.data.job && (
                                         <div className="text-xs text-slate-500">

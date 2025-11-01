@@ -20,11 +20,11 @@ The Jobs module is the core of the job hunt tracking system. It manages job appl
 ### **Key Features**
 - Track job applications from discovery to offer
 - Multi-stage pipeline (Applied → HR → Tech → Offer → Rejected/Dormant)
-- Heat scoring (0-3) based on referral strength and outreach responses
+- Heat scoring (0–100 → 0–3 badge) derived from referrals, outreach signals, tailoring, and recency
 - CV tailoring score tracking
 - Status history timeline
-- Deadline management
-- Integration with outreach and referrals
+- Instant outreach logging from Jobs and Contacts (with inline outcome edits)
+- Integration with outreach, referrals, follow-ups, and contacts
 
 ### **Why This Matters**
 Job hunting is a numbers game with high stakes. This module helps you:
@@ -49,7 +49,7 @@ model Job {
   sourceUrl   String?                      // Job posting URL
   stage       JobStage  @default(APPLIED)
   heat        Int       @default(0)        // 0-3 relationship score
-  deadline    DateTime?
+  deadline    DateTime?                 // Legacy field (unused in v2 heat logic)
   archived    Boolean   @default(false)    // Soft delete flag
   archivedAt  DateTime?
   lastTouchAt DateTime  @default(now())
@@ -109,16 +109,17 @@ model JobStatusHistory {
 }
 ```
 
-### **Heat Scoring System**
-```
-0 = Cold      - No referral or outreach responses yet
-1 = Warm      - Any outreach response (positive/negative) or positive reply from a weak contact
-2 = Hot       - Positive outreach from a MEDIUM/STRONG contact
-3 = Critical  - Referral recorded (REFERRAL or SENT_CV)
-```
+### **Heat Scoring System (v2)**
+- Every job carries a **score from 0–100**. The score is bucketed into a 0–3 heat badge using the YAML-configured thresholds (`heat-rules.yaml`).
+- **Stage baseline** provides the foundation (e.g. `APPLIED = 35`, `HR = 50`, `TECH = 65`, `OFFER = 80`).
+- **Referral signals** (`REFERRAL`, `SENT_CV`) override outreach and deliver the full referral weight.
+- Else, the latest outreach contributes outcome + contact strength + channel weights.
+- **Personalization** adds `(personalizationScore ÷ divisor)` and **Tailoring** adds `(tailoringScore ÷ divisor)` if present.
+- Contributions are multiplied by an **exponential recency decay** (`halfLifeDays = 7`, clamp to `minimumFactor`, optional `maximumDays`) using `job.lastTouchAt`.
+- The combined score is clamped by stage/global caps, then rounded and matched to the heat bucket array.
+- **Archived jobs** skip all logic and are forced to score 0 with a single “Archived” breakdown entry.
 
-Heat auto-recalculates based on referral strength and outreach outcomes. Archived jobs are always cooled to 0.
-- Falls back to cold (0) when no signals are present
+`GET /jobs/:id/heat-explain` returns `{ score, heat, breakdown[], lastTouchAt, decayFactor }` to power tooltips/debugging.
 
 ---
 
@@ -167,7 +168,6 @@ async create(data: {
   company: string;
   role: string;
   sourceUrl?: string;
-  deadline?: string;
   heat?: number;
   initialApplication?: {
     tailoringScore: number;
@@ -294,7 +294,7 @@ frontend/src/
 │   ├── JobWizardModal.tsx      # Create job with CV + outreach (inline contact creation)
 │   ├── JobHistoryModal.tsx     # Timeline + stage updates via dialog
 │   ├── JobListTable.tsx        # Tabular view (stage inline edit, contacts column)
-│   ├── LinkContactDialog.tsx   # Link job → contact via outreach
+│   ├── AddOutreachDialog.tsx   # Add outreach from a job (existing/new contact)
 │   ├── LinkJobDialog.tsx       # Link contact → job via outreach (supports inline job create)
 │   ├── UpdateJobStageDialog.tsx# Stage change modal collecting notes
 │   └── HeatBadge.tsx           # Visual heat indicator (0-3)
@@ -327,7 +327,7 @@ useUpdateJobStageMutation();
 const [stageFilter, setStageFilter] = useState<JobStage | undefined>();
 const [heatFilter, setHeatFilter] = useState<number | undefined>();
 const [viewMode, setViewMode] = useState<'pipeline' | 'table'>('pipeline');
-const [linkJob, setLinkJob] = useState<JobSummary | null>(null); // opens LinkContactDialog
+const [outreachJob, setOutreachJob] = useState<JobSummary | null>(null); // opens AddOutreachDialog
 const [stageJob, setStageJob] = useState<JobSummary | null>(null); // opens UpdateJobStageDialog
 ```
 
@@ -364,7 +364,6 @@ List jobs with optional filters.
     "stage": "TECH",
     "heat": 2,
     "sourceUrl": "https://techcorp.com/careers/senior-engineer",
-    "deadline": "2025-11-15T00:00:00.000Z",
     "lastTouchAt": "2025-10-28T10:00:00.000Z",
     "createdAt": "2025-10-20T08:00:00.000Z",
     "updatedAt": "2025-10-28T10:00:00.000Z",
@@ -387,7 +386,6 @@ Create new job application.
   "company": "StartupXYZ",
   "role": "Full Stack Engineer",
   "sourceUrl": "https://startupxyz.com/jobs/fullstack",
-  "deadline": "2025-11-30T00:00:00.000Z",
   "initialApplication": {
     "tailoringScore": 85,
     "dateSent": "2025-10-30T10:00:00.000Z"
@@ -536,8 +534,25 @@ Log outreach attempt for job.
 
 ---
 
+#### **DELETE /outreach/:id**
+Remove a logged outreach (unlinks contact ↔ job).
+
+- Cancels any open follow-ups tied to the outreach's job/contact pair.
+- Recalculates job heat.
+- **Response**
+  ```json
+  {
+    "deletedId": "out_123",
+    "jobId": "job_1",
+    "contactId": "contact_1"
+  }
+  ```
+- Idempotent: returns success even if the outreach was already missing.
+
+---
+
 #### **PATCH /jobs/:id**
-Update core job details (company, role, URL, deadline, linked company).
+Update core job details (company, role, URL, linked company).
 
 **Request Body** (any subset):
 ```json
@@ -545,14 +560,12 @@ Update core job details (company, role, URL, deadline, linked company).
   "company": "Acme Inc",
   "role": "Staff SWE",
   "sourceUrl": "https://acme.com/careers/staff-swe",
-  "deadline": "2025-12-01T00:00:00.000Z",
   "companyId": "ck..."
 }
 ```
 
 **Side Effects**:
 - Normalizes empty strings to `null`
-- Re-parses ISO deadlines
 - Touches `updatedAt`
 
 ---
@@ -615,9 +628,9 @@ Get status change timeline.
 - Toggle between kanban pipeline and analytical table view.
 - Stage filters (Applied/HR/Tech/Offer plus archived toggle) and heat chips (0–3).
 - Pipeline cards show heat, last touch, and linked contact chips (clickable to open the Contact drawer).
-- Table columns: Company • Role • Stage (inline selector) • Heat • Contacts (chips + count) • Last touch • Next follow-up • Deadline • Source • Actions.
-- Row actions: Edit, History, Link contact, Delete (soft/hard).
-- `Link contact` button opens the two-tab dialog for selecting or creating contacts and logging outreach in one flow.
+- Table columns: Company • Role • Stage (inline selector) • Heat • Contacts (chips + count) • Last touch • Next follow-up • Source • Actions.
+- Row actions: Edit, History, Add outreach, Delete (soft/hard).
+- `Add outreach` opens the two-tab dialog for selecting or creating contacts and logging outreach in one flow.
 
 **Props**: None (route component)
 
@@ -629,7 +642,7 @@ Get status change timeline.
 **Purpose**: Create new job with optional CV submission and outreach.
 
 **Features**:
-- **Step 1**: Job details (company, role, URL, deadline)
+- **Step 1**: Job details (company, role, URL)
 - **Step 2**: CV submission (tailoring score)
 - **Step 3**: Optional outreach (contact, channel, message, purpose)
   - Validation (Zod + react-hook-form)
@@ -650,20 +663,20 @@ Get status change timeline.
 ### **HeatBadge**
 **Location**: `frontend/src/components/HeatBadge.tsx`
 
-**Purpose**: Visual indicator of job urgency.
+**Purpose**: Visual indicator of job momentum with tooltip breakdown.
 
 **Props**:
 ```typescript
 {
   heat: 0 | 1 | 2 | 3;
+  jobId?: string; // enables tooltip when provided
 }
 ```
 
-**Styling**:
-- 0: Gray (cold)
-- 1: Yellow (warm)
-- 2: Orange (hot)
-- 3: Red (critical)
+**Behaviour**:
+- Renders badge colour/emojis for quick scanning (0=gray, 1=yellow, 2=orange, 3=red)
+- When `jobId` is supplied, opens a popover that refetches `GET /jobs/:id/heat-explain` every time the tooltip opens
+- Breakdown rows display `value / max` with contextual copy per signal; decay row highlights the current factor and days since last touch
 
 ---
 
@@ -671,7 +684,7 @@ Get status change timeline.
 
 ### **Flow 1: Create Job with CV + Outreach**
 1. User clicks "Add Job" button (opens JobWizardModal)
-2. **Step 1**: Enters company, role, deadline
+2. **Step 1**: Enters company, role, source URL (optional)
    - Optionally pastes job URL
 3. **Step 2**: Enters tailoring score (0-100)
    - Indicates how well CV matches job description
@@ -682,7 +695,7 @@ Get status change timeline.
    - Add message content / follow-up note
 5. Clicks "Create Job"
 6. Backend:
-   - Creates Job (stage=APPLIED, heat calculated from deadline)
+   - Creates Job (stage=APPLIED, heat calculated from relationship signals)
    - Creates JobStatusHistory (stage=APPLIED, note="Job created")
    - Creates JobApplication (with tailoring score)
    - Creates Outreach (if step 3 filled)
@@ -698,36 +711,32 @@ Get status change timeline.
 4. Backend:
    - Updates `job.stage`
    - Creates JobStatusHistory entry (persisting the optional note)
-   - Recalculates heat (TECH → heat >= 2)
+   - Recalculates heat using stage baseline + signals + decay
    - Updates `lastTouchAt` and `updatedAt`
 7. UI refreshes, job shows new stage and heat
 
 ---
 
-### **Flow 3: Heat Auto-Calculation**
+### **Flow 3: Heat Auto-Calculation (v2)**
 **Triggered By**:
-- Job creation with deadline
-- Deadline update
-- Status change
-- Application submission
-- Outreach logged
+- Job creation (initial score calculation)
+- Stage changes (`POST /jobs/:id/status`)
+- Application submissions (`POST /jobs/:id/applications`)
+- Outreach create/update (`POST /jobs/:id/outreach`, `PATCH /outreach/:id`)
+- Referral create/remove
+- Archive/unarchive
 
-**Algorithm**:
-```
-IF job has referral with kind in (REFERRAL, SENT_CV):
-  heat = 3
-ELSE IF job has outreach outcome = POSITIVE AND contact strength in (MEDIUM, STRONG):
-  heat = 2
-ELSE IF job has outreach outcome = POSITIVE:
-  heat = 1
-ELSE IF job has outreach outcome in (POSITIVE, NEGATIVE):
-  heat = 1
-ELSE:
-  heat = 0
+**Signals & Scoring**:
+- Stage baseline: APPLIED < HR < TECH < OFFER
+- Referral bonus (REFERRAL, SENT_CV) pushes score toward top bucket
+- Latest outreach outcome + contact strength + channel weight
+- Personalization score (`/5`) and job application tailoring score (`/4`)
+- Exponential recency decay (half-life 7 days, min factor 25%) based on `lastTouchAt`
+- Final score clamped 0–100 → mapped to 0–3 heat bucket
 
-IF job.archived = true:
-  heat = 0
-```
+**Diagnostics / UX**:
+- `GET /jobs/:id/heat-explain` returns `{ score, heat, breakdown[], lastTouchAt, decayFactor }`
+- `HeatBadge` tooltip refetches this endpoint on each open and renders `value / max` plus explanatory copy per signal
 
 ---
 
@@ -736,7 +745,7 @@ IF job.archived = true:
 2. Frontend calls `GET /jobs/:id/history` and renders the modal header (company + role) plus linked contact chips.
 3. Chips are clickable; selecting one opens the relevant Contact drawer for deeper context.
 4. Backend returns status history, applications, outreach (with contact info), and follow-ups.
-5. UI timeline merges these entries chronologically, showing stage notes, outreach channel/type/personalization/purpose, and follow-up status (including which contact needs attention).
+5. UI timeline merges these entries chronologically, showing stage notes, outreach channel/type/personalization/purpose (with inline outcome editor), and follow-up status (including which contact needs attention).
 6. Close modal or jump to `Update stage` from the modal toolbar; changes refresh the timeline instantly.
 
 ---
@@ -762,26 +771,27 @@ IF job.archived = true:
 
 ---
 
-### **Flow 6: Link Contact from Jobs (Outreach)**
-1. User clicks `Link contact` on job card or table row (JobsPage).
-2. `LinkContactDialog` opens with tabs:
+### **Flow 6: Add Outreach from Jobs**
+1. User clicks `Add outreach` on a job card or table row (JobsPage).
+2. `AddOutreachDialog` opens with tabs:
    - **Select existing**: type-ahead search (`/contacts?query=`) shows name/role/company; selecting preview highlights "Linking to" banner.
    - **Create new**: lightweight form (name required, other fields optional, company prefilled from job).
-3. After choosing contact, user fills outreach mini-form (channel, message type, purpose badge, personalization score tooltip, optional note).
+3. After choosing contact, user fills outreach mini-form (channel, message type, outcome dropdown, purpose badge, personalization score tooltip, optional note/follow-up).
 4. Submits → `POST /jobs/:id/outreach` with either `contactId` or `contactCreate`.
-5. Backend logs outreach, auto-schedules follow-up (unless disabled), recomputes heat/contact count.
-6. UI toasts success, closes the dialog, refreshes Jobs list + job history, and immediately opens the linked Contact drawer so the user can verify the connection. The contact timeline picks up the new outreach via standard query invalidation.
+5. Backend logs outreach, auto-schedules follow-up (unless disabled), recomputes heat/contact count, and returns updated job snapshot.
+6. UI toasts success, closes the dialog, refreshes Jobs list + job history + heat tooltip, and immediately opens the linked Contact drawer so the user can verify the connection. The contact timeline picks up the new outreach via standard query invalidation.
+7. If the outreach needs to be removed later, the user clicks “Delete outreach” from job history or contact timeline → calls `DELETE /outreach/:id`, which cancels open follow-ups and recalculates heat before refreshing linked views.
 
 ---
 
-### **Flow 7: Link Job from Contacts (Outreach + Inline Job)**
-1. Inside `ContactDrawer`, user presses `Link to job`.
+### **Flow 7: Add Outreach from Contacts**
+1. Inside `ContactDrawer`, user presses **Add outreach**.
 2. `LinkJobDialog` opens with tabs:
    - **Select job**: search `/jobs?query=` (filters archived) to attach outreach to existing job.
-   - **Create job**: minimal job form (company, role required; optional URL/deadline) that reuses `POST /jobs` under the hood before logging outreach.
-3. After job is selected/created, the same outreach mini-form is shown (contact is pre-wired) with channel, message type, purpose, personalization, and notes.
+   - **Create job**: minimal job form (company, role required; optional URL) that reuses `POST /jobs` before logging outreach.
+3. After job is selected/created, the outreach mini-form is shown (contact prefilled) with channel, message type, outcome, purpose, personalization, follow-up, and notes.
 4. Submits → `POST /jobs/:jobId/outreach` (if new job created in step 2, dialog waits for createJob mutation to resolve).
-5. Backend logs outreach, returns updated job summary; UI invalidates contact detail, jobs list, and job history to sync counts & timelines.
+5. Backend logs outreach, returns updated job summary; UI invalidates contact detail, jobs list, job history, and heat tooltip queries to sync counts & timelines.
 
 ---
 
@@ -789,15 +799,21 @@ IF job.archived = true:
 
 ### **Heat Recalculation Rules**
 
-Heat focuses on relationship strength rather than deadlines:
+`JobsService.computeHeatResult()` loads `heat-rules.yaml` (or the in-memory default) and produces both the persisted heat badge and the tooltip breakdown. The algorithm:
 
-1. **Referral priority (heat = 3)** – If any referral of kind `REFERRAL` or `SENT_CV` exists for the job.
-2. **Warm outreach (heat = 2)** – Positive outreach tied to a MEDIUM/STRONG contact.
-3. **Positive reply (heat = 1)** – Positive outreach from a WEAK contact.
-4. **Any response (heat = 1)** – Any outreach with a POSITIVE or NEGATIVE outcome.
-5. **Default (heat = 0)** – No referral or outreach responses.
+1. Look up the stage baseline and stage-specific cap.
+2. If the job is archived, short-circuit with `{ score: archivedCap, heat: 0 }`.
+3. Gather signals:
+   - Latest referral (takes precedence over outreach signals)
+   - Latest outreach outcome/contact strength/channel
+   - Latest outreach personalization score
+   - Latest application tailoring score
+4. Apply exponential decay to all non-stage components (`halfLifeDays`, `minimumFactor`, `maximumDays`).
+5. Sum stage base + decayed contributions, clamp against stage/global caps, and round.
+6. Map the rounded score to the configured heat buckets.
+7. Return a breakdown array with `value`, `maxValue`, and `note` for every contributing signal, plus decay + clamp entries.
 
-Archived jobs are automatically cooled to heat 0 regardless of previous signals.
+`recalculateHeat(jobId)` simply computes the result and persists the heat integer; the UI and API consumers call `getHeatExplanation()` to inspect the full detail.
 
 ---
 
@@ -880,48 +896,15 @@ const stages = [
 
 ### **Customizing Heat Algorithm**
 
-**File**: `backend/src/modules/jobs/jobs.service.ts`
+**Primary lever**: edit `backend/src/modules/jobs/heat-rules.yaml` (or update `DEFAULT_RULES` in `heat-rules.loader.ts`) to tweak weights, stage caps, decay, and bucket thresholds.
 
-**Method**: `private async recalculateHeat(jobId: string)`
+**Reload behaviour**: rules are cached in-memory; restart the backend (or call `setHeatRules(null)` in tests) to pick up config changes.
 
-**Example**: Add boost for jobs at specific companies
-```typescript
-private async recalculateHeat(jobId: string) {
-  const referral = await this.prisma.referral.findFirst({
-    where: {
-      jobId,
-      kind: { in: [ReferralKind.REFERRAL, ReferralKind.SENT_CV] }
-    }
-  });
-  if (referral) {
-    await this.setHeat(jobId, 3);
-    return;
-  }
+**Advanced overrides**:
+- Update `computeHeatResult()` if you need to inject new signal categories (remember to include `maxValue` + `note` in the breakdown for tooltip parity).
+- Extend the YAML schema and loader if adding brand new keys.
 
-  const warmOutreach = await this.prisma.outreach.findFirst({
-    where: { jobId, outcome: OutreachOutcome.POSITIVE },
-    include: { contact: true }
-  });
-  if (warmOutreach?.contact) {
-    const level = warmOutreach.contact.strength;
-    await this.setHeat(jobId, level === 'STRONG' || level === 'MEDIUM' ? 2 : 1);
-    return;
-  }
-
-  const anyResponse = await this.prisma.outreach.count({
-    where: {
-      jobId,
-      outcome: { in: [OutreachOutcome.POSITIVE, OutreachOutcome.NEGATIVE] }
-    }
-  });
-  if (anyResponse > 0) {
-    await this.setHeat(jobId, 1);
-    return;
-  }
-
-  await this.setHeat(jobId, 0);
-}
-```
+The `HeatBadge` and `/jobs/:id/heat-explain` endpoint automatically reflect any rules changes after the next recalculation.
 
 ---
 
@@ -976,6 +959,6 @@ private async recalculateHeat(jobId: string) {
 
 ---
 
-**Last Updated**: October 30, 2025
+**Last Updated**: November 1, 2025
 **Version**: 1.0
 **Status**: Production Ready ✅

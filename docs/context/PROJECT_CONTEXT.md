@@ -24,7 +24,7 @@ Track job applications from discovery to offer.
 
 **Key Features**:
 - Multi-stage pipeline (Applied → Screening → Interview → Offer)
-- Heat scoring (0-3) based on urgency
+- Heat scoring (signal-based 0–100 score mapped to a 0–3 badge)
 - CV tailoring score tracking
 - Status history timeline
 
@@ -176,13 +176,13 @@ Track daily and weekly metrics.
 
 ### **4. Proactive Reminders**
 - Follow-ups auto-created on stage changes
-- Notifications for upcoming deadlines
+- Notifications for upcoming follow-ups
 - KPI targets to hit daily goals
 
 ### **5. Quality Over Quantity**
 - Tailoring score: how well CV matches job
 - Personalization score: how customized outreach is
-- Heat scoring: which jobs need attention now
+- Heat scoring: compute relationship momentum so the hottest jobs stay visible
 
 ---
 
@@ -228,7 +228,7 @@ Track daily and weekly metrics.
 ## 🚀 **Current Status** (October 2025)
 
 ### **Implemented (Production Ready)**
-- ✅ Jobs Module (full CRUD, heat scoring, status history)
+- ✅ Jobs Module (full CRUD, signal-based heat scoring, status history)
 - ✅ Contacts Module (enhanced with email/phone/LinkedIn/GitHub/tags)
 - ✅ Companies Module (auto-deduplication, search)
 - ✅ Outreach tracking
@@ -264,7 +264,7 @@ Track daily and weekly metrics.
 
 #### **1. Job Discovery → Application**
 1. Find job posting online
-2. Create job in system (company, role, URL, deadline)
+2. Create job in system (company, role, optional source URL)
 3. Tailor CV (track tailoring score 0-100)
 4. Submit application via system
 5. System auto-creates follow-up reminder
@@ -280,8 +280,8 @@ Track daily and weekly metrics.
 1. Job moves to SCREENING stage
 2. System creates follow-up for thank-you note
 3. Job moves to INTERVIEW
-4. Heat auto-increases to 2+ (HOT)
-5. Offer received → Heat = 3 (CRITICAL)
+4. Heat climbs as referrals, positive outreach, and tailoring scores accumulate (recency-weighted).
+5. Offer stage applies the highest baseline/cap so the badge remains very hot until archived.
 
 #### **4. Code Review Request**
 1. Select senior contact
@@ -304,7 +304,7 @@ Track daily and weekly metrics.
 ### **System Features to Support**
 - Daily KPI dashboard (track progress)
 - Follow-up reminders (never forget)
-- Heat scoring (prioritize urgent jobs)
+- Heat scoring (decay-weighted signals to prioritize urgent jobs)
 - Network stars (identify top referrers)
 - Timeline views (see complete history)
 
@@ -365,15 +365,15 @@ Like sales, it's a numbers game with conversion rates:
 - Modern patterns (slots, compound components)
 
 ### **Why Heat Scoring?**
-**Decision**: Add 0-3 heat levels instead of simple priority flags.
+**Decision**: Add a signal-driven heat score (0–100) mapped to a 0–3 badge instead of simple priority flags.
 **Rationale**:
 - More granular than High/Medium/Low
-- Auto-calculated from deadline + activity
+- Auto-calculated from stage baselines, referrals, outreach signals, personalization, tailoring, and recency decay
 - Visual urgency (color-coded)
 - Gamifies the process (watch heat rise)
 
 ---
 
 **Document Created**: October 30, 2025
-**Last Updated**: October 30, 2025
+**Last Updated**: November 1, 2025
 **Version**: 1.0

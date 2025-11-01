@@ -62,7 +62,6 @@ export type CreateJobMutationInput = {
   company: string;
   role: string;
   sourceUrl?: string;
-  deadline?: string;
   heat?: number;
   initialApplication?: {
     tailoringScore: number;
@@ -175,7 +174,6 @@ export const useJobsQuery = (filters?: {
         updatedAt: string;
         lastTouchAt: string;
         sourceUrl?: string | null;
-        deadline?: string | null;
         archived: boolean;
         archivedAt?: string | null;
         contactsCount: number;
@@ -203,7 +201,6 @@ export const useJobDetailQuery = (id: string) => {
         stage: string;
         heat: number;
         sourceUrl?: string;
-        deadline?: string;
         companyId?: string;
         lastTouchAt: string;
         createdAt: string;
@@ -220,6 +217,35 @@ export const useJobDetailQuery = (id: string) => {
       };
     },
     enabled: !!id
+  });
+};
+
+export const useJobHeatExplainQuery = (jobId: string | undefined, options?: { enabled?: boolean }) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['jobs', jobId, 'heat-explain'],
+    enabled: Boolean(jobId) && (options?.enabled ?? true),
+    queryFn: async () => {
+      const { data } = await api.get(`/jobs/${jobId}/heat-explain`);
+      return data as {
+        jobId: string;
+        stage: string;
+        score: number;
+        heat: number;
+        breakdown: Array<{
+          category: string;
+          label: string;
+          value: number;
+          rawValue?: number;
+          note?: string;
+        }>;
+        decayFactor: number;
+        daysSinceLastTouch: number;
+        lastTouchAt: string;
+        capApplied?: string;
+        stageBase: number;
+      };
+    }
   });
 };
 
@@ -269,7 +295,6 @@ export const useUpdateJobMutation = () => {
       company?: string;
       role?: string;
       sourceUrl?: string | null;
-      deadline?: string | null;
       companyId?: string | null;
     }) => {
       const { data } = await api.patch(`/jobs/${id}`, payload);
@@ -358,7 +383,6 @@ export const useCreateJobOutreachMutation = () => {
           lastTouchAt: string;
           updatedAt: string;
           sourceUrl?: string | null;
-          deadline?: string | null;
           archived: boolean;
           contactsCount: number;
           contacts: Array<{
@@ -386,7 +410,10 @@ export const useCreateJobOutreachMutation = () => {
 
       const contactName = outreach?.contact?.name ?? outreach?.contactId ?? 'contact';
       const companyName = job?.company ?? '';
-      toast.success('Contact linked', companyName ? `${companyName} ↔ ${contactName}` : `Linked to ${contactName}`);
+      toast.success(
+        'Outreach logged',
+        companyName ? `${companyName} ↔ ${contactName}` : `Logged outreach to ${contactName}`
+      );
     },
     onError: (error) => {
       const parsed = parseApiError(error);
@@ -575,7 +602,6 @@ export const useJobSearchQuery = (query: string, options?: { enabled?: boolean; 
         company: string;
         role: string;
         stage: string;
-        deadline?: string | null;
         contactsCount: number;
       }>;
     }
@@ -883,10 +909,47 @@ export const useUpdateOutreachMutation = () => {
         queryClient.invalidateQueries({ queryKey: ['contacts', result.contact.id] });
       }
       if (result.job?.id) {
+        queryClient.invalidateQueries({ queryKey: ['jobs'] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.job.id] });
         queryClient.invalidateQueries({ queryKey: ['jobs', result.job.id, 'history'] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.job.id, 'heat-explain'] });
       }
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Outreach updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useDeleteOutreachMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { data } = await api.delete(`/outreach/${id}`);
+      return data as {
+        deletedId: string;
+        jobId?: string | null;
+        contactId?: string | null;
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      if (result.jobId) {
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'history'] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'heat-explain'] });
+      }
+      if (result.contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', result.contactId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Outreach removed');
     },
     onError: (error) => {
       const parsed = parseApiError(error);

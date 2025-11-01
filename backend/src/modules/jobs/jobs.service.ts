@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { JobStage, OutreachOutcome, Prisma, ReferralKind } from '@prisma/client';
+import { JobStage, Prisma, ReferralKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FollowupsService } from '../followups/followups.service';
 import { OutreachService } from '../outreach/outreach.service';
@@ -11,6 +11,40 @@ import {
 } from './dto';
 import { CreateJobOutreachInput } from './dto/create-job-outreach.dto';
 import { InferDto } from '../../utils/create-zod-dto';
+import { loadHeatRules, HeatRules } from './heat-rules.loader';
+
+type HeatBreakdownCategory =
+  | 'stage'
+  | 'referral'
+  | 'outreach'
+  | 'contact'
+  | 'channel'
+  | 'personalization'
+  | 'tailoring'
+  | 'decay'
+  | 'clamp';
+
+type HeatBreakdownItem = {
+  category: HeatBreakdownCategory;
+  label: string;
+  value: number;
+  rawValue?: number;
+  maxValue?: number;
+  note?: string;
+};
+
+type HeatComputationResult = {
+  jobId: string;
+  stage: JobStage;
+  score: number;
+  heat: number;
+  breakdown: HeatBreakdownItem[];
+  decayFactor: number;
+  daysSinceLastTouch: number;
+  lastTouchAt: Date;
+  capApplied?: string;
+  stageBase: number;
+};
 
 @Injectable()
 export class JobsService {
@@ -110,7 +144,6 @@ export class JobsService {
           company: data.company,
           role: data.role,
           sourceUrl: data.sourceUrl ?? null,
-          deadline: data.deadline ? new Date(data.deadline) : null,
           heat: data.heat ?? 0,
           stage
         }
@@ -163,7 +196,6 @@ export class JobsService {
     company?: string;
     role?: string;
     sourceUrl?: string | null;
-    deadline?: string | null;
     companyId?: string | null;
   }) {
     await this.ensureJobExists(jobId);
@@ -174,9 +206,6 @@ export class JobsService {
         ...(data.company !== undefined && { company: data.company }),
         ...(data.role !== undefined && { role: data.role }),
         ...(data.sourceUrl !== undefined && { sourceUrl: data.sourceUrl }),
-        ...(data.deadline !== undefined && {
-          deadline: data.deadline ? new Date(data.deadline) : null
-        }),
         ...(data.companyId !== undefined && { companyId: data.companyId }),
         updatedAt: new Date()
       }
@@ -485,9 +514,41 @@ export class JobsService {
   }
 
   async recalculateHeat(jobId: string) {
+    const result = await this.computeHeatResult(jobId);
+    await this.setHeat(jobId, result.heat);
+  }
+
+  async getHeatExplanation(jobId: string) {
+    return this.computeHeatResult(jobId);
+  }
+
+  private async computeHeatResult(jobId: string, rules: HeatRules = loadHeatRules()): Promise<HeatComputationResult> {
     const job = await this.prisma.job.findUnique({
       where: { id: jobId },
-      select: { archived: true }
+      include: {
+        outreaches: {
+          orderBy: { sentAt: 'desc' },
+          take: 1,
+          include: {
+            contact: {
+              select: { id: true, name: true, strength: true }
+            }
+          }
+        },
+        applications: {
+          orderBy: { dateSent: 'desc' },
+          take: 1,
+          select: { id: true, tailoringScore: true, dateSent: true }
+        },
+        referrals: {
+          where: {
+            kind: { in: [ReferralKind.REFERRAL, ReferralKind.SENT_CV] }
+          },
+          orderBy: { at: 'desc' },
+          take: 1,
+          select: { id: true, kind: true }
+        }
+      }
     });
 
     if (!job) {
@@ -495,53 +556,226 @@ export class JobsService {
     }
 
     if (job.archived) {
-      await this.setHeat(jobId, 0);
-      return;
+      const archivedScore = rules.caps.archived ?? 0;
+      return {
+        jobId,
+        stage: job.stage,
+        score: this.round(archivedScore, 0),
+        heat: 0,
+        breakdown: [
+          {
+            category: 'clamp',
+            label: 'Archived',
+            value: this.round(archivedScore),
+            rawValue: this.round(archivedScore),
+            maxValue: this.round(archivedScore),
+            note: 'Archived jobs remain cold by design'
+          }
+        ],
+        decayFactor: 0,
+        daysSinceLastTouch: 0,
+        lastTouchAt: job.lastTouchAt,
+        capApplied: 'archived',
+        stageBase: 0
+      };
     }
 
-    const referral = await this.prisma.referral.findFirst({
-      where: {
-        jobId,
-        kind: { in: [ReferralKind.REFERRAL, ReferralKind.SENT_CV] }
-      }
+    const latestOutreach = job.outreaches[0] ?? null;
+    const latestApplication = job.applications[0] ?? null;
+    const referral = job.referrals[0] ?? null;
+
+    const breakdown: HeatBreakdownItem[] = [];
+    const stageBase = rules.stageBase[job.stage] ?? 0;
+    const stageCap = rules.caps.stage?.[job.stage];
+    const stageMax = typeof stageCap === 'number' ? stageCap : 100;
+    breakdown.push({
+      category: 'stage',
+      label: `Stage (${job.stage.toLowerCase()})`,
+      value: this.round(stageBase),
+      rawValue: this.round(stageBase),
+      maxValue: this.round(stageMax),
+      note: typeof stageCap === 'number' ? `Baseline for stage; capped at ${this.round(stageCap)}` : 'Baseline score for current stage'
     });
+
+    const dynamicComponents: Array<{
+      category: HeatBreakdownCategory;
+      label: string;
+      raw: number;
+      maxRaw?: number;
+      note?: string;
+    }> = [];
+
     if (referral) {
-      await this.setHeat(jobId, 3);
-      return;
+      dynamicComponents.push({
+        category: 'referral',
+        label: 'Referral',
+        raw: rules.referral.score,
+        note: `Active ${referral.kind.toLowerCase()}`
+      });
+    } else if (latestOutreach) {
+      const outcomeScore = rules.outreachOutcome[latestOutreach.outcome] ?? 0;
+      if (outcomeScore !== 0) {
+        dynamicComponents.push({
+          category: 'outreach',
+          label: `Outcome (${latestOutreach.outcome.toLowerCase()})`,
+          raw: outcomeScore,
+          note: `Sent ${latestOutreach.sentAt.toISOString()}`
+        });
+      }
+
+      const strengthKey = (latestOutreach.contact?.strength ?? 'UNKNOWN') as string;
+      const strengthScore = rules.contactStrength[strengthKey] ?? 0;
+      if (strengthScore !== 0) {
+        dynamicComponents.push({
+          category: 'contact',
+          label: `Contact strength (${strengthKey.toLowerCase()})`,
+          raw: strengthScore,
+          note: latestOutreach.contact?.name ? `Contact ${latestOutreach.contact.name}` : undefined
+        });
+      }
+
+      const channelScore = rules.channel[latestOutreach.channel] ?? 0;
+      if (channelScore !== 0) {
+        dynamicComponents.push({
+          category: 'channel',
+          label: `Channel (${latestOutreach.channel.toLowerCase()})`,
+          raw: channelScore,
+          note: 'Relative weight by channel'
+        });
+      }
     }
 
-    const warmOutreach = await this.prisma.outreach.findFirst({
-      where: {
-        jobId,
-        outcome: OutreachOutcome.POSITIVE
-      },
-      include: {
-        contact: true
+    if (latestOutreach?.personalizationScore !== null && latestOutreach?.personalizationScore !== undefined) {
+      const personalizationRaw =
+        latestOutreach.personalizationScore / Math.max(1, rules.personalizationDivisor);
+      if (personalizationRaw !== 0) {
+        dynamicComponents.push({
+          category: 'personalization',
+          label: 'Personalization',
+          raw: personalizationRaw,
+          maxRaw: 100 / Math.max(1, rules.personalizationDivisor),
+          note: `${latestOutreach.personalizationScore} ÷ ${rules.personalizationDivisor}`
+        });
       }
+    }
+
+    if (latestApplication?.tailoringScore !== null && latestApplication?.tailoringScore !== undefined) {
+      const tailoringRaw = latestApplication.tailoringScore / Math.max(1, rules.tailoringDivisor);
+      if (tailoringRaw !== 0) {
+        dynamicComponents.push({
+          category: 'tailoring',
+          label: 'Tailoring',
+          raw: tailoringRaw,
+          maxRaw: 100 / Math.max(1, rules.tailoringDivisor),
+          note: `${latestApplication.tailoringScore} ÷ ${rules.tailoringDivisor}`
+        });
+      }
+    }
+
+    const lastTouchAt = job.lastTouchAt ?? job.updatedAt ?? job.createdAt;
+    const daysSinceLastTouch = Math.max(
+      0,
+      (Date.now() - lastTouchAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const halfLife = rules.decay.halfLifeDays > 0 ? rules.decay.halfLifeDays : 7;
+    const effectiveDays =
+      rules.decay.maximumDays && rules.decay.maximumDays > 0
+        ? Math.min(daysSinceLastTouch, rules.decay.maximumDays)
+        : daysSinceLastTouch;
+
+    let decayFactor = Math.pow(0.5, effectiveDays / halfLife);
+    if (rules.decay.minimumFactor !== undefined) {
+      decayFactor = Math.max(decayFactor, rules.decay.minimumFactor);
+    }
+
+    let dynamicDecayedTotal = 0;
+    dynamicComponents.forEach((component) => {
+      const decayedValue = component.raw * decayFactor;
+      dynamicDecayedTotal += decayedValue;
+      const rounded = this.round(decayedValue);
+      const maxValue = this.round(component.maxRaw ?? component.raw);
+      const noteSegments = [component.note];
+      if (decayFactor !== 1) {
+        noteSegments.push(`Recency ×${this.round(decayFactor, 2)}`);
+      }
+
+      breakdown.push({
+        category: component.category,
+        label: component.label,
+        value: rounded,
+        rawValue: this.round(component.raw),
+        maxValue,
+        note: noteSegments.filter(Boolean).join(' · ')
+      });
     });
 
-    if (warmOutreach?.contact) {
-      const strength = warmOutreach.contact.strength;
-      if (strength === 'STRONG' || strength === 'MEDIUM') {
-        await this.setHeat(jobId, 2);
-      } else {
-        await this.setHeat(jobId, 1);
-      }
-      return;
-    }
-
-    const anyResponse = await this.prisma.outreach.count({
-      where: {
-        jobId,
-        outcome: { in: [OutreachOutcome.POSITIVE, OutreachOutcome.NEGATIVE] }
-      }
+    breakdown.push({
+      category: 'decay',
+      label: 'Recency factor',
+      value: this.round(decayFactor, 2),
+      rawValue: this.round(decayFactor, 2),
+      maxValue: 1,
+      note: `${this.round(daysSinceLastTouch, 1)} days since last touch · half-life ${halfLife}d`
     });
-    if (anyResponse > 0) {
-      await this.setHeat(jobId, 1);
-      return;
+
+    const rawTotalBeforeClamp = stageBase + dynamicDecayedTotal;
+    let finalScore = rawTotalBeforeClamp;
+    let capApplied: string | undefined;
+
+    if (typeof stageCap === 'number' && finalScore > stageCap) {
+      finalScore = stageCap;
+      capApplied = `stage:${job.stage}`;
     }
 
-    await this.setHeat(jobId, 0);
+    if (finalScore > 100) {
+      finalScore = 100;
+      capApplied = capApplied ?? 'global:100';
+    }
+
+    if (finalScore < 0) {
+      finalScore = 0;
+      capApplied = capApplied ?? 'global:0';
+    }
+
+    const clampAdjustment = this.round(finalScore - rawTotalBeforeClamp);
+    if (clampAdjustment !== 0) {
+      breakdown.push({
+        category: 'clamp',
+        label: 'Cap adjustment',
+        value: clampAdjustment,
+        rawValue: clampAdjustment,
+        maxValue: clampAdjustment,
+        note: capApplied
+      });
+    }
+
+    const roundedScore = Math.round(finalScore);
+    const buckets = [...(rules.heatBuckets ?? [])].sort((a, b) => a.maxScore - b.maxScore);
+    let heat = 0;
+    for (const bucket of buckets) {
+      if (roundedScore <= bucket.maxScore) {
+        heat = bucket.heat;
+        break;
+      }
+    }
+    if (buckets.length === 0) {
+      heat = Math.min(3, Math.max(0, Math.floor(roundedScore / 25)));
+    } else if (roundedScore > buckets[buckets.length - 1].maxScore) {
+      heat = buckets[buckets.length - 1].heat;
+    }
+
+    return {
+      jobId,
+      stage: job.stage,
+      score: roundedScore,
+      heat,
+      breakdown,
+      decayFactor: this.round(decayFactor, 2),
+      daysSinceLastTouch: this.round(daysSinceLastTouch, 1),
+      lastTouchAt,
+      capApplied,
+      stageBase: this.round(stageBase)
+    };
   }
 
   private async setHeat(jobId: string, heat: number) {
@@ -549,6 +783,11 @@ export class JobsService {
       where: { id: jobId },
       data: { heat, updatedAt: new Date() }
     });
+  }
+
+  private round(value: number, decimals = 2) {
+    const factor = 10 ** decimals;
+    return Math.round(value * factor) / factor;
   }
 
   async getPipelineSummary() {

@@ -1,7 +1,7 @@
 # Jobs Module Fix Plan
 
 ## Summary of Current Issues
-- **POST /jobs returns 400 when creating** – The Job wizard submits `deadline` as a date-only string (`YYYY-MM-DD`, see `frontend/src/components/JobWizardModal.tsx:73`), but `CreateJobDto` enforces `z.string().datetime()` (`backend/src/modules/jobs/dto/create-job.dto.ts:25-33`). Zod throws `Invalid datetime` so the API rejects otherwise valid payloads and the UI reports a generic failure.
+- **(Resolved) Job creation validation mismatch** – The wizard previously submitted `deadline` as a date-only string while the backend expected ISO datetimes. Deadline input has been removed, DTOs were relaxed, and job creation now succeeds without extra coercion.
 - **DELETE /jobs/:id returns 500** – `JobsService.delete` (`backend/src/modules/jobs/jobs.service.ts:107-114`) calls `prisma.job.delete` without cascading deletions. When a job has applications, outreach, or status history (`prisma/schema.prisma` relations are `onDelete: Restrict`), Prisma raises `P2003` and Nest returns a 500.
 - **Frontend unable to add a Job or open full Job details consistently** – Because the create mutation fails, React Query (`frontend/src/api/hooks.ts:102-155`) caches an error state and the UI closes the modal with no toast. Subsequent attempts to open the edit modal rely on `useJobDetailQuery`, but missing records/400 responses leave the modal empty, so users perceive it as broken.
 
@@ -17,6 +17,11 @@
 - Contact Drawer gains a danger zone (archive vs hard delete), outreach entries expose editable purpose badges, and follow-ups appear alongside outreach/referral/review history.
 - Contacts table lists linked jobs and next follow-up dates, making it easy to confirm which roles each person is attached to after linking from either direction.
 
+## What Changed (2025-11-02)
+- Archived jobs now display in a dedicated panel (and table view) when “Show Archived” is toggled, preventing freshly archived roles from disappearing.
+- Next follow-up indicators show neutral day counts (e.g., `3 days`) instead of negative phrasing, matching the UX expectation for countdowns.
+- Heat recalculation aligns with the documented hierarchy—referrals (3), strong/medium positives (2), other responses (1), archived/default (0)—with targeted unit tests guarding each branch.
+
 ## Root-Cause Hypotheses
 - DTO/validation mismatch between frontend JobWizard payload and backend CreateJobDto – The DTO expects ISO strings and enum-safe payloads while the wizard provides date-only strings and loosely typed outreach fields, leading to validation failures.
 - Zod/class-validator rules causing 400 on missing/invalid fields (e.g., date format, enum stage, numeric types) – Global `ZodValidationPipe` returns flattened error objects; without coercion the DTO rejects numeric strings and non-ISO dates, and the frontend does not parse the response.
@@ -26,7 +31,7 @@
 
 ## Acceptance Criteria (must-haves)
 - Creating a job via the wizard returns 201 with the persisted job (id, stage, timestamps) and refreshes the list automatically.
-- Updating an existing job (stage, deadline, company link, heat recalculation) continues to succeed with no regressions in history or last-touch updates.
+- Updating an existing job (stage, company link, heat recalculation) continues to succeed with no regressions in history or last-touch updates.
 - Deleting a job from the UI defaults to a soft delete (job hidden from active list, no 500s) and supports an explicit `?hard=true` development path that handles FK cleanup or returns clear 409 errors.
 - `GET /jobs`, `GET /jobs/:id/history`, `POST /jobs/:id/applications`, `POST /jobs/:id/status`, and `POST /jobs/:id/outreach` function end-to-end from the UI with visible success/error toasts and no console errors.
 - API errors surface meaningful messages to the UI, and backend logs capture structured entries (route, jobId, requestId) instead of raw stack traces.

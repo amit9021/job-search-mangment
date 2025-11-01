@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { useJobHistoryQuery } from '../api/hooks';
+import { useJobHistoryQuery, useUpdateOutreachMutation, useDeleteOutreachMutation } from '../api/hooks';
 import { UpdateJobStageDialog } from './UpdateJobStageDialog';
 
 interface JobHistoryModalProps {
@@ -17,13 +17,45 @@ type TimelineItem = {
   label: string;
   description?: string;
   contact?: { id: string; name: string | null };
+  outreach?: {
+    id: string;
+    outcome: string;
+    personalizationScore: number;
+    messageType: string;
+    content?: string | null;
+    context?: string | null;
+  };
 };
 
 export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: JobHistoryModalProps) => {
   const { data, isLoading } = useJobHistoryQuery(jobId ?? '', { enabled: open && Boolean(jobId) });
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
+  const updateOutreach = useUpdateOutreachMutation();
+  const deleteOutreach = useDeleteOutreachMutation();
 
-  const timeline = useMemo<TimelineItem[]>(() => {
+  const handleOutcomeChange = async (outreachId: string, outcome: string) => {
+    try {
+      await updateOutreach.mutateAsync({ id: outreachId, outcome });
+    } catch {
+      // toast handled in mutation
+    }
+  };
+
+  const handleDeleteOutreach = async (outreachId: string) => {
+    const confirmed = window.confirm(
+      'Remove this outreach? This will unlink the contact from the job timeline.'
+    );
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await deleteOutreach.mutateAsync({ id: outreachId });
+    } catch {
+      // toast handled in mutation
+    }
+  };
+
+const timeline = useMemo<TimelineItem[]>(() => {
     if (!data) {
       return [];
     }
@@ -48,6 +80,9 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
       });
     });
 
+    const humanize = (value?: string | null) =>
+      value ? value.replace(/_/g, ' ') : undefined;
+
     const contextLabel = (context?: string) => {
       switch (context) {
         case 'JOB_OPPORTUNITY':
@@ -71,15 +106,14 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
         id: `outreach-${outreach.id}`,
         date: outreach.sentAt,
         label: `Outreach via ${outreach.channel}${contactSuffix}`,
-        description: [
-          outreach.messageType,
-          `Personalization ${outreach.personalizationScore}`,
-          outreach.outcome !== 'NONE' ? `Outcome: ${outreach.outcome}` : null,
-          outreach.content ? `Note: ${outreach.content}` : null,
-          contextLabel(outreach.context) ? `Context: ${contextLabel(outreach.context)}` : null
-        ]
-          .filter(Boolean)
-          .join(' • '),
+        outreach: {
+          id: outreach.id,
+          outcome: outreach.outcome,
+          personalizationScore: outreach.personalizationScore,
+          messageType: humanize(outreach.messageType) ?? outreach.messageType,
+          content: outreach.content ?? undefined,
+          context: contextLabel(outreach.context)
+        },
         contact: outreach.contact
       });
     });
@@ -185,7 +219,53 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                         View contact
                       </button>
                     )}
-                    {item.description && <p className="mt-1 text-xs text-slate-500">{item.description}</p>}
+                    {item.outreach ? (
+                      <div className="mt-2 space-y-2 text-xs text-slate-600">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-slate-700">Outcome</span>
+                          <select
+                            value={item.outreach.outcome}
+                            onChange={(event) =>
+                              handleOutcomeChange(item.outreach!.id, event.target.value)
+                            }
+                            disabled={updateOutreach.isPending}
+                            className="rounded-md border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100"
+                          >
+                            <option value="NONE">Not set</option>
+                            <option value="NO_RESPONSE">No response yet</option>
+                            <option value="POSITIVE">Positive</option>
+                            <option value="NEGATIVE">Negative</option>
+                          </select>
+                          {updateOutreach.isPending && (
+                            <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                              Saving…
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          <span>Message: {item.outreach.messageType}</span>
+                          <span>Personalization: {item.outreach.personalizationScore}</span>
+                          {item.outreach.context && <span>Context: {item.outreach.context}</span>}
+                        </div>
+                        {item.outreach.content && (
+                          <p className="text-slate-500">Note: {item.outreach.content}</p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOutreach(item.outreach!.id)}
+                            disabled={deleteOutreach.isPending}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
+                          >
+                            Delete outreach
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      item.description && (
+                        <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+                      )
+                    )}
                   </div>
                 </li>
               ))}

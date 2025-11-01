@@ -148,7 +148,7 @@ export class OutreachService {
   ) {
     const outreach = await this.prisma.outreach.findUnique({ where: { id } });
     if (!outreach) {
-      throw new NotFoundException('Outreach not found');
+      return { id, jobId: null, contactId: null };
     }
 
     const updateData: any = {};
@@ -176,5 +176,33 @@ export class OutreachService {
       data: updateData,
       include: { contact: true, job: true }
     });
+  }
+
+  async delete(id: string) {
+    const outreach = await this.prisma.outreach.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        jobId: true,
+        contactId: true
+      }
+    });
+
+    if (!outreach) {
+      throw new NotFoundException('Outreach not found');
+    }
+
+    await this.followupsService.cancelOpenForContext({
+      jobId: outreach.jobId ?? undefined,
+      contactId: outreach.contactId ?? undefined
+    });
+
+    await this.prisma.outreach.delete({ where: { id } });
+
+    return {
+      id,
+      jobId: outreach.jobId ?? null,
+      contactId: outreach.contactId ?? null
+    };
   }
 }

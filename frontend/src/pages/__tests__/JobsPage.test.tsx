@@ -61,7 +61,6 @@ describe('JobsPage', () => {
           contactsCount: 0,
           contacts: [],
           nextFollowUpAt: null,
-          deadline: null,
           sourceUrl: null
         }
       ],
@@ -111,7 +110,6 @@ describe('JobsPage', () => {
           contactsCount: 1,
           contacts: [{ id: 'contact-1', name: 'Jane Doe', role: 'Recruiter' }],
           nextFollowUpAt: null,
-          deadline: null,
           sourceUrl: null
         }
       ],

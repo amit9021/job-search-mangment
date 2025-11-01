@@ -8,8 +8,8 @@ import { PrismaService } from '../src/prisma/prisma.service';
 class MockPrismaService {
   user = { findUnique: jest.fn() };
   jobApplication = { count: jest.fn(), create: jest.fn() };
-  outreach = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn() };
-  followUp = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() };
+  outreach = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() };
+  followUp = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn(), deleteMany: jest.fn() };
   codeReview = { count: jest.fn(), findMany: jest.fn() };
   job = { findMany: jest.fn(), groupBy: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() };
   contact = { count: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn() };
@@ -99,7 +99,6 @@ describe('App e2e (happy path smoke tests)', () => {
         company: 'Acme',
         role: 'Senior Engineer',
         heat: 3,
-        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
         lastTouchAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         stage: 'APPLIED',
@@ -317,5 +316,127 @@ describe('App e2e (happy path smoke tests)', () => {
     expect(prisma.job.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ stage: 'HR' }) }));
     expect(response.body.job).toEqual(expect.objectContaining({ id: 'job_stage', stage: 'HR' }));
     expect(response.body.history).toEqual(expect.objectContaining({ note: 'scheduled HR' }));
+  });
+
+  it('PATCH /outreach/:id updates outcome and recalculates heat', async () => {
+    prisma.outreach.findUnique.mockResolvedValue({ id: 'out_1', jobId: 'job_heat' } as any);
+    prisma.outreach.update.mockResolvedValue({
+      id: 'out_1',
+      job: { id: 'job_heat' },
+      contact: { id: 'contact_1' }
+    } as any);
+    prisma.job.findUnique.mockResolvedValue({
+      id: 'job_heat',
+      stage: 'APPLIED',
+      archived: false,
+      lastTouchAt: new Date(),
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      outreaches: [],
+      applications: [],
+      referrals: []
+    });
+    prisma.job.update.mockResolvedValue({});
+
+    const response = await request(app.getHttpServer())
+      .patch('/outreach/out_1')
+      .set('Authorization', 'Bearer fake')
+      .send({ outcome: 'POSITIVE' });
+
+    expect(response.status).toBe(200);
+    expect(prisma.outreach.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'out_1' },
+        data: expect.objectContaining({ outcome: 'POSITIVE' })
+      })
+    );
+    expect(prisma.job.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'job_heat' },
+        data: expect.objectContaining({ heat: expect.any(Number) })
+      })
+    );
+  });
+
+  it('DELETE /outreach/:id removes outreach and recalculates heat', async () => {
+    prisma.outreach.findUnique.mockResolvedValue({
+      id: 'out_1',
+      jobId: 'job_heat',
+      contactId: 'contact_1'
+    } as any);
+    prisma.followUp.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.outreach.delete.mockResolvedValue({});
+    prisma.job.findUnique.mockResolvedValue({
+      id: 'job_heat',
+      stage: 'APPLIED',
+      archived: false,
+      lastTouchAt: new Date(),
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      outreaches: [],
+      applications: [],
+      referrals: []
+    });
+    prisma.referral.findFirst.mockResolvedValue(null);
+    prisma.outreach.findFirst.mockResolvedValue(null);
+    prisma.outreach.count.mockResolvedValue(0);
+    prisma.outreach.findMany.mockResolvedValue([]);
+    prisma.followUp.findMany.mockResolvedValue([]);
+    prisma.job.update.mockResolvedValue({});
+
+    const response = await request(app.getHttpServer())
+      .delete('/outreach/out_1')
+      .set('Authorization', 'Bearer fake');
+
+    expect(response.status).toBe(200);
+    expect(prisma.outreach.delete).toHaveBeenCalledWith({ where: { id: 'out_1' } });
+    expect(prisma.followUp.deleteMany).toHaveBeenCalledWith({
+      where: { sentAt: null, jobId: 'job_heat', contactId: 'contact_1' }
+    });
+    expect(prisma.job.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'job_heat' },
+        data: expect.objectContaining({ heat: expect.any(Number) })
+      })
+    );
+  });
+
+  it('DELETE /outreach/:id is idempotent when outreach is missing', async () => {
+    prisma.outreach.findUnique.mockResolvedValue(null);
+    prisma.followUp.deleteMany.mockResolvedValue({ count: 0 });
+
+    const response = await request(app.getHttpServer())
+      .delete('/outreach/out_missing')
+      .set('Authorization', 'Bearer fake');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      deletedId: 'out_missing',
+      jobId: null,
+      contactId: null
+    });
+    expect(prisma.followUp.deleteMany).toHaveBeenCalled();
+  });
+
+  it('GET /jobs/:id/heat-explain returns breakdown', async () => {
+    prisma.job.findUnique.mockResolvedValue({
+      id: 'job_heat',
+      stage: 'APPLIED',
+      archived: false,
+      lastTouchAt: new Date(),
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      outreaches: [],
+      applications: [],
+      referrals: []
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/jobs/job_heat/heat-explain')
+      .set('Authorization', 'Bearer fake');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('score');
+    expect(Array.isArray(response.body.breakdown)).toBe(true);
   });
 });

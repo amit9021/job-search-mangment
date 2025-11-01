@@ -35,7 +35,6 @@ const schema = z.object({
   company: z.string().min(1, 'Company required'),
   role: z.string().min(1, 'Role required'),
   sourceUrl: z.string().url().optional().or(z.literal('')),
-  deadline: z.string().optional(),
   tailoringScore: z
     .string()
     .optional()
@@ -127,8 +126,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         company: jobDetail.company,
         role: jobDetail.role,
         sourceUrl: jobDetail.sourceUrl || '',
-        deadline: jobDetail.deadline ? jobDetail.deadline.split('T')[0] : '',
-      outreachEnabled: false,
+        outreachEnabled: false,
       tailoringScore: undefined,
       personalizationScore: '80',
       channel: 'EMAIL',
@@ -182,13 +180,11 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
 
     try {
       if (isEditMode && jobId) {
-        const deadlineIso = values.deadline ? new Date(values.deadline).toISOString() : null;
         await updateJob.mutateAsync({
           id: jobId,
           company: values.company,
           role: values.role,
-          sourceUrl: values.sourceUrl ? values.sourceUrl : null,
-          deadline: deadlineIso
+          sourceUrl: values.sourceUrl ? values.sourceUrl : null
         });
         toast.success('Job updated');
       } else {
@@ -196,7 +192,6 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
           company: values.company,
           role: values.role,
           sourceUrl: values.sourceUrl ? values.sourceUrl : undefined,
-          deadline: values.deadline ? new Date(values.deadline).toISOString() : undefined,
           initialApplication:
             values.tailoringScore !== undefined
               ? {
@@ -250,7 +245,6 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         company: '',
         role: '',
         sourceUrl: '',
-        deadline: '',
         tailoringScore: undefined,
         outreachEnabled: !isEditMode,
         context: 'JOB_OPPORTUNITY',
@@ -272,7 +266,6 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
           company: 'company',
           role: 'role',
           sourceUrl: 'sourceUrl',
-          deadline: 'deadline',
           'initialApplication.tailoringScore': 'tailoringScore',
           'initialOutreach.channel': 'channel',
           'initialOutreach.messageType': 'messageType',
@@ -327,7 +320,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
           </Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">
             {isEditMode
-              ? 'Update job details (company, role, URL, deadline)'
+              ? 'Update job details (company, role, URL)'
               : 'Capture the application with a tailored CV and queue the 3-day follow-up automatically.'}
           </Dialog.Description>
           <form className="mt-5 flex flex-1 flex-col" onSubmit={onSubmit}>
@@ -360,32 +353,16 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                   />
                   {errors.role && <p className="text-xs text-red-500">{errors.role.message}</p>}
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500" htmlFor={`${formId}-sourceUrl`}>
-                      Source URL
-                    </label>
-                    <input
-                      id={`${formId}-sourceUrl`}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
-                      placeholder="https://"
-                      {...register('sourceUrl')}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase text-slate-500 flex items-center gap-1" htmlFor={`${formId}-deadline`}>
-                      Deadline
-                      <span className="text-[10px] uppercase text-slate-400" title="Application close / target date (optional)">
-                        ⓘ
-                      </span>
-                    </label>
-                    <input
-                      type="date"
-                      id={`${formId}-deadline`}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
-                      {...register('deadline')}
-                    />
-                  </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase text-slate-500" htmlFor={`${formId}-sourceUrl`}>
+                    Source URL
+                  </label>
+                  <input
+                    id={`${formId}-sourceUrl`}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    placeholder="https://"
+                    {...register('sourceUrl')}
+                  />
                 </div>
                 {!isEditMode && (
                   <>

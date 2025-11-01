@@ -6,7 +6,7 @@ import { OutreachModule } from '../outreach/outreach.module';
 import { ContactsModule } from '../contacts/contacts.module';
 
 @Module({
-  imports: [FollowupsModule, OutreachModule, forwardRef(() => ContactsModule)],
+  imports: [FollowupsModule, forwardRef(() => OutreachModule), forwardRef(() => ContactsModule)],
   controllers: [JobsController],
   providers: [JobsService],
   exports: [JobsService]

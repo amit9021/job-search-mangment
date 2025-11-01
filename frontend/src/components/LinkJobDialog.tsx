@@ -23,7 +23,6 @@ type JobSearchResult = {
   company: string;
   role: string;
   stage: string;
-  deadline?: string | null;
   contactsCount: number;
 };
 
@@ -42,6 +41,14 @@ const outreachContextLabels: Record<(typeof outreachContextValues)[number], stri
   OTHER: 'Other'
 };
 
+const outreachOutcomeValues = ['NONE', 'NO_RESPONSE', 'POSITIVE', 'NEGATIVE'] as const;
+const outreachOutcomeLabels: Record<(typeof outreachOutcomeValues)[number], string> = {
+  NONE: 'Not set',
+  NO_RESPONSE: 'No response yet',
+  POSITIVE: 'Positive',
+  NEGATIVE: 'Negative'
+};
+
 const newJobSchema = z.object({
   company: z.string().min(1, 'Company is required'),
   role: z.string().min(1, 'Role is required'),
@@ -50,10 +57,6 @@ const newJobSchema = z.object({
     .optional()
     .transform(trimToUndefined)
     .refine((value) => !value || /^https?:\/\//i.test(value), 'Invalid URL'),
-  deadline: z
-    .string()
-    .optional()
-    .transform(trimToUndefined)
 });
 
 type NewJobFormValues = z.infer<typeof newJobSchema>;
@@ -62,6 +65,7 @@ const outreachSchema = z.object({
   channel: z.enum(['EMAIL', 'LINKEDIN', 'PHONE', 'OTHER']),
   messageType: z.string().min(1, 'Message type required'),
   context: z.enum(outreachContextValues).default('JOB_OPPORTUNITY'),
+  outcome: z.enum(outreachOutcomeValues).default('NONE'),
   personalizationScore: z
     .union([z.string(), z.number()])
     .transform((value) => {
@@ -139,6 +143,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
       channel: 'LINKEDIN',
       messageType: 'intro_request',
       context: 'JOB_OPPORTUNITY',
+      outcome: 'NONE',
       personalizationScore: 70,
       createFollowUp: true
     }
@@ -153,11 +158,12 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
       setDebouncedTerm('');
       setSelectedJob(null);
       setSelectionError(null);
-      resetNewJob({ company: contact.companyName ?? '', role: '', sourceUrl: '', deadline: '' });
+      resetNewJob({ company: contact.companyName ?? '', role: '', sourceUrl: '' });
       resetOutreachForm({
         channel: 'LINKEDIN',
         messageType: 'intro_request',
         context: 'JOB_OPPORTUNITY',
+        outcome: 'NONE',
         personalizationScore: 70,
         createFollowUp: true
       });
@@ -190,7 +196,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
 
   const onSubmitOutreach = handleSubmitOutreach(async (values) => {
     if (!selectedJob) {
-      setSelectionError('Select or create a job before logging outreach.');
+      setSelectionError('Select or create a job before adding outreach.');
       return;
     }
 
@@ -198,25 +204,15 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
     if (selectedJob.type === 'existing') {
       jobId = selectedJob.job.id;
     } else {
-      let deadlineIso: string | undefined;
-      if (selectedJob.draft.deadline) {
-        const parsed = new Date(selectedJob.draft.deadline);
-        if (!Number.isNaN(parsed.getTime())) {
-          deadlineIso = parsed.toISOString();
-        }
-      }
-
       const payload: CreateJobMutationInput = {
         company: selectedJob.draft.company,
         role: selectedJob.draft.role,
-        sourceUrl: selectedJob.draft.sourceUrl,
-        deadline: deadlineIso
+        sourceUrl: selectedJob.draft.sourceUrl ? selectedJob.draft.sourceUrl : undefined
       };
       try {
         const createdJob = await createJob.mutateAsync(payload);
         jobId = createdJob.id;
       } catch {
-        // error toast handled by mutation
         return;
       }
     }
@@ -229,6 +225,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
       personalizationScore: values.personalizationScore ?? undefined,
       content: values.content,
       context: values.context,
+      outcome: values.outcome,
       createFollowUp: values.createFollowUp,
       followUpNote: values.followUpNote
     };
@@ -239,6 +236,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
         channel: 'LINKEDIN',
         messageType: 'intro_request',
         context: 'JOB_OPPORTUNITY',
+        outcome: 'NONE',
         personalizationScore: 70,
         createFollowUp: true
       });
@@ -258,10 +256,10 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
         <Dialog.Overlay className="fixed inset-0 z-[80] bg-slate-900/40" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-[90] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold text-slate-900">
-            Link job to {contact.name}
+            Add outreach for {contact.name}
           </Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">
-            Log outreach that connects this contact to a role.
+            Link this contact to a job and capture what happened.
           </Dialog.Description>
 
           <Tabs.Root value={tab} onValueChange={(value) => setTab(value as 'existing' | 'new')}>
@@ -305,9 +303,6 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                   (jobResults ?? []).map((job) => {
                     const isSelected =
                       selectedJob?.type === 'existing' && selectedJob.job.id === job.id;
-                    const deadlineLabel = job.deadline
-                      ? `Deadline ${new Date(job.deadline).toLocaleDateString()}`
-                      : 'No deadline';
                     return (
                       <button
                         key={job.id}
@@ -320,7 +315,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                         <span className="font-medium">{job.company}</span>
                         <span className="text-xs text-slate-500">{job.role}</span>
                         <span className="text-xs text-slate-400">
-                          {deadlineLabel} · {job.contactsCount} contact(s)
+                          Stage {job.stage.toLowerCase()} · {job.contactsCount} contact(s)
                         </span>
                       </button>
                     );
@@ -367,25 +362,6 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                     <p className="mt-1 text-xs text-red-600">{jobErrors.sourceUrl.message}</p>
                   )}
                 </div>
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    Deadline
-                    <span
-                      className="text-xs text-slate-400"
-                      title="Application close / target date (optional)"
-                    >
-                      ⓘ
-                    </span>
-                  </label>
-                  <input
-                    type="date"
-                    {...registerJob('deadline')}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  />
-                  {jobErrors.deadline && (
-                    <p className="mt-1 text-xs text-red-600">{jobErrors.deadline.message}</p>
-                  )}
-                </div>
                 <div className="flex justify-end pt-2">
                   <button
                     type="submit"
@@ -401,7 +377,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
           <div className="mt-5 space-y-3">
             {selectedLabel ? (
               <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
-                Linking job: <span className="font-medium">{selectedLabel}</span>
+                Job: <span className="font-medium">{selectedLabel}</span>
                 <button
                   type="button"
                   className="ml-3 text-xs font-semibold underline"
@@ -419,7 +395,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
           </div>
 
           <form className="mt-4 space-y-4" onSubmit={onSubmitOutreach}>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700">Channel</label>
                 <select
@@ -459,6 +435,22 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Outcome</label>
+                <select
+                  {...registerOutreach('outcome')}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {outreachOutcomeValues.map((value) => (
+                    <option key={value} value={value}>
+                      {outreachOutcomeLabels[value]}
+                    </option>
+                  ))}
+                </select>
+                {outreachErrors.outcome && (
+                  <p className="mt-1 text-xs text-red-600">{outreachErrors.outcome.message}</p>
+                )}
               </div>
             </div>
 
@@ -533,7 +525,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Linking…' : 'Link job'}
+                {isSubmitting ? 'Saving…' : 'Add outreach'}
               </button>
             </div>
           </form>

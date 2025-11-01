@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import { LinkContactDialog } from '../LinkContactDialog';
+import { AddOutreachDialog } from '../AddOutreachDialog';
 
 vi.mock('../../api/hooks', async () => {
   const actual = await vi.importActual<typeof import('../../api/hooks')>('../../api/hooks');
@@ -17,7 +17,7 @@ import * as hooks from '../../api/hooks';
 const useContactSearchQuery = vi.mocked(hooks.useContactSearchQuery);
 const useCreateJobOutreachMutation = vi.mocked(hooks.useCreateJobOutreachMutation);
 
-describe('LinkContactDialog', () => {
+describe('AddOutreachDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     useContactSearchQuery.mockReturnValue({ data: [], isFetching: false });
@@ -57,7 +57,7 @@ describe('LinkContactDialog', () => {
     vi.useFakeTimers();
 
     render(
-      <LinkContactDialog
+      <AddOutreachDialog
         job={{ id: 'job_1', company: 'Acme', role: 'Engineer', stage: 'APPLIED', heat: 0, lastTouchAt: '', contactsCount: 0 }}
         open
         onOpenChange={() => {}}
@@ -73,10 +73,10 @@ describe('LinkContactDialog', () => {
 
     fireEvent.click(screen.getByText(/Jane Candidate/));
 
-    await waitFor(() => expect(screen.getByText(/linking to/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/contact:/i)).toBeInTheDocument());
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /link contact/i }));
+      fireEvent.click(screen.getByRole('button', { name: /add outreach/i }));
     });
 
     await waitFor(() => {
@@ -86,7 +86,8 @@ describe('LinkContactDialog', () => {
           contactId: 'contact_1',
           channel: 'EMAIL',
           messageType: 'intro_request',
-          context: 'JOB_OPPORTUNITY'
+          context: 'JOB_OPPORTUNITY',
+          outcome: 'NONE'
         })
       );
     });

@@ -70,7 +70,6 @@ const schema = z.object({
   company: z.string().min(1),
   role: z.string().min(1),
   sourceUrl: sourceUrlSchema,
-  deadline: isoDateOptional,
   heat: heatSchema,
   stage: z.nativeEnum(JobStage).optional(),
   initialOutreach: createJobOutreachSchema.optional(),

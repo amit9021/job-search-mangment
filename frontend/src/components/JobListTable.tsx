@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow } from 'date-fns';
+import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
 import { HeatBadge } from './HeatBadge';
 
 type JobRow = {
@@ -9,7 +9,6 @@ type JobRow = {
   heat: number;
   lastTouchAt: string;
   nextFollowUpAt?: string | null;
-  deadline?: string | null;
   sourceUrl?: string | null;
   contactsCount: number;
   contacts: Array<{
@@ -24,7 +23,7 @@ interface JobListTableProps {
   onEdit: (jobId: string) => void;
   onDelete: (job: { id: string; company: string; role: string }) => void;
   onHistory: (jobId: string) => void;
-  onLinkContact: (job: JobRow) => void;
+  onAddOutreach: (job: JobRow) => void;
   onChangeStage: (job: JobRow) => void;
   onOpenContact: (contactId?: string | null) => void;
 }
@@ -38,13 +37,17 @@ const formatRelative = (dateString?: string | null) => {
   return formatDistanceToNow(date, { addSuffix: true });
 };
 
-const formatDate = (dateString?: string | null) => {
+const formatFollowUpCountdown = (dateString?: string | null) => {
   if (!dateString) return '—';
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) {
+  const dueDate = new Date(dateString);
+  if (Number.isNaN(dueDate.getTime())) {
     return '—';
   }
-  return format(date, 'MMM d, yyyy');
+  const diff = Math.abs(differenceInCalendarDays(dueDate, new Date()));
+  if (diff === 0) {
+    return 'Today';
+  }
+  return `${diff} day${diff === 1 ? '' : 's'}`;
 };
 
 export const JobListTable = ({
@@ -52,7 +55,7 @@ export const JobListTable = ({
   onEdit,
   onDelete,
   onHistory,
-  onLinkContact,
+  onAddOutreach,
   onChangeStage,
   onOpenContact
 }: JobListTableProps) => {
@@ -68,7 +71,6 @@ export const JobListTable = ({
             <th className="px-4 py-3 text-left">Contacts</th>
             <th className="px-4 py-3 text-left">Last touch</th>
             <th className="px-4 py-3 text-left">Next follow-up</th>
-            <th className="px-4 py-3 text-left">Deadline</th>
             <th className="px-4 py-3 text-left">Source</th>
             <th className="px-4 py-3 text-right">Actions</th>
           </tr>
@@ -88,7 +90,7 @@ export const JobListTable = ({
                 </button>
               </td>
               <td className="px-4 py-3">
-                <HeatBadge heat={job.heat} />
+                <HeatBadge heat={job.heat} jobId={job.id} />
               </td>
               <td className="px-4 py-3 text-slate-600">
                 {job.contacts.length === 0 ? (
@@ -111,9 +113,8 @@ export const JobListTable = ({
               </td>
               <td className="px-4 py-3 text-slate-500 text-xs">{formatRelative(job.lastTouchAt)}</td>
               <td className="px-4 py-3 text-slate-500 text-xs">
-                {formatRelative(job.nextFollowUpAt ?? undefined)}
+                {formatFollowUpCountdown(job.nextFollowUpAt ?? undefined)}
               </td>
-              <td className="px-4 py-3 text-slate-500 text-xs">{formatDate(job.deadline)}</td>
               <td className="px-4 py-3 text-slate-500 text-xs">
                 {job.sourceUrl ? (
                   <a
@@ -146,10 +147,10 @@ export const JobListTable = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onLinkContact(job)}
+                    onClick={() => onAddOutreach(job)}
                     className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100"
                   >
-                    Link contact
+                    Add outreach
                   </button>
                   <button
                     type="button"
@@ -164,7 +165,7 @@ export const JobListTable = ({
           ))}
           {jobs.length === 0 && (
             <tr>
-              <td colSpan={10} className="px-4 py-10 text-center text-sm text-slate-400">
+              <td colSpan={9} className="px-4 py-10 text-center text-sm text-slate-400">
                 No jobs match the current filters.
               </td>
             </tr>

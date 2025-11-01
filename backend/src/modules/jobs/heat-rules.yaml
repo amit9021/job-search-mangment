@@ -1,0 +1,53 @@
+caps:
+  archived: 0
+  stage:
+    OFFER: 95
+    REJECTED: 20
+    DORMANT: 15
+
+stageBase:
+  APPLIED: 35
+  HR: 50
+  TECH: 65
+  OFFER: 80
+  REJECTED: 10
+  DORMANT: 5
+
+referral:
+  score: 45
+
+outreachOutcome:
+  POSITIVE: 30
+  NEGATIVE: -20
+  NO_RESPONSE: 15
+  NONE: 5
+
+contactStrength:
+  STRONG: 20
+  MEDIUM: 12
+  WEAK: 6
+  UNKNOWN: 4
+
+channel:
+  EMAIL: 12
+  LINKEDIN: 14
+  PHONE: 16
+  OTHER: 8
+
+personalizationDivisor: 5
+tailoringDivisor: 4
+
+decay:
+  halfLifeDays: 7
+  minimumFactor: 0.25
+  maximumDays: 30
+
+heatBuckets:
+  - maxScore: 24
+    heat: 0
+  - maxScore: 49
+    heat: 1
+  - maxScore: 74
+    heat: 2
+  - maxScore: 100
+    heat: 3

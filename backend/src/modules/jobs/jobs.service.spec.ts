@@ -1,6 +1,7 @@
 import { ConflictException } from '@nestjs/common';
-import { JobStage, Prisma } from '@prisma/client';
+import { JobStage, Prisma, ReferralKind } from '@prisma/client';
 import { JobsService } from './jobs.service';
+import { setHeatRules } from './heat-rules.loader';
 
 type PrismaMock = {
   $transaction: jest.Mock;
@@ -88,6 +89,7 @@ describe('JobsService', () => {
   let outreach: { createJobOutreach: jest.Mock };
   let contacts: { create: jest.Mock };
   let service: JobsService;
+  let recalcSpy: jest.SpyInstance;
 
   beforeEach(() => {
     prisma = createPrismaMock();
@@ -100,11 +102,12 @@ describe('JobsService', () => {
       outreach as any,
       contacts as any
     );
-    jest.spyOn(service, 'recalculateHeat').mockResolvedValue();
+    recalcSpy = jest.spyOn(service, 'recalculateHeat').mockResolvedValue();
     jest.spyOn(service as unknown as { touchJob: (id: string) => Promise<void> }, 'touchJob').mockResolvedValue();
   });
 
   afterEach(() => {
+    setHeatRules(null);
     jest.restoreAllMocks();
   });
 
@@ -255,6 +258,155 @@ describe('JobsService', () => {
       prisma.$transaction.mockRejectedValue(error);
 
       await expect(service.delete('job_del', { hard: true })).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('heat computation', () => {
+    const baseRules = {
+      caps: { archived: 0, stage: {} },
+      stageBase: {
+        APPLIED: 30,
+        HR: 40,
+        TECH: 60,
+        OFFER: 80,
+        REJECTED: 10,
+        DORMANT: 5
+      },
+      referral: { score: 45 },
+      outreachOutcome: {
+        POSITIVE: 20,
+        NEGATIVE: -20,
+        NO_RESPONSE: 8,
+        NONE: 0
+      },
+      contactStrength: {
+        STRONG: 15,
+        MEDIUM: 10,
+        WEAK: 5,
+        UNKNOWN: 2
+      },
+      channel: {
+        EMAIL: 10,
+        LINKEDIN: 12,
+        PHONE: 14,
+        OTHER: 6
+      },
+      personalizationDivisor: 5,
+      tailoringDivisor: 4,
+      decay: {
+        halfLifeDays: 7,
+        minimumFactor: 0.25,
+        maximumDays: 30
+      },
+      heatBuckets: [
+        { maxScore: 24, heat: 0 },
+        { maxScore: 49, heat: 1 },
+        { maxScore: 74, heat: 2 },
+        { maxScore: 100, heat: 3 }
+      ]
+    };
+
+    beforeEach(() => {
+      recalcSpy.mockRestore();
+      prisma.job.update.mockClear();
+      prisma.job.update.mockResolvedValue({});
+      setHeatRules(baseRules as any);
+    });
+
+    afterEach(() => {
+      setHeatRules(null);
+    });
+
+    it('returns cold score for archived jobs', async () => {
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_archived',
+        stage: JobStage.APPLIED,
+        archived: true,
+        lastTouchAt: new Date(),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        outreaches: [],
+        applications: [],
+        referrals: []
+      });
+
+      const result = await service.getHeatExplanation('job_archived');
+
+      expect(result.heat).toBe(0);
+      expect(result.score).toBe(0);
+      expect(result.breakdown[0].category).toBe('clamp');
+    });
+
+    it('applies referral bonus when referral exists', async () => {
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_ref',
+        stage: JobStage.APPLIED,
+        archived: false,
+        lastTouchAt: new Date(),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        outreaches: [],
+        applications: [],
+        referrals: [{ id: 'ref_1', kind: ReferralKind.REFERRAL }]
+      });
+
+      const result = await service.getHeatExplanation('job_ref');
+
+      expect(result.score).toBeGreaterThanOrEqual(baseRules.stageBase.APPLIED);
+      expect(result.breakdown.some((item) => item.category === 'referral')).toBe(true);
+    });
+
+    it('decays outreach contributions over time', async () => {
+      const twentyOneDaysAgo = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_decay',
+        stage: JobStage.APPLIED,
+        archived: false,
+        lastTouchAt: twentyOneDaysAgo,
+        updatedAt: twentyOneDaysAgo,
+        createdAt: twentyOneDaysAgo,
+        outreaches: [
+          {
+            id: 'outreach_1',
+            sentAt: twentyOneDaysAgo,
+            outcome: 'POSITIVE',
+            channel: 'EMAIL',
+            personalizationScore: 80,
+            contact: { id: 'contact_1', name: 'Jane', strength: 'STRONG' }
+          }
+        ],
+        applications: [],
+        referrals: []
+      });
+
+      const result = await service.getHeatExplanation('job_decay');
+
+      expect(result.decayFactor).toBeLessThan(1);
+      expect(result.breakdown.some((item) => item.category === 'outreach')).toBe(true);
+    });
+
+    it('recalculateHeat persists computed heat', async () => {
+      const now = new Date();
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_heat',
+        stage: JobStage.APPLIED,
+        archived: false,
+        lastTouchAt: now,
+        updatedAt: now,
+        createdAt: now,
+        outreaches: [],
+        applications: [],
+        referrals: []
+      });
+
+      await service.recalculateHeat('job_heat');
+
+      expect(prisma.job.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'job_heat' },
+          data: expect.objectContaining({ heat: expect.any(Number) })
+        })
+      );
     });
   });
 });

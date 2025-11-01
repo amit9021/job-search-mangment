@@ -58,6 +58,20 @@ export class FollowupsService {
     });
   }
 
+  async cancelOpenForContext(params: { jobId?: string; contactId?: string }) {
+    if (!params.jobId && !params.contactId) {
+      return { count: 0 };
+    }
+
+    return this.prisma.followUp.deleteMany({
+      where: {
+        sentAt: null,
+        ...(params.jobId ? { jobId: params.jobId } : {}),
+        ...(params.contactId ? { contactId: params.contactId } : {})
+      }
+    });
+  }
+
   async markSent(id: string, note?: string) {
     const followup = await this.prisma.followUp.findUnique({ where: { id } });
     if (!followup) {

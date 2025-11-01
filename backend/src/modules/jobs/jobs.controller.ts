@@ -65,6 +65,11 @@ export class JobsController {
     return this.jobsService.recordJobOutreach(params.id, body);
   }
 
+  @Get(':id/heat-explain')
+  async heatExplain(@Param() params: IdParamDto) {
+    return this.jobsService.getHeatExplanation(params.id);
+  }
+
   @Get(':id/history')
   async history(@Param() params: IdParamDto) {
     return this.jobsService.getHistory(params.id);

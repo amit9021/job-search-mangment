@@ -10,7 +10,7 @@ import {
   JobOutreachPayload
 } from '../api/hooks';
 
-type JobSummaryForLink = {
+type JobSummary = {
   id: string;
   company: string;
   role: string;
@@ -42,6 +42,14 @@ const outreachContextLabels: Record<(typeof outreachContextValues)[number], stri
   OTHER: 'Other'
 };
 
+const outreachOutcomeValues = ['NONE', 'NO_RESPONSE', 'POSITIVE', 'NEGATIVE'] as const;
+const outreachOutcomeLabels: Record<(typeof outreachOutcomeValues)[number], string> = {
+  NONE: 'Not set',
+  NO_RESPONSE: 'No response yet',
+  POSITIVE: 'Positive',
+  NEGATIVE: 'Negative'
+};
+
 const newContactSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   role: z
@@ -70,6 +78,7 @@ const outreachSchema = z.object({
   channel: z.enum(['EMAIL', 'LINKEDIN', 'PHONE', 'OTHER']),
   messageType: z.string().min(1, 'Message type required'),
   context: z.enum(outreachContextValues).default('JOB_OPPORTUNITY'),
+  outcome: z.enum(outreachOutcomeValues).default('NONE'),
   personalizationScore: z
     .union([z.string(), z.number()])
     .transform((value) => {
@@ -104,8 +113,8 @@ type SelectedContact =
   | { type: 'existing'; contact: ContactResult }
   | { type: 'new'; draft: NewContactFormValues };
 
-interface LinkContactDialogProps {
-  job: JobSummaryForLink;
+interface AddOutreachDialogProps {
+  job: JobSummary;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLinked?: (result: {
@@ -116,7 +125,7 @@ interface LinkContactDialogProps {
   }) => void;
 }
 
-export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkContactDialogProps) => {
+export const AddOutreachDialog = ({ job, open, onOpenChange, onLinked }: AddOutreachDialogProps) => {
   const [tab, setTab] = useState<'existing' | 'new'>('existing');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
@@ -154,6 +163,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
       channel: 'EMAIL',
       messageType: 'intro_request',
       context: 'JOB_OPPORTUNITY',
+      outcome: 'NONE',
       personalizationScore: 70,
       createFollowUp: true
     }
@@ -172,6 +182,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
         channel: 'EMAIL',
         messageType: 'intro_request',
         context: 'JOB_OPPORTUNITY',
+        outcome: 'NONE',
         personalizationScore: 70,
         createFollowUp: true
       });
@@ -210,7 +221,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
 
   const onSubmitOutreach = handleSubmitOutreach(async (values) => {
     if (!selected) {
-      setContactError('Select or create a contact before logging outreach.');
+      setContactError('Select or create a contact before adding outreach.');
       return;
     }
 
@@ -221,6 +232,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
       personalizationScore: values.personalizationScore ?? undefined,
       content: values.content,
       context: values.context,
+      outcome: values.outcome,
       createFollowUp: values.createFollowUp,
       followUpNote: values.followUpNote
     };
@@ -240,6 +252,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
         channel: 'EMAIL',
         messageType: 'intro_request',
         context: 'JOB_OPPORTUNITY',
+        outcome: 'NONE',
         personalizationScore: 70,
         createFollowUp: true
       });
@@ -264,10 +277,10 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold text-slate-900">
-            Link contact to {job.company}
+            Add outreach for {job.company}
           </Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">
-            Create an outreach record that connects this job to a person.
+            Log who you reached out to and capture the details for heat tracking.
           </Dialog.Description>
 
           <div className="mt-4">
@@ -404,7 +417,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
           <div className="mt-5 space-y-3">
             {selectedLabel ? (
               <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
-                Linking to: <span className="font-medium">{selectedLabel}</span>
+                Contact: <span className="font-medium">{selectedLabel}</span>
                 <button
                   type="button"
                   className="ml-3 text-xs font-semibold underline"
@@ -422,7 +435,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
           </div>
 
         <form className="mt-4 space-y-4" onSubmit={onSubmitOutreach}>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700">Channel</label>
                 <select
@@ -462,6 +475,22 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Outcome</label>
+                <select
+                  {...registerOutreach('outcome')}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {outreachOutcomeValues.map((value) => (
+                    <option key={value} value={value}>
+                      {outreachOutcomeLabels[value]}
+                    </option>
+                  ))}
+                </select>
+                {outreachErrors.outcome && (
+                  <p className="mt-1 text-xs text-red-600">{outreachErrors.outcome.message}</p>
+                )}
               </div>
             </div>
 
@@ -536,7 +565,7 @@ export const LinkContactDialog = ({ job, open, onOpenChange, onLinked }: LinkCon
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 disabled={createOutreach.isPending}
               >
-                {createOutreach.isPending ? 'Linking…' : 'Link contact'}
+                {createOutreach.isPending ? 'Saving…' : 'Add outreach'}
               </button>
             </div>
           </form>

@@ -571,7 +571,7 @@ Update outreach metadata (e.g., purpose/context, outcome, notes).
   - Linked job chips (company/role/stage) and danger zone actions (archive vs hard delete)
 - **Timeline Tab**:
   - Chronological activity list across outreach, follow-ups, referrals, and reviews
-  - Outreach entries display purpose and allow inline editing of the context enum
+  - Outreach entries display purpose/outcome and allow inline editing of both outcome and context enums
   - Icons by type (outreach/referral/review/followup)
   - Relative dates + empty state messaging
 
@@ -665,7 +665,9 @@ Update outreach metadata (e.g., purpose/context, outcome, notes).
 2. Clicks "Timeline" tab
 3. `useContactDetailQuery()` has fetched timeline array
 4. Timeline component maps over items:
-   - Outreach: shows channel, personalization, message type, outcome, and job context plus a badge for “Purpose” (editable inline via dropdown).
+- Outreach: shows channel, personalization, message type, outcome, and job context plus a badge for “Purpose” (editable inline via dropdown).
+  - Outcome dropdown updates immediately via `PATCH /outreach/:id`.
+  - “Delete outreach” calls `DELETE /outreach/:id`, removes open follow-ups, and refreshes linked job/contact details.
    - Follow-up: highlights the due/completed status, associated job, and any reminder note.
    - Referral: shows job company/role
    - Review: shows project, score
@@ -682,13 +684,14 @@ Update outreach metadata (e.g., purpose/context, outcome, notes).
 ---
 
 ### **Flow 5: Link Contact to Job**
-1. From ContactDrawer header, user clicks `Link to job`.
+1. From ContactDrawer header, user clicks `Add outreach`.
 2. `LinkJobDialog` opens with two paths:
    - **Select job** tab: debounce search hits `/jobs?query=` and lists company/role/stage.
    - **Create job** tab: minimal job form submits to `POST /jobs` before outreach.
-3. After job is chosen/created, outreach mini-form (channel, message type, personalization score tooltip, optional notes) is shown.
+3. After job is chosen/created, the outreach mini-form (channel, message type, outcome, personalization score tooltip, optional notes/follow-up) is shown.
 4. Submit logs outreach via `POST /jobs/:jobId/outreach` (passes `contactId` plus optional follow-up note).
-5. Success toast, dialog slides above the drawer (higher z-index), closes cleanly, and React Query invalidates contact detail + jobs caches so timelines, linked role chips, and job contact counts refresh instantly.
+5. Success toast, dialog slides above the drawer (higher z-index), closes cleanly, and React Query invalidates contact detail + jobs/heat caches so timelines, linked role chips, and job contact counts refresh instantly.
+6. If the outreach is deleted from the timeline, `DELETE /outreach/:id` unlinks the contact and cancels open follow-ups; caches are invalidated so both contact and job views stay in sync.
 
 ---
 

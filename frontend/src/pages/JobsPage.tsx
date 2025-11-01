@@ -1,14 +1,29 @@
-import { formatDistanceToNow } from 'date-fns';
+import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, KeyboardEvent } from 'react';
 import { useJobsQuery, useDeleteJobMutation } from '../api/hooks';
 import { HeatBadge } from '../components/HeatBadge';
 import { JobWizardModal } from '../components/JobWizardModal';
 import { JobHistoryModal } from '../components/JobHistoryModal';
-import { LinkContactDialog } from '../components/LinkContactDialog';
+import { AddOutreachDialog } from '../components/AddOutreachDialog';
 import { JobListTable } from '../components/JobListTable';
 import { UpdateJobStageDialog } from '../components/UpdateJobStageDialog';
 import { ContactDrawer } from '../components/ContactDrawer';
+
+type JobListItem = {
+  id: string;
+  company: string;
+  role: string;
+  stage: string;
+  heat: number;
+  updatedAt: string;
+  lastTouchAt: string;
+  nextFollowUpAt?: string | null;
+  sourceUrl?: string | null;
+  archived: boolean;
+  contactsCount: number;
+  contacts?: Array<{ id: string; name: string | null; role?: string | null }>;
+};
 
 const columns: Array<{ stage: string; title: string }> = [
   { stage: 'APPLIED', title: 'Applied' },
@@ -18,6 +33,19 @@ const columns: Array<{ stage: string; title: string }> = [
 ];
 
 const archivedStages = ['REJECTED', 'DORMANT'];
+
+const formatFollowUpCountdown = (dateString?: string | null) => {
+  if (!dateString) return '—';
+  const dueDate = new Date(dateString);
+  if (Number.isNaN(dueDate.getTime())) {
+    return '—';
+  }
+  const diff = Math.abs(differenceInCalendarDays(dueDate, new Date()));
+  if (diff === 0) {
+    return 'Today';
+  }
+  return `${diff} day${diff === 1 ? '' : 's'}`;
+};
 
 export const JobsPage = () => {
   const [showArchived, setShowArchived] = useState(false);
@@ -32,19 +60,7 @@ export const JobsPage = () => {
   } | null>(null);
   const [historyJobId, setHistoryJobId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'pipeline' | 'table'>('pipeline');
-  const [linkJob, setLinkJob] = useState<{
-    id: string;
-    company: string;
-    role: string;
-    stage: string;
-    heat: number;
-    lastTouchAt: string;
-    nextFollowUpAt?: string | null;
-    deadline?: string | null;
-    sourceUrl?: string | null;
-    contactsCount: number;
-    contacts?: Array<{ id: string; name: string | null; role?: string | null }>;
-  } | null>(null);
+  const [outreachJob, setOutreachJob] = useState<JobListItem | null>(null);
   const [stageJob, setStageJob] = useState<{
     id: string;
     company: string;
@@ -53,6 +69,7 @@ export const JobsPage = () => {
   } | null>(null);
   const [focusContactId, setFocusContactId] = useState<string | null>(null);
   const [contactDrawerOpen, setContactDrawerOpen] = useState(false);
+  const [actionsJob, setActionsJob] = useState<JobListItem | null>(null);
 
   const handleOpenContact = (contactId?: string | null) => {
     if (!contactId) {
@@ -81,12 +98,127 @@ export const JobsPage = () => {
     }
   };
 
-  const jobs = useMemo(
+  const archivedJobs = useMemo(
     () =>
-      (allJobs ?? []).filter((job) =>
-        showArchived ? archivedStages.includes(job.stage) : !archivedStages.includes(job.stage)
+      (allJobs ?? []).filter(
+        (job) => job.archived || archivedStages.includes(job.stage)
       ),
-    [allJobs, showArchived]
+    [allJobs]
+  );
+
+  const activeJobs = useMemo(
+    () =>
+      (allJobs ?? []).filter(
+        (job) => !(job.archived || archivedStages.includes(job.stage))
+      ),
+    [allJobs]
+  );
+
+  const openJobActions = (job: JobListItem) => {
+    setActionsJob(job);
+  };
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>, job: JobListItem) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openJobActions(job);
+    }
+  };
+
+  const renderJobCard = (job: JobListItem) => (
+    <article
+      key={job.id}
+      className="group relative rounded-xl border border-white bg-white p-3 shadow-sm cursor-pointer focus-within:ring-2 focus-within:ring-blue-400 focus:outline-none"
+      role="button"
+      tabIndex={0}
+      onClick={() => openJobActions(job)}
+      onKeyDown={(event) => handleCardKeyDown(event, job)}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <h4 className="text-sm font-semibold text-slate-900">{job.company}</h4>
+          <p className="text-xs text-slate-500">{job.role}</p>
+        </div>
+        <div
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          role="presentation"
+        >
+          <HeatBadge heat={job.heat} jobId={job.id} />
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        Stage {job.stage.toLowerCase()} • Last touch{' '}
+        {formatDistanceToNow(new Date(job.lastTouchAt), { addSuffix: true })}
+      </p>
+      <p className="text-xs text-amber-600">
+        {job.nextFollowUpAt
+          ? `Next follow-up in ${formatFollowUpCountdown(job.nextFollowUpAt)}`
+          : 'No follow-up scheduled'}
+      </p>
+      {job.contacts && job.contacts.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {job.contacts.map((contact) => (
+            <button
+              key={`${job.id}-${contact.id}`}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenContact(contact.id);
+              }}
+              className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
+            >
+              {contact.name ?? 'Unnamed contact'}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            handleEdit(job.id);
+          }}
+          className="rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-100"
+          title="Edit job"
+        >
+          Edit
+        </button>
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            setHistoryJobId(job.id);
+          }}
+          className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-200"
+          title="View history"
+        >
+          History
+        </button>
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            setOutreachJob({
+              ...job,
+              sourceUrl: job.sourceUrl ?? undefined
+            });
+          }}
+          className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-600 hover:bg-emerald-100"
+          title="Add outreach"
+        >
+          Outreach
+        </button>
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            handleDelete(job);
+          }}
+          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100"
+          title="Delete job"
+        >
+          Del
+        </button>
+      </div>
+    </article>
   );
 
   return (
@@ -140,105 +272,57 @@ export const JobsPage = () => {
         />
       )}
       {viewMode === 'pipeline' ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {columns.map((column) => (
-            <div key={column.stage} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-700">{column.title}</h3>
-                <span className="text-xs text-slate-400">
-                  {jobs.filter((job) => job.stage === column.stage).length}
-                </span>
+        showArchived ? (
+          <div className="grid gap-4 md:grid-cols-1 xl:grid-cols-2">
+            {['REJECTED', 'DORMANT'].map((stage) => {
+              const stageJobs = archivedJobs.filter((job) => job.stage === stage);
+              if (stageJobs.length === 0) {
+                return null;
+              }
+              return (
+                <div key={stage} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700">{stage === 'REJECTED' ? 'Rejected' : 'Dormant'}</h3>
+                    <span className="text-xs text-slate-400">{stageJobs.length}</span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {stageJobs.map((job) => renderJobCard(job))}
+                  </div>
+                </div>
+              );
+            })}
+            {archivedJobs.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-400">
+                No archived jobs yet.
               </div>
-              <div className="mt-3 space-y-3">
-                {jobs
-                  .filter((job) => job.stage === column.stage)
-                  .map((job) => (
-                    <article key={job.id} className="group relative rounded-xl border border-white bg-white p-3 shadow-sm">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="text-sm font-semibold text-slate-900">{job.company}</h4>
-                          <p className="text-xs text-slate-500">{job.role}</p>
-                        </div>
-                        <HeatBadge heat={job.heat} />
-                      </div>
-                      <p className="mt-2 text-xs text-slate-500">
-                        Updated {formatDistanceToNow(new Date(job.updatedAt), { addSuffix: true })}
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {columns.map((column) => {
+              const stageJobs = activeJobs.filter((job) => job.stage === column.stage);
+              return (
+                <div key={column.stage} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700">{column.title}</h3>
+                    <span className="text-xs text-slate-400">{stageJobs.length}</span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {stageJobs.map((job) => renderJobCard(job))}
+                    {stageJobs.length === 0 && (
+                      <p className="rounded-lg border border-dashed border-slate-200 bg-white/60 p-4 text-xs text-slate-400">
+                        No items yet.
                       </p>
-                      <p className="text-xs text-slate-400">
-                        Last touch {formatDistanceToNow(new Date(job.lastTouchAt), { addSuffix: true })}
-                      </p>
-                      {job.contacts && job.contacts.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {job.contacts.map((contact) => (
-                            <button
-                              key={`${job.id}-${contact.id}`}
-                              type="button"
-                              onClick={() => handleOpenContact(contact.id)}
-                              className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
-                            >
-                              {contact.name ?? 'Unnamed contact'}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <button
-                          onClick={() => handleEdit(job.id)}
-                          className="rounded bg-blue-50 p-1 text-xs text-blue-600 hover:bg-blue-100"
-                          title="Edit job"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => setHistoryJobId(job.id)}
-                          className="rounded bg-slate-100 p-1 text-xs text-slate-600 hover:bg-slate-200"
-                          title="View history"
-                        >
-                          History
-                        </button>
-                        <button
-                          onClick={() =>
-                            setLinkJob({
-                              id: job.id,
-                              company: job.company,
-                              role: job.role,
-                              stage: job.stage,
-                              heat: job.heat,
-                              lastTouchAt: job.lastTouchAt,
-                              nextFollowUpAt: job.nextFollowUpAt,
-                              deadline: job.deadline,
-                              sourceUrl: job.sourceUrl ?? undefined,
-                              contactsCount: job.contactsCount ?? 0,
-                              contacts: job.contacts ?? []
-                            })
-                          }
-                          className="rounded bg-emerald-50 p-1 text-xs text-emerald-600 hover:bg-emerald-100"
-                          title="Link contact"
-                        >
-                          Link
-                        </button>
-                        <button
-                          onClick={() => handleDelete(job)}
-                          className="rounded bg-red-50 p-1 text-xs text-red-600 hover:bg-red-100"
-                          title="Delete job"
-                        >
-                          Del
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                {jobs.filter((job) => job.stage === column.stage).length === 0 && (
-                  <p className="rounded-lg border border-dashed border-slate-200 bg-white/60 p-4 text-xs text-slate-400">
-                    No items yet.
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : (
         <JobListTable
-          jobs={jobs.map((job) => ({
+          jobs={(showArchived ? archivedJobs : activeJobs).map((job) => ({
             id: job.id,
             company: job.company,
             role: job.role,
@@ -246,7 +330,6 @@ export const JobsPage = () => {
             heat: job.heat,
             lastTouchAt: job.lastTouchAt,
             nextFollowUpAt: job.nextFollowUpAt,
-            deadline: job.deadline,
             sourceUrl: job.sourceUrl ?? null,
             contactsCount: job.contactsCount ?? 0,
             contacts: job.contacts ?? []
@@ -254,8 +337,8 @@ export const JobsPage = () => {
           onEdit={handleEdit}
           onHistory={setHistoryJobId}
           onDelete={handleDelete}
-          onLinkContact={(job) => {
-            setLinkJob({
+          onAddOutreach={(job) => {
+            setOutreachJob({
               id: job.id,
               company: job.company,
               role: job.role,
@@ -263,7 +346,6 @@ export const JobsPage = () => {
               heat: job.heat,
               lastTouchAt: job.lastTouchAt,
               nextFollowUpAt: job.nextFollowUpAt,
-              deadline: job.deadline ?? undefined,
               sourceUrl: job.sourceUrl ?? undefined,
               contactsCount: job.contactsCount,
               contacts: job.contacts
@@ -292,13 +374,13 @@ export const JobsPage = () => {
         onOpenContact={handleOpenContact}
       />
 
-      {linkJob && (
-        <LinkContactDialog
-          job={linkJob}
-          open={linkJob !== null}
+      {outreachJob && (
+        <AddOutreachDialog
+          job={outreachJob}
+          open={outreachJob !== null}
           onOpenChange={(open) => {
             if (!open) {
-              setLinkJob(null);
+              setOutreachJob(null);
             }
           }}
           onLinked={(result) => {
@@ -318,6 +400,97 @@ export const JobsPage = () => {
           }}
         />
       )}
+
+      <Dialog.Root
+        open={actionsJob !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionsJob(null);
+          }
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
+            <Dialog.Title className="text-lg font-semibold text-slate-900">Job actions</Dialog.Title>
+            {actionsJob && (
+              <>
+                <Dialog.Description className="mt-1 text-sm text-slate-500">
+                  {actionsJob.company} — {actionsJob.role}
+                </Dialog.Description>
+                <div className="mt-4 space-y-2 text-xs text-slate-600">
+                  <div>
+                    <span className="font-semibold text-slate-700">Stage:</span>{' '}
+                    {actionsJob.stage.toLowerCase()}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">Last touch:</span>{' '}
+                    {formatDistanceToNow(new Date(actionsJob.lastTouchAt), { addSuffix: true })}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">Next follow-up:</span>{' '}
+                    {actionsJob.nextFollowUpAt
+                      ? formatFollowUpCountdown(actionsJob.nextFollowUpAt)
+                      : 'None scheduled'}
+                  </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-100"
+                    onClick={() => {
+                      handleEdit(actionsJob.id);
+                      setActionsJob(null);
+                    }}
+                  >
+                    Edit job details
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                    onClick={() => {
+                      setHistoryJobId(actionsJob.id);
+                      setActionsJob(null);
+                    }}
+                  >
+                    View history
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-100"
+                    onClick={() => {
+                      setOutreachJob({
+                        ...actionsJob,
+                        sourceUrl: actionsJob.sourceUrl ?? undefined
+                      });
+                      setActionsJob(null);
+                    }}
+                  >
+                    Add outreach
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                    onClick={() => {
+                      handleDelete(actionsJob);
+                      setActionsJob(null);
+                    }}
+                  >
+                    Delete / archive
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                  onClick={() => setActionsJob(null)}
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {stageJob && (
         <UpdateJobStageDialog

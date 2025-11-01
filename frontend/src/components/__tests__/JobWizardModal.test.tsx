@@ -56,7 +56,6 @@ describe('JobWizardModal', () => {
 
     fireEvent.change(screen.getByLabelText(/company/i), { target: { value: 'Acme Corp' } });
     fireEvent.change(screen.getByLabelText(/role/i), { target: { value: 'Senior Engineer' } });
-    fireEvent.change(screen.getByLabelText(/deadline/i), { target: { value: '2025-01-10' } });
     fireEvent.change(screen.getByLabelText(/tailoring score/i), { target: { value: '82' } });
     fireEvent.change(screen.getByLabelText(/^contact$/i), { target: { value: 'Jane Recruiter' } });
     fireEvent.change(await screen.findByLabelText(/email \(optional\)/i), { target: { value: 'jane@example.com' } });
@@ -68,7 +67,6 @@ describe('JobWizardModal', () => {
     expect(payload).toMatchObject({
       company: 'Acme Corp',
       role: 'Senior Engineer',
-      deadline: new Date('2025-01-10').toISOString(),
       initialApplication: expect.objectContaining({ tailoringScore: 82 }),
       initialOutreach: expect.objectContaining({
         contactCreate: expect.objectContaining({
