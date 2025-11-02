@@ -58,7 +58,7 @@ describe('JobWizardModal', () => {
     fireEvent.change(screen.getByLabelText(/role/i), { target: { value: 'Senior Engineer' } });
     fireEvent.change(screen.getByLabelText(/tailoring score/i), { target: { value: '82' } });
     fireEvent.change(screen.getByLabelText(/^contact$/i), { target: { value: 'Jane Recruiter' } });
-    fireEvent.change(await screen.findByLabelText(/email \(optional\)/i), { target: { value: 'jane@example.com' } });
+    fireEvent.change(await screen.findByLabelText(/contact email/i), { target: { value: 'jane@example.com' } });
 
     fireEvent.click(screen.getByRole('button', { name: /create job/i }));
 
@@ -107,7 +107,7 @@ describe('JobWizardModal', () => {
     fireEvent.change(screen.getByLabelText(/company/i), { target: { value: 'Acme' } });
     fireEvent.change(screen.getByLabelText(/role/i), { target: { value: 'Designer' } });
     fireEvent.change(screen.getByLabelText(/^contact$/i), { target: { value: 'Sam Recruiter' } });
-    await screen.findByLabelText(/email \(optional\)/i);
+    await screen.findByLabelText(/contact email/i);
 
     fireEvent.click(screen.getByRole('button', { name: /create job/i }));
 

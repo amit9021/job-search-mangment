@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import { JobsPage } from '../JobsPage';
 import { ToastProvider } from '../../components/ToastProvider';
@@ -14,7 +14,8 @@ vi.mock('../../api/hooks', async () => {
     useUpdateJobMutation: vi.fn(),
     useJobDetailQuery: vi.fn(),
     useJobHistoryQuery: vi.fn(),
-    useContactDetailQuery: vi.fn()
+    useContactDetailQuery: vi.fn(),
+    useJobHeatExplainQuery: vi.fn()
   };
 });
 
@@ -27,8 +28,10 @@ const useUpdateJobMutation = vi.mocked(hooksModule.useUpdateJobMutation);
 const useJobDetailQuery = vi.mocked(hooksModule.useJobDetailQuery);
 const useJobHistoryQuery = vi.mocked(hooksModule.useJobHistoryQuery);
 const useContactDetailQuery = vi.mocked(hooksModule.useContactDetailQuery);
+const useJobHeatExplainQuery = vi.mocked(hooksModule.useJobHeatExplainQuery);
 
 let deleteMutationSpy: ReturnType<typeof vi.fn>;
+let heatRefetchSpy: ReturnType<typeof vi.fn>;
 
 const renderPage = () => {
   const queryClient = new QueryClient();
@@ -46,6 +49,7 @@ describe('JobsPage', () => {
     vi.resetAllMocks();
 
     deleteMutationSpy = vi.fn().mockResolvedValue({});
+    heatRefetchSpy = vi.fn();
 
     useJobsQuery.mockReturnValue({
       data: [
@@ -72,12 +76,28 @@ describe('JobsPage', () => {
     useJobDetailQuery.mockReturnValue({ data: null });
     useJobHistoryQuery.mockReturnValue({ data: { stage: 'APPLIED', statusHistory: [], applications: [], outreaches: [], followups: [] }, isLoading: false });
     useContactDetailQuery.mockReturnValue({ data: null, isLoading: false });
+    useJobHeatExplainQuery.mockReturnValue({
+      data: {
+        jobId: 'job-1',
+        stage: 'APPLIED',
+        score: 55,
+        heat: 1,
+        breakdown: [],
+        decayFactor: 0,
+        daysSinceLastTouch: 0,
+        lastTouchAt: new Date().toISOString(),
+        stageBase: 40
+      },
+      isFetching: false,
+      isError: false,
+      refetch: heatRefetchSpy
+    });
   });
 
   it('opens delete dialog and performs soft delete', async () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Del' }));
+    fireEvent.click(screen.getByTitle('Delete job'));
 
     expect(await screen.findByText(/delete job/i)).toBeInTheDocument();
 
@@ -89,7 +109,7 @@ describe('JobsPage', () => {
   it('performs hard delete when selected', async () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Del' }));
+    fireEvent.click(screen.getByTitle('Delete job'));
     fireEvent.click(screen.getByRole('button', { name: /delete permanently/i }));
     await waitFor(() => expect(deleteMutationSpy).toHaveBeenCalled());
     expect(deleteMutationSpy).toHaveBeenLastCalledWith({ id: 'job-1', hard: true });
@@ -144,5 +164,88 @@ describe('JobsPage', () => {
     fireEvent.click(chip);
 
     expect(await screen.findByRole('heading', { name: 'Jane Doe' })).toBeInTheDocument();
+  });
+
+  it('renders KPI header metrics based on job data', () => {
+    useJobsQuery.mockReturnValue({
+      data: [
+        {
+          id: 'job-1',
+          company: 'Acme',
+          role: 'Engineer',
+          stage: 'APPLIED',
+          heat: 3,
+          updatedAt: new Date().toISOString(),
+          lastTouchAt: new Date().toISOString(),
+          archived: false,
+          contactsCount: 2,
+          contacts: [],
+          nextFollowUpAt: new Date(Date.now() + 86400000).toISOString(),
+          sourceUrl: null
+        },
+        {
+          id: 'job-2',
+          company: 'Dormant Co',
+          role: 'Analyst',
+          stage: 'REJECTED',
+          heat: 0,
+          updatedAt: new Date().toISOString(),
+          lastTouchAt: new Date().toISOString(),
+          archived: true,
+          contactsCount: 0,
+          contacts: [],
+          nextFollowUpAt: null,
+          sourceUrl: null
+        }
+      ],
+      isLoading: false
+    });
+
+    renderPage();
+
+    const activeTile = screen.getByText('Active jobs').closest('article');
+    expect(activeTile).toBeTruthy();
+    if (activeTile) {
+      expect(within(activeTile).getByText('1')).toBeInTheDocument();
+    }
+
+    const hotTile = screen.getByText('Hot jobs').closest('article');
+    expect(hotTile).toBeTruthy();
+    if (hotTile) {
+      expect(within(hotTile).getByText('1')).toBeInTheDocument();
+    }
+
+    const avgTile = screen.getByText('Average heat').closest('article');
+    expect(avgTile).toBeTruthy();
+    if (avgTile) {
+      expect(within(avgTile).getByText('3.0')).toBeInTheDocument();
+    }
+  });
+
+  it('shows next follow-up bubble on pipeline card when scheduled', () => {
+    const nextFollowUpAt = new Date(Date.now() + 86400000).toISOString();
+    useJobsQuery.mockReturnValue({
+      data: [
+        {
+          id: 'job-3',
+          company: 'Bright Future',
+          role: 'Growth Lead',
+          stage: 'APPLIED',
+          heat: 2,
+          updatedAt: new Date().toISOString(),
+          lastTouchAt: new Date().toISOString(),
+          archived: false,
+          contactsCount: 0,
+          contacts: [],
+          nextFollowUpAt,
+          sourceUrl: null
+        }
+      ],
+      isLoading: false
+    });
+
+    renderPage();
+
+    expect(screen.getByText(/Next in/i)).toBeInTheDocument();
   });
 });

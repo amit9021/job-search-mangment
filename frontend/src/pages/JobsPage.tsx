@@ -9,6 +9,7 @@ import { AddOutreachDialog } from '../components/AddOutreachDialog';
 import { JobListTable } from '../components/JobListTable';
 import { UpdateJobStageDialog } from '../components/UpdateJobStageDialog';
 import { ContactDrawer } from '../components/ContactDrawer';
+import { KpiHeader } from '../components/KpiHeader';
 
 type JobListItem = {
   id: string;
@@ -33,6 +34,57 @@ const columns: Array<{ stage: string; title: string }> = [
 ];
 
 const archivedStages = ['REJECTED', 'DORMANT'];
+const stageOrder = columns.map((column) => column.stage);
+
+const heatPalette: Record<
+  number,
+  {
+    base: string;
+    border: string;
+    progress: string;
+    bubble: string;
+    bubbleText: string;
+    icon: string;
+    label: string;
+  }
+> = {
+  0: {
+    base: 'bg-slate-50',
+    border: 'border-slate-100',
+    progress: 'bg-slate-300',
+    bubble: 'bg-slate-200',
+    bubbleText: 'text-slate-700',
+    icon: '🧊',
+    label: 'Cold'
+  },
+  1: {
+    base: 'bg-amber-50',
+    border: 'border-amber-200',
+    progress: 'bg-amber-400',
+    bubble: 'bg-amber-100',
+    bubbleText: 'text-amber-700',
+    icon: '🌤',
+    label: 'Warming'
+  },
+  2: {
+    base: 'bg-orange-50',
+    border: 'border-orange-200',
+    progress: 'bg-orange-400',
+    bubble: 'bg-orange-100',
+    bubbleText: 'text-orange-700',
+    icon: '🔥',
+    label: 'Hot'
+  },
+  3: {
+    base: 'bg-rose-50',
+    border: 'border-rose-200',
+    progress: 'bg-rose-500',
+    bubble: 'bg-rose-100',
+    bubbleText: 'text-rose-700',
+    icon: '🚀',
+    label: 'Blazing'
+  }
+};
 
 const formatFollowUpCountdown = (dateString?: string | null) => {
   if (!dateString) return '—';
@@ -125,104 +177,175 @@ export const JobsPage = () => {
     }
   };
 
+  const buildActionSummary = (job: JobListItem) => {
+    const palette = heatPalette[job.heat] ?? heatPalette[0];
+    const pieces: string[] = [`${palette.icon} ${palette.label}`];
+
+    const contactsTotal =
+      typeof job.contactsCount === 'number'
+        ? job.contactsCount
+        : job.contacts
+          ? job.contacts.length
+          : 0;
+    pieces.push(`${contactsTotal} contact${contactsTotal === 1 ? '' : 's'}`);
+
+    const lastTouchDate = new Date(job.lastTouchAt);
+    if (!Number.isNaN(lastTouchDate.getTime())) {
+      pieces.push(`Last touch ${formatDistanceToNow(lastTouchDate, { addSuffix: true })}`);
+    }
+
+    if (job.nextFollowUpAt) {
+      const countdown = formatFollowUpCountdown(job.nextFollowUpAt);
+      if (countdown !== '—') {
+        pieces.push(`Next follow-up in ${countdown}`);
+      }
+    }
+
+    return pieces.join(' · ');
+  };
+
   const renderJobCard = (job: JobListItem) => (
-    <article
-      key={job.id}
-      className="group relative rounded-xl border border-white bg-white p-3 shadow-sm cursor-pointer focus-within:ring-2 focus-within:ring-blue-400 focus:outline-none"
-      role="button"
-      tabIndex={0}
-      onClick={() => openJobActions(job)}
-      onKeyDown={(event) => handleCardKeyDown(event, job)}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <h4 className="text-sm font-semibold text-slate-900">{job.company}</h4>
-          <p className="text-xs text-slate-500">{job.role}</p>
-        </div>
-        <div
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          role="presentation"
+    (() => {
+      const palette = heatPalette[job.heat] ?? heatPalette[0];
+      const stageIndex = stageOrder.indexOf(job.stage);
+      const progressPercent =
+        stageIndex < 0 ? 0 : Math.round(((stageIndex + 1) / stageOrder.length) * 100);
+      const lastTouchDate = new Date(job.lastTouchAt);
+      const lastTouchLabel = Number.isNaN(lastTouchDate.getTime())
+        ? 'Unknown'
+        : formatDistanceToNow(lastTouchDate, { addSuffix: true });
+      const followUpLabel = job.nextFollowUpAt
+        ? formatFollowUpCountdown(job.nextFollowUpAt)
+        : null;
+
+      return (
+        <article
+          key={job.id}
+          className={`group relative flex cursor-pointer flex-col gap-3 rounded-2xl border ${palette.border} ${palette.base} p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-blue-400 focus:outline-none`}
+          role="button"
+          tabIndex={0}
+          onClick={() => openJobActions(job)}
+          onKeyDown={(event) => handleCardKeyDown(event, job)}
+          style={{ backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.75))' }}
         >
-          <HeatBadge heat={job.heat} jobId={job.id} />
-        </div>
-      </div>
-      <p className="mt-2 text-xs text-slate-500">
-        Stage {job.stage.toLowerCase()} • Last touch{' '}
-        {formatDistanceToNow(new Date(job.lastTouchAt), { addSuffix: true })}
-      </p>
-      <p className="text-xs text-amber-600">
-        {job.nextFollowUpAt
-          ? `Next follow-up in ${formatFollowUpCountdown(job.nextFollowUpAt)}`
-          : 'No follow-up scheduled'}
-      </p>
-      {job.contacts && job.contacts.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {job.contacts.map((contact) => (
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h4 className="text-base font-semibold text-slate-900">{job.company}</h4>
+              <p className="text-sm text-slate-500">{job.role}</p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              {followUpLabel && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${palette.bubble} ${palette.bubbleText}`}
+                >
+                  ⏱ Next in {followUpLabel}
+                </span>
+              )}
+              <div
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                role="presentation"
+              >
+                <HeatBadge heat={job.heat} jobId={job.id} />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-xs text-slate-500">
+            <p className="font-semibold uppercase tracking-wide text-slate-400">Pipeline</p>
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-400">
+              <span>{job.stage.toLowerCase()}</span>
+              <span>Last touch {lastTouchLabel}</span>
+            </div>
+            <div className="relative mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ease-out ${palette.progress}`}
+                style={{ width: `${progressPercent}%`, minWidth: progressPercent > 0 ? '16%' : '0%' }}
+              />
+            </div>
+          </div>
+
+          {job.contacts && job.contacts.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-2">
+              {job.contacts.map((contact) => (
+                <button
+                  key={`${job.id}-${contact.id}`}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleOpenContact(contact.id);
+                  }}
+                  className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 transition hover:bg-blue-100"
+                >
+                  {contact.name ?? 'Unnamed contact'}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-500">
             <button
-              key={`${job.id}-${contact.id}`}
-              type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                handleOpenContact(contact.id);
+                handleEdit(job.id);
               }}
-              className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 transition hover:border-blue-300 hover:text-blue-600"
+              title="Edit job"
             >
-              {contact.name ?? 'Unnamed contact'}
+              ✏️ Edit
             </button>
-          ))}
-        </div>
-      )}
-      <div className="mt-4 flex flex-wrap gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            handleEdit(job.id);
-          }}
-          className="rounded-md border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-100"
-          title="Edit job"
-        >
-          Edit
-        </button>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            setHistoryJobId(job.id);
-          }}
-          className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-200"
-          title="View history"
-        >
-          History
-        </button>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            setOutreachJob({
-              ...job,
-              sourceUrl: job.sourceUrl ?? undefined
-            });
-          }}
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-600 hover:bg-emerald-100"
-          title="Add outreach"
-        >
-          Outreach
-        </button>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            handleDelete(job);
-          }}
-          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100"
-          title="Delete job"
-        >
-          Del
-        </button>
-      </div>
-    </article>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                setHistoryJobId(job.id);
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 transition hover:border-violet-300 hover:text-violet-600"
+              title="View history"
+            >
+              👁 History
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                setOutreachJob({
+                  ...job,
+                  sourceUrl: job.sourceUrl ?? undefined
+                });
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 transition hover:border-emerald-300 hover:text-emerald-600"
+              title="Add outreach"
+            >
+              ✉️ Outreach
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDelete(job);
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 transition hover:border-red-300 hover:text-red-600"
+              title="Delete job"
+            >
+              🗑 Remove
+            </button>
+          </div>
+        </article>
+      );
+    })()
   );
 
+  const jobs = allJobs ?? [];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <KpiHeader
+        jobs={jobs.map((job) => ({
+          id: job.id,
+          stage: job.stage,
+          heat: job.heat,
+          archived: job.archived,
+          nextFollowUpAt: job.nextFollowUpAt ?? null
+        }))}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Pipeline</h2>
@@ -418,46 +541,23 @@ export const JobsPage = () => {
                 <Dialog.Description className="mt-1 text-sm text-slate-500">
                   {actionsJob.company} — {actionsJob.role}
                 </Dialog.Description>
-                <div className="mt-4 space-y-2 text-xs text-slate-600">
-                  <div>
-                    <span className="font-semibold text-slate-700">Stage:</span>{' '}
-                    {actionsJob.stage.toLowerCase()}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-700">Last touch:</span>{' '}
-                    {formatDistanceToNow(new Date(actionsJob.lastTouchAt), { addSuffix: true })}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-700">Next follow-up:</span>{' '}
-                    {actionsJob.nextFollowUpAt
-                      ? formatFollowUpCountdown(actionsJob.nextFollowUpAt)
-                      : 'None scheduled'}
-                  </div>
-                </div>
+                <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                  {buildActionSummary(actionsJob)}
+                </p>
                 <div className="mt-6 space-y-2">
                   <button
                     type="button"
-                    className="w-full rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-100"
-                    onClick={() => {
-                      handleEdit(actionsJob.id);
-                      setActionsJob(null);
-                    }}
-                  >
-                    Edit job details
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-600"
                     onClick={() => {
                       setHistoryJobId(actionsJob.id);
                       setActionsJob(null);
                     }}
                   >
-                    View history
+                    👁 View history
                   </button>
                   <button
                     type="button"
-                    className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-100"
+                    className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-100"
                     onClick={() => {
                       setOutreachJob({
                         ...actionsJob,
@@ -466,22 +566,32 @@ export const JobsPage = () => {
                       setActionsJob(null);
                     }}
                   >
-                    Add outreach
+                    ✉️ Add outreach
                   </button>
                   <button
                     type="button"
-                    className="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
+                    className="w-full rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100"
+                    onClick={() => {
+                      handleEdit(actionsJob.id);
+                      setActionsJob(null);
+                    }}
+                  >
+                    ✏️ Edit details
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-100"
                     onClick={() => {
                       handleDelete(actionsJob);
                       setActionsJob(null);
                     }}
                   >
-                    Delete / archive
+                    🗑 Delete / archive
                   </button>
                 </div>
                 <button
                   type="button"
-                  className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                  className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
                   onClick={() => setActionsJob(null)}
                 >
                   Close

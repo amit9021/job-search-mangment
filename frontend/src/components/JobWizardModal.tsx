@@ -338,6 +338,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                   <input
                     id={`${formId}-company`}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    placeholder="Acme Corporation"
                     {...register('company')}
                   />
                   {errors.company && <p className="text-xs text-red-500">{errors.company.message}</p>}
@@ -349,6 +350,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                   <input
                     id={`${formId}-role`}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
+                    placeholder="Senior Backend Engineer"
                     {...register('role')}
                   />
                   {errors.role && <p className="text-xs text-red-500">{errors.role.message}</p>}
@@ -380,13 +382,27 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                         {...register('tailoringScore')}
                       />
                     </div>
-                    <div className="rounded-lg border border-slate-200 p-4">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <input type="checkbox" {...register('outreachEnabled')} />
-                        Log outreach now & queue follow-up
-                      </label>
+                    <div className="rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between gap-3 px-4 py-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">Log outreach now</p>
+                          <p className="text-xs text-slate-500">Capture the touchpoint and auto-queue a follow-up.</p>
+                        </div>
+                        <label
+                          htmlFor={`${formId}-outreachEnabled`}
+                          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400"
+                        >
+                          <span>Optional</span>
+                          <input
+                            id={`${formId}-outreachEnabled`}
+                            type="checkbox"
+                            className="h-4 w-4 accent-emerald-500"
+                            {...register('outreachEnabled')}
+                          />
+                        </label>
+                      </div>
                       {outreachEnabled && (
-                        <div className="mt-3 space-y-3 text-sm">
+                        <div className="border-t border-slate-200 px-4 py-4 space-y-4 text-sm">
                           <div className="grid gap-3 md:grid-cols-2">
                             <div>
                               <label className="text-xs font-semibold uppercase text-slate-500" htmlFor={`${formId}-contactLookup`}>
@@ -569,6 +585,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                               <textarea
                                 id={`${formId}-note`}
                                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20"
+                                placeholder="Paste what you sent or any next steps…"
                                 rows={3}
                                 {...register('note')}
                               />

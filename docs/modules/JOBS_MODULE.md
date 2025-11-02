@@ -302,6 +302,13 @@ frontend/src/
     └── hooks.ts                # React Query hooks
 ```
 
+### **UI/UX Enhancements (2025-11)**
+- **KPI header tiles**: `KpiHeader.tsx` now surfaces Active jobs, Hot jobs, Follow-ups due today, and Average heat, refreshing automatically with React Query invalidations.
+- **Pipeline cards**: cards adopt heat-tinted backgrounds, progressive stage bar, “Next follow-up” bubble, and inline quick actions (Edit, History, Outreach, Remove) for faster triage.
+- **HeatBadge tooltip**: badge colors (🧊/🌤/🔥/🚀) map to heat buckets and open a Radix popover that fetches `GET /jobs/:id/heat-explain` on demand, showing a loading state and detailed breakdown rows.
+- **Timeline modal**: `JobHistoryModal.tsx` groups entries per day with icons (✉️ outreach, ⏰ follow-up, 🛤️ stage, 📄 application); outreach rows expose inline outcome edits that invalidate job + heat queries.
+- **Job actions modal**: re-ordered buttons (👁 History → ✉️ Outreach → ✏️ Edit → 🗑 Delete/Archive) with a compact summary line (heat, contacts, last touch, next follow-up) for quick context.
+
 ### **State Management**
 
 #### **React Query Hooks**

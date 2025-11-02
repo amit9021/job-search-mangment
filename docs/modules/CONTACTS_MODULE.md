@@ -574,6 +574,7 @@ Update outreach metadata (e.g., purpose/context, outcome, notes).
   - Outreach entries display purpose/outcome and allow inline editing of both outcome and context enums
   - Icons by type (outreach/referral/review/followup)
   - Relative dates + empty state messaging
+  - Shares icon/color vocabulary with the Jobs timeline (Nov 2025 refresh) while keeping the existing outreach logging flow intact
 
 ---
 
