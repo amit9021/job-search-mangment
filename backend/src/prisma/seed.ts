@@ -146,6 +146,56 @@ async function main() {
       impactScore: 8
     }
   });
+
+  await prisma.growthReview.create({
+    data: {
+      reviewerId: contactStrong.id,
+      projectName: project.name,
+      summary: 'Excellent user journey but consider adding load tests for peak usage.',
+      score: 4,
+      takeaways: 'Pilot load testing with k6 and prepare a short retro.'
+    }
+  });
+
+  await prisma.growthEvent.create({
+    data: {
+      name: 'Product Ops Circle',
+      date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      location: 'Remote',
+      attended: false,
+      notes: 'Prep a 2 minute lightning talk about the AI portfolio platform.'
+    }
+  });
+
+  await prisma.growthBoostTask.createMany({
+    data: [
+      {
+        title: 'Publish project walk-through thread',
+        description: 'Write a 4 tweet breakdown of the AI portfolio platform with before/after metrics.',
+        category: 'visibility-gap',
+        impactLevel: 5,
+        tags: ['linkedin', 'storytelling'],
+        status: 'pending'
+      },
+      {
+        title: 'Reach out to 2 alumni for feedback',
+        description: 'Share current job search focus and ask for 15 min async feedback on positioning.',
+        category: 'network-gap',
+        impactLevel: 3,
+        tags: ['networking']
+      }
+    ]
+  });
+
+  await prisma.projectHighlight.create({
+    data: {
+      projectName: 'AI Portfolio Platform',
+      platformUrl: 'https://linkedin.com/posts/example',
+      spotlight: true,
+      plannedPost: 'Mini case study about reducing recruiter triage time by 30%.',
+      published: false
+    }
+  });
 }
 
 main()

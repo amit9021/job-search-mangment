@@ -17,6 +17,7 @@ import { ReferralsModule } from './modules/referrals/referrals.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './common/health.controller';
+import { GrowModule } from './modules/grow/grow.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { HealthController } from './common/health.controller';
     ReviewsModule,
     EventsModule,
     BoostsModule,
+    GrowModule,
     NotificationsModule
   ],
   controllers: [HealthController]
