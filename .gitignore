@@ -24,6 +24,7 @@ prisma/migrations/*/migration_lock.toml
 .DS_Store
 
 # IDE
-.vscode/
-.claude/
+.vscode
+.claude
+docs
 
