@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ContactStrength } from '@prisma/client';
+import { differenceInCalendarDays } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 
@@ -17,8 +18,19 @@ export class ContactsService {
     includeArchived?: boolean;
     page?: number;
     pageSize?: number;
+    tags?: string[];
+    lastTouch?: '7d' | '30d' | 'stale' | 'never';
   }) {
-    const { query, strength, companyId, includeArchived = false, page = 1, pageSize = 50 } = params || {};
+    const {
+      query,
+      strength,
+      companyId,
+      includeArchived = false,
+      page = 1,
+      pageSize = 50,
+      tags,
+      lastTouch
+    } = params || {};
 
     const where: any = {
       ...(includeArchived ? {} : { archived: false })
@@ -30,6 +42,10 @@ export class ContactsService {
 
     if (companyId) {
       where.companyId = companyId;
+    }
+
+    if (tags && tags.length > 0) {
+      where.tags = { hasEvery: tags };
     }
 
     if (query) {
@@ -136,20 +152,113 @@ export class ContactsService {
       upsertJob(link.contactId, link.job);
     });
 
-    return contacts.map((contact) => {
+    const computed = contacts.map((contact) => {
       const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort((a, b) =>
         `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
       );
       const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
       const nextFollowUp = contact.followups[0];
+      const nextFollowUpAt = nextFollowUp?.dueAt ?? null;
+      const lastTouchAt = lastTouchFromOutreach ?? contact.createdAt;
+      const engagement = this.computeEngagement({
+        lastTouch: lastTouchFromOutreach,
+        createdAt: contact.createdAt,
+        nextFollowUp: nextFollowUpAt,
+        strength: contact.strength
+      });
 
       return {
         ...contact,
         linkedJobs,
-        lastTouchAt: lastTouchFromOutreach ?? contact.createdAt,
-        nextFollowUpAt: nextFollowUp?.dueAt ?? null
+        lastTouchAt,
+        nextFollowUpAt,
+        hadOutreach: contact.outreaches.length > 0,
+        engagement
       };
     });
+
+    const filtered = lastTouch
+      ? computed.filter((entry) =>
+          this.matchesLastTouch(lastTouch, entry.lastTouchAt, entry.hadOutreach)
+        )
+      : computed;
+
+    return filtered.map((entry) => {
+      const { hadOutreach, ...rest } = entry;
+      return rest;
+    });
+  }
+
+  private computeEngagement(params: {
+    lastTouch: Date | null;
+    createdAt: Date;
+    nextFollowUp: Date | null;
+    strength: ContactStrength;
+  }) {
+    const now = new Date();
+    const reference = params.lastTouch ?? params.createdAt;
+    let score = 0;
+
+    if (reference) {
+      const daysAgo = Math.max(0, differenceInCalendarDays(now, reference));
+      if (daysAgo <= 2) {
+        score = 90;
+      } else if (daysAgo <= 7) {
+        score = 75;
+      } else if (daysAgo <= 21) {
+        score = 55;
+      } else {
+        score = 20;
+      }
+    }
+
+    if (params.nextFollowUp) {
+      const daysUntil = differenceInCalendarDays(params.nextFollowUp, now);
+      if (daysUntil <= 0) {
+        score = Math.max(score, 85);
+      } else if (daysUntil <= 3) {
+        score = Math.max(score, 65);
+      }
+    }
+
+    if (params.strength === 'STRONG') {
+      score = Math.max(score, 65);
+    } else if (params.strength === 'MEDIUM') {
+      score = Math.max(score, 45);
+    }
+
+    const level = score >= 75 ? 'hot' : score >= 45 ? 'warm' : 'cold';
+
+    return {
+      level,
+      score,
+      updatedAt: reference ? reference.toISOString() : undefined
+    };
+  }
+
+  private matchesLastTouch(
+    filter: '7d' | '30d' | 'stale' | 'never',
+    lastTouchAt: Date | null,
+    hadOutreach: boolean
+  ) {
+    if (filter === 'never') {
+      return !hadOutreach;
+    }
+
+    if (!lastTouchAt) {
+      return filter === 'stale';
+    }
+
+    const now = new Date();
+    const daysAgo = Math.max(0, differenceInCalendarDays(now, lastTouchAt));
+
+    if (filter === '7d') {
+      return daysAgo <= 7;
+    }
+    if (filter === '30d') {
+      return daysAgo <= 30;
+    }
+    return daysAgo > 30;
   }
 
   async create(data: {
@@ -301,11 +410,58 @@ export class ContactsService {
     const linkedJobs = Array.from(linkedJobsMap.values()).sort((a, b) =>
       `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
     );
+    const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
+    const nextFollowUp = contact.followups.find((followup: any) => followup.sentAt === null) ?? contact.followups[0] ?? null;
+    const nextFollowUpAt = nextFollowUp?.dueAt ?? null;
+    const engagement = this.computeEngagement({
+      lastTouch: lastTouchFromOutreach,
+      createdAt: contact.createdAt,
+      nextFollowUp: nextFollowUpAt,
+      strength: contact.strength
+    });
 
     return {
       ...contact,
       timeline,
-      linkedJobs
+      linkedJobs,
+      lastTouchAt: lastTouchFromOutreach ?? contact.createdAt,
+      nextFollowUpAt,
+      engagement
+    };
+  }
+
+  async getEngagementSummary(contactId: string) {
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: contactId },
+      include: {
+        outreaches: {
+          orderBy: { sentAt: 'desc' },
+          take: 1
+        },
+        followups: {
+          where: { sentAt: null },
+          orderBy: { dueAt: 'asc' },
+          take: 1
+        }
+      }
+    });
+    if (!contact || contact.archived) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    const lastTouch = contact.outreaches[0]?.sentAt ?? null;
+    const nextFollowUpAt = contact.followups[0]?.dueAt ?? null;
+    const engagement = this.computeEngagement({
+      lastTouch,
+      createdAt: contact.createdAt,
+      nextFollowUp: nextFollowUpAt,
+      strength: contact.strength
+    });
+
+    return {
+      lastTouchAt: (lastTouch ?? contact.createdAt).toISOString(),
+      nextFollowUpAt: nextFollowUpAt ? nextFollowUpAt.toISOString() : null,
+      engagement
     };
   }
 

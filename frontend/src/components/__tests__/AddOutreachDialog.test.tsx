@@ -1,4 +1,3 @@
-import { act } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import { AddOutreachDialog } from '../AddOutreachDialog';
@@ -54,8 +53,6 @@ describe('AddOutreachDialog', () => {
       isFetching: false
     });
 
-    vi.useFakeTimers();
-
     render(
       <AddOutreachDialog
         job={{ id: 'job_1', company: 'Acme', role: 'Engineer', stage: 'APPLIED', heat: 0, lastTouchAt: '', contactsCount: 0 }}
@@ -66,8 +63,6 @@ describe('AddOutreachDialog', () => {
 
     const searchInput = screen.getByPlaceholderText(/type name/i);
     fireEvent.change(searchInput, { target: { value: 'Jane' } });
-    vi.advanceTimersByTime(300);
-    vi.useRealTimers();
 
     await waitFor(() => expect(screen.getByText(/Jane Candidate/)).toBeInTheDocument());
 
@@ -75,9 +70,7 @@ describe('AddOutreachDialog', () => {
 
     await waitFor(() => expect(screen.getByText(/contact:/i)).toBeInTheDocument());
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /add outreach/i }));
-    });
+    fireEvent.click(screen.getByRole('button', { name: /add outreach/i }));
 
     await waitFor(() => {
       expect(mutateSpy).toHaveBeenCalledWith(
@@ -88,6 +81,44 @@ describe('AddOutreachDialog', () => {
           messageType: 'intro_request',
           context: 'JOB_OPPORTUNITY',
           outcome: 'NONE'
+        })
+      );
+    });
+  });
+
+  it('logs outreach for an inline contact in contact mode', async () => {
+    const mutateSpy = vi.fn().mockResolvedValue({
+      outreach: { id: 'outreach_c1', contact: { id: 'contact_inline', name: 'Taylor' }, contactId: 'contact_inline' },
+      job: {
+        id: 'job_inline',
+        company: 'Vandelay',
+        role: 'Sales Lead',
+        stage: 'APPLIED',
+        heat: 0,
+        contactsCount: 1,
+        contacts: [{ id: 'contact_inline', name: 'Taylor', role: 'Hiring Manager' }]
+      }
+    });
+
+    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: mutateSpy, isPending: false });
+
+    render(
+      <AddOutreachDialog
+        mode="contact"
+        job={{ id: 'job_inline', company: 'Vandelay', role: 'Sales Lead', stage: 'APPLIED', heat: 0, lastTouchAt: '', contactsCount: 0 }}
+        contact={{ id: 'contact_inline', name: 'Taylor', role: 'Hiring Manager', email: 'taylor@example.com' }}
+        open
+        onOpenChange={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /add outreach/i }));
+
+    await waitFor(() => {
+      expect(mutateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jobId: 'job_inline',
+          contactId: 'contact_inline'
         })
       );
     });

@@ -7,8 +7,7 @@ vi.mock('../../api/hooks', async () => {
   return {
     ...actual,
     useJobSearchQuery: vi.fn(),
-    useCreateJobMutation: vi.fn(),
-    useCreateJobOutreachMutation: vi.fn()
+    useCreateJobMutation: vi.fn()
   };
 });
 
@@ -16,17 +15,15 @@ import * as hooks from '../../api/hooks';
 
 const useJobSearchQuery = vi.mocked(hooks.useJobSearchQuery);
 const useCreateJobMutation = vi.mocked(hooks.useCreateJobMutation);
-const useCreateJobOutreachMutation = vi.mocked(hooks.useCreateJobOutreachMutation);
 
 describe('LinkJobDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     useJobSearchQuery.mockReturnValue({ data: [], isFetching: false });
     useCreateJobMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
   });
 
-  it('creates a new job inline and logs outreach', async () => {
+  it('creates a new job inline and emits linked job payload', async () => {
     const createJobSpy = vi.fn().mockResolvedValue({
       id: 'job_created',
       company: 'Initrode',
@@ -35,13 +32,9 @@ describe('LinkJobDialog', () => {
       heat: 0,
       contactsCount: 0
     });
-    const createOutreachSpy = vi.fn().mockResolvedValue({
-      outreach: { id: 'outreach_new', contactId: 'contact_77' },
-      job: { id: 'job_created', contactsCount: 1 }
-    });
 
     useCreateJobMutation.mockReturnValue({ mutateAsync: createJobSpy, isPending: false });
-    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: createOutreachSpy, isPending: false });
+    const onLinked = vi.fn();
 
     render(
       <LinkJobDialog
@@ -49,6 +42,7 @@ describe('LinkJobDialog', () => {
         open
         onOpenChange={() => {}}
         defaultTab="new"
+        onLinked={onLinked}
       />
     );
 
@@ -62,20 +56,20 @@ describe('LinkJobDialog', () => {
     fireEvent.change(sourceInput, { target: { value: 'https://jobs.example.com' } });
     fireEvent.click(screen.getByRole('button', { name: /use this job/i }));
 
-    await waitFor(() => expect(screen.getByText(/linking job/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled());
 
-    fireEvent.click(screen.getByRole('button', { name: /link job/i }));
+    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
     await waitFor(() => {
       expect(createJobSpy).toHaveBeenCalledWith(
         expect.objectContaining({ company: 'Initrode', role: 'AE', sourceUrl: 'https://jobs.example.com' })
       );
-      expect(createOutreachSpy).toHaveBeenCalledWith(
+      expect(onLinked).toHaveBeenCalledWith(
         expect.objectContaining({
-          jobId: 'job_created',
-          contactId: 'contact_77',
-          channel: 'LINKEDIN',
-          context: 'JOB_OPPORTUNITY'
+          id: 'job_created',
+          company: 'Initrode',
+          role: 'AE',
+          stage: 'APPLIED'
         })
       );
     });

@@ -493,7 +493,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
                               <div className="mt-3 grid gap-3 md:grid-cols-3">
                                 <div className="md:col-span-1 col-span-3">
                                   <label className="text-[11px] font-semibold uppercase text-slate-500" htmlFor={`${formId}-contactEmail`}>
-                                    Email (optional)
+                                    Contact email (optional)
                                   </label>
                                   <input
                                     id={`${formId}-contactEmail`}

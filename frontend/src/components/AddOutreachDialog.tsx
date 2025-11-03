@@ -122,11 +122,22 @@ interface AddOutreachDialogProps {
     contactId?: string;
     contactName?: string | null;
     contacts?: Array<{ id: string; name: string | null; role?: string | null }>;
+    outreachId?: string;
   }) => void;
+  mode?: 'job' | 'contact';
+  contact?: ContactResult;
 }
 
-export const AddOutreachDialog = ({ job, open, onOpenChange, onLinked }: AddOutreachDialogProps) => {
-  const [tab, setTab] = useState<'existing' | 'new'>('existing');
+export const AddOutreachDialog = ({
+  job,
+  open,
+  onOpenChange,
+  onLinked,
+  mode = 'job',
+  contact
+}: AddOutreachDialogProps) => {
+  const isContactMode = mode === 'contact';
+  const [tab, setTab] = useState<'existing' | 'new'>(isContactMode ? 'existing' : 'existing');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [selected, setSelected] = useState<SelectedContact | null>(null);
@@ -175,9 +186,12 @@ export const AddOutreachDialog = ({ job, open, onOpenChange, onLinked }: AddOutr
     if (!open) {
       setSearchTerm('');
       setDebouncedTerm('');
-      setSelected(null);
-      setTab('existing');
-      resetNewContact({ companyName: job.company });
+      setContactError(null);
+      if (!isContactMode) {
+        setSelected(null);
+        setTab('existing');
+        resetNewContact({ companyName: job.company });
+      }
       resetOutreachForm({
         channel: 'EMAIL',
         messageType: 'intro_request',
@@ -186,9 +200,25 @@ export const AddOutreachDialog = ({ job, open, onOpenChange, onLinked }: AddOutr
         personalizationScore: 70,
         createFollowUp: true
       });
+      return;
+    }
+
+    if (isContactMode && contact) {
+      setTab('existing');
+      setSelected({
+        type: 'existing',
+        contact: {
+          id: contact.id,
+          name: contact.name || 'Contact',
+          role: contact.role,
+          email: contact.email,
+          linkedinUrl: contact.linkedinUrl,
+          company: contact.company
+        }
+      });
       setContactError(null);
     }
-  }, [open, job.company, resetNewContact, resetOutreachForm]);
+  }, [open, isContactMode, contact, job.company, resetNewContact, resetOutreachForm]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -264,174 +294,203 @@ export const AddOutreachDialog = ({ job, open, onOpenChange, onLinked }: AddOutr
         jobId: job.id,
         contactId,
         contactName,
-        contacts: result.job?.contacts ?? []
+        contacts: result.job?.contacts ?? [],
+        outreachId: result.outreach.id
       });
     } catch {
       // errors handled by mutation toast
     }
   });
 
+  const dialogTitle = isContactMode
+    ? `Log outreach — ${contact?.name ?? job.company}`
+    : `Add outreach for ${job.company}`;
+  const dialogDescription = isContactMode
+    ? 'Capture the touchpoint without leaving the contact drawer.'
+    : 'Log who you reached out to and capture the details for heat tracking.';
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <Dialog.Title className="text-lg font-semibold text-slate-900">
-            Add outreach for {job.company}
-          </Dialog.Title>
-          <Dialog.Description className="text-sm text-slate-500">
-            Log who you reached out to and capture the details for heat tracking.
-          </Dialog.Description>
+          <Dialog.Title className="text-lg font-semibold text-slate-900">{dialogTitle}</Dialog.Title>
+          <Dialog.Description className="text-sm text-slate-500">{dialogDescription}</Dialog.Description>
 
           <div className="mt-4">
-            <Tabs.Root value={tab} onValueChange={(value) => setTab(value as 'existing' | 'new')}>
-              <Tabs.List className="flex gap-2 border-b border-slate-200 pb-2">
-                <Tabs.Trigger
-                  value="existing"
-                  className="rounded-md px-3 py-1 text-sm font-medium text-slate-600 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
-                >
-                  Select existing
-                </Tabs.Trigger>
-                <Tabs.Trigger
-                  value="new"
-                  className="rounded-md px-3 py-1 text-sm font-medium text-slate-600 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
-                >
-                  Create new
-                </Tabs.Trigger>
-              </Tabs.List>
-
-              <Tabs.Content value="existing" className="mt-4">
-                <label className="block text-sm font-medium text-slate-700">Search contacts</label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Type name, company, email, or LinkedIn…"
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
-                <div className="mt-3 max-h-44 overflow-y-auto rounded-md border border-slate-200">
-                  {debouncedTerm.length < 2 && (
-                    <p className="p-3 text-sm text-slate-500">
-                      Enter at least two characters to search your contacts.
-                    </p>
+            {isContactMode ? (
+              <div className="flex flex-wrap items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                <div>
+                  <p className="font-semibold text-slate-800">{contact?.name ?? 'Contact'}</p>
+                  <p className="text-xs text-slate-500">
+                    {[contact?.role, contact?.company?.name].filter(Boolean).join(' • ') || '—'}
+                  </p>
+                  {contact?.email && (
+                    <p className="text-xs text-slate-400">{contact.email}</p>
                   )}
-                  {debouncedTerm.length >= 2 && isSearching && (
-                    <p className="p-3 text-sm text-slate-500">Searching…</p>
-                  )}
-                  {debouncedTerm.length >= 2 && !isSearching && (contactResults ?? []).length === 0 && (
-                    <p className="p-3 text-sm text-slate-500">No matches found. Try a different query.</p>
-                  )}
-                  {debouncedTerm.length >= 2 &&
-                    (contactResults ?? []).map((contact) => {
-                      const isSelected =
-                        selected?.type === 'existing' && selected.contact.id === contact.id;
-                      return (
-                        <button
-                          key={contact.id}
-                          type="button"
-                          onClick={() => handleExistingSelect(contact)}
-                          className={`flex w-full flex-col items-start gap-1 border-b border-slate-100 px-3 py-2 text-left text-sm transition ${
-                            isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'
-                          }`}
-                        >
-                          <span className="font-medium">{contact.name}</span>
-                          <span className="text-xs text-slate-500">
-                            {[contact.role, contact.company?.name].filter(Boolean).join(' • ') || '—'}
-                          </span>
-                          {contact.email && (
-                            <span className="text-xs text-slate-400">{contact.email}</span>
-                          )}
-                        </button>
-                      );
-                    })}
                 </div>
-              </Tabs.Content>
+                <div className="ml-auto text-xs uppercase text-slate-400">
+                  Linked to {job.company}
+                </div>
+              </div>
+            ) : (
+              <Tabs.Root value={tab} onValueChange={(value) => setTab(value as 'existing' | 'new')}>
+                <Tabs.List className="flex gap-2 border-b border-slate-200 pb-2">
+                  <Tabs.Trigger
+                    value="existing"
+                    className="rounded-md px-3 py-1 text-sm font-medium text-slate-600 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  >
+                    Select existing
+                  </Tabs.Trigger>
+                  <Tabs.Trigger
+                    value="new"
+                    className="rounded-md px-3 py-1 text-sm font-medium text-slate-600 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+                  >
+                    Create new
+                  </Tabs.Trigger>
+                </Tabs.List>
 
-              <Tabs.Content value="new" className="mt-4">
-                <form className="space-y-3" onSubmit={onCreateNewContact}>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">
-                      Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...registerContact('name')}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                    {contactErrors.name && (
-                      <p className="mt-1 text-xs text-red-600">{contactErrors.name.message}</p>
+                <Tabs.Content value="existing" className="mt-4">
+                  <label className="block text-sm font-medium text-slate-700">Search contacts</label>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Type name, company, email, or LinkedIn…"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                  <div className="mt-3 max-h-44 overflow-y-auto rounded-md border border-slate-200">
+                    {debouncedTerm.length < 2 && (
+                      <p className="p-3 text-sm text-slate-500">
+                        Enter at least two characters to search your contacts.
+                      </p>
                     )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Role</label>
-                    <input
-                      {...registerContact('role')}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                    {contactErrors.role && (
-                      <p className="mt-1 text-xs text-red-600">{contactErrors.role.message}</p>
+                    {debouncedTerm.length >= 2 && isSearching && (
+                      <p className="p-3 text-sm text-slate-500">Searching…</p>
                     )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Email</label>
-                    <input
-                      {...registerContact('email')}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                    {contactErrors.email && (
-                      <p className="mt-1 text-xs text-red-600">{contactErrors.email.message}</p>
+                    {debouncedTerm.length >= 2 && !isSearching && (contactResults ?? []).length === 0 && (
+                      <p className="p-3 text-sm text-slate-500">No matches found. Try a different query.</p>
                     )}
+                    {debouncedTerm.length >= 2 &&
+                      (contactResults ?? []).map((candidate) => {
+                        const isSelected =
+                          selected?.type === 'existing' && selected.contact.id === candidate.id;
+                        return (
+                          <button
+                            key={candidate.id}
+                            type="button"
+                            onClick={() => handleExistingSelect(candidate)}
+                            className={`flex w-full flex-col items-start gap-1 border-b border-slate-100 px-3 py-2 text-left text-sm transition ${
+                              isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <span className="font-medium">{candidate.name}</span>
+                            <span className="text-xs text-slate-500">
+                              {[candidate.role, candidate.company?.name].filter(Boolean).join(' • ') || '—'}
+                            </span>
+                            {candidate.email && (
+                              <span className="text-xs text-slate-400">{candidate.email}</span>
+                            )}
+                          </button>
+                        );
+                      })}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">LinkedIn URL</label>
-                    <input
-                      {...registerContact('linkedinUrl')}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                    {contactErrors.linkedinUrl && (
-                      <p className="mt-1 text-xs text-red-600">{contactErrors.linkedinUrl.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Company</label>
-                    <input
-                      {...registerContact('companyName')}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                    {contactErrors.companyName && (
-                      <p className="mt-1 text-xs text-red-600">{contactErrors.companyName.message}</p>
-                    )}
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="submit"
-                      className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-                    >
-                      Use this contact
-                    </button>
-                  </div>
-                </form>
-              </Tabs.Content>
-            </Tabs.Root>
+                </Tabs.Content>
+
+                <Tabs.Content value="new" className="mt-4">
+                  <form className="space-y-3" onSubmit={onCreateNewContact}>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">
+                        Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        {...registerContact('name')}
+                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                      {contactErrors.name && (
+                        <p className="mt-1 text-xs text-red-600">{contactErrors.name.message}</p>
+                      )}
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Role</label>
+                        <input
+                          {...registerContact('role')}
+                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        {contactErrors.role && (
+                          <p className="mt-1 text-xs text-red-600">{contactErrors.role.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Company</label>
+                        <input
+                          {...registerContact('companyName')}
+                          placeholder={job.company}
+                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        {contactErrors.companyName && (
+                          <p className="mt-1 text-xs text-red-600">{contactErrors.companyName.message}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">Email</label>
+                        <input
+                          {...registerContact('email')}
+                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        {contactErrors.email && (
+                          <p className="mt-1 text-xs text-red-600">{contactErrors.email.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700">LinkedIn URL</label>
+                        <input
+                          {...registerContact('linkedinUrl')}
+                          placeholder="https://linkedin.com/in/username"
+                          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        {contactErrors.linkedinUrl && (
+                          <p className="mt-1 text-xs text-red-600">{contactErrors.linkedinUrl.message}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                      >
+                        Use this contact
+                      </button>
+                    </div>
+                  </form>
+                </Tabs.Content>
+              </Tabs.Root>
+            )}
           </div>
 
           <div className="mt-5 space-y-3">
             {selectedLabel ? (
               <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
                 Contact: <span className="font-medium">{selectedLabel}</span>
-                <button
-                  type="button"
-                  className="ml-3 text-xs font-semibold underline"
-                  onClick={() => setSelected(null)}
-                >
-                  Change
-                </button>
+                {!isContactMode && (
+                  <button
+                    type="button"
+                    className="ml-3 text-xs font-semibold underline"
+                    onClick={() => setSelected(null)}
+                  >
+                    Change
+                  </button>
+                )}
               </div>
-            ) : (
+            ) : !isContactMode ? (
               <div className="rounded-md border border-dashed border-slate-200 p-3 text-sm text-slate-500">
                 Select or create a contact to continue.
               </div>
-            )}
-            {contactError && <p className="text-xs text-red-600">{contactError}</p>}
+            ) : null}
+            {contactError && !isContactMode && <p className="text-xs text-red-600">{contactError}</p>}
           </div>
 
         <form className="mt-4 space-y-4" onSubmit={onSubmitOutreach}>

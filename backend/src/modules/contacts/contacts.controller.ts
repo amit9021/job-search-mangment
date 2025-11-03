@@ -44,6 +44,11 @@ export class ContactsController {
     return this.contactsService.getById(params.id);
   }
 
+  @Get(':id/heat')
+  async heat(@Param() params: IdParamDto) {
+    return this.contactsService.getEngagementSummary(params.id);
+  }
+
   @Post()
   async create(@Body() body: CreateContactDto) {
     return this.contactsService.create(body as any);

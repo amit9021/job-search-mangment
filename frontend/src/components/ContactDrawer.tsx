@@ -1,10 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
-import { differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays, format, startOfWeek } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useContactDetailQuery,
   useCreateContactMutation,
@@ -17,7 +17,9 @@ import {
 import { CompanySelect } from './CompanySelect';
 import { TagsInput } from './TagsInput';
 import { StrengthBadge } from './StrengthBadge';
+import { ContactEngagementBadge } from './ContactEngagementBadge';
 import { LinkJobDialog } from './LinkJobDialog';
+import { AddOutreachDialog } from './AddOutreachDialog';
 import { useToast } from './ToastProvider';
 
 const contactSchema = z.object({
@@ -80,6 +82,12 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
   const deleteOutreach = useDeleteOutreachMutation();
   const toast = useToast();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [pendingOutreachJob, setPendingOutreachJob] = useState<{
+    id: string;
+    company: string;
+    role: string | null;
+    stage?: string;
+  } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [editingContext, setEditingContext] = useState<{
@@ -367,6 +375,31 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
   };
 
   const timelineItems = contact?.timeline ?? [];
+  const timelineDisplay = useMemo(() => {
+    const entries: Array<
+      | { kind: 'heading'; label: string }
+      | { kind: 'item'; item: (typeof timelineItems)[number] }
+    > = [];
+    let currentKey: string | null = null;
+
+    timelineItems.forEach((item) => {
+      const date = new Date(item.date);
+      if (!Number.isNaN(date.getTime())) {
+        const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+        const key = weekStart.toISOString();
+        if (key !== currentKey) {
+          currentKey = key;
+          entries.push({
+            kind: 'heading',
+            label: `Week of ${format(weekStart, 'MMM d')}`
+          });
+        }
+      }
+      entries.push({ kind: 'item', item });
+    });
+
+    return entries;
+  }, [timelineItems]);
   const linkedJobs = contact?.linkedJobs ?? [];
   const isSubmitting = isCreateMode ? createContact.isPending : updateContact.isPending;
   const submitLabel = isCreateMode ? 'Create contact' : 'Save changes';
@@ -413,6 +446,16 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                           <div className="mt-2">
                             {contact && <StrengthBadge strength={contact.strength} />}
                           </div>
+                          {contact?.engagement && (
+                            <div className="mt-2">
+                              <ContactEngagementBadge
+                                engagement={contact.engagement}
+                                lastTouchAt={contact.lastTouchAt}
+                                nextFollowUpAt={contact.nextFollowUpAt}
+                                strength={contact.strength}
+                              />
+                            </div>
+                          )}
                           {linkedJobs.length > 0 && (
                             <div className="mt-3">
                               <p className="text-[11px] font-semibold uppercase text-gray-400">
@@ -440,9 +483,12 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                             <button
                               type="button"
                               onClick={() => setLinkDialogOpen(true)}
-                              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                              className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                             >
-                              Add outreach
+                              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                                <path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 010-2h4V5a1 1 0 011-1z" />
+                              </svg>
+                              Link job
                             </button>
                           </div>
                         </>
@@ -470,6 +516,14 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                         className="px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 data-[state=active]:text-blue-600 data-[state=active]:border-blue-600"
                       >
                         Timeline ({timelineItems.length})
+                      </Tabs.Trigger>
+                    )}
+                    {!isCreateMode && (
+                      <Tabs.Trigger
+                        value="jobs"
+                        className="px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:border-gray-300 data-[state=active]:text-blue-600 data-[state=active]:border-blue-600"
+                      >
+                        Jobs ({linkedJobs.length})
                       </Tabs.Trigger>
                     )}
                   </Tabs.List>
@@ -669,157 +723,164 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
 
                   {!isCreateMode && (
                     <Tabs.Content value="timeline" className="flex-1 overflow-y-auto p-6">
-                      {timelineItems.length > 0 ? (
-                        <div className="space-y-6">
-                          {timelineItems.map((item, index) => (
-                            <div key={index} className="flex gap-4">
-                              {getTimelineIcon(item.type)}
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <div className="font-medium text-gray-900 capitalize">{item.type}</div>
-                                  <div className="text-sm text-gray-500">{formatDate(item.date)}</div>
-                                </div>
-                                <div className="mt-1 space-y-2 text-sm text-gray-600">
-                                  {item.type === 'outreach' && (
-                                    <div className="space-y-2">
-                                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                        <span>Channel: {item.data.channel}</span>
-                                        <span>
-                                          Message:{' '}
-                                          {humanizeMessageType(item.data.messageType) ||
-                                            item.data.messageType ||
-                                            '—'}
-                                        </span>
-                                        <span>Personalization: {item.data.personalizationScore}</span>
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                                        <span className="font-medium text-slate-700">Outcome</span>
-                                        <select
-                                          value={item.data.outcome ?? 'NONE'}
-                                          onChange={(event) =>
-                                            handleOutcomeUpdate(item.data.id, event.target.value)
-                                          }
-                                          disabled={updateOutreach.isPending}
-                                          className="rounded-md border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100"
-                                        >
-                                          {outreachOutcomeOptions.map((option) => (
-                                            <option key={option} value={option}>
-                                              {outreachOutcomeLabels[option]}
-                                            </option>
-                                          ))}
-                                        </select>
-                                        {updateOutreach.isPending && (
-                                          <span className="text-[10px] uppercase tracking-wide text-slate-400">
-                                            Saving…
+                      {timelineDisplay.length > 0 ? (
+                        <div className="space-y-4">
+                          {timelineDisplay.map((entry, index) =>
+                            entry.kind === 'heading' ? (
+                              <p
+                                key={`heading-${entry.label}-${index}`}
+                                className="text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                              >
+                                {entry.label}
+                              </p>
+                            ) : (
+                              <div
+                                key={`${entry.item.type}-${entry.item.date}-${index}`}
+                                className="flex gap-4"
+                              >
+                                {getTimelineIcon(entry.item.type)}
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="font-medium text-gray-900 capitalize">{entry.item.type}</div>
+                                    <div className="text-sm text-gray-500">{formatDate(entry.item.date)}</div>
+                                  </div>
+                                  <div className="mt-1 space-y-2 text-sm text-gray-600">
+                                    {entry.item.type === 'outreach' && (
+                                      <div className="space-y-2">
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                          <span>Channel: {entry.item.data.channel}</span>
+                                          <span>
+                                            Message:{' '}
+                                            {humanizeMessageType(entry.item.data.messageType) ||
+                                              entry.item.data.messageType ||
+                                              '—'}
                                           </span>
-                                        )}
-                                      </div>
-                                      {item.data.job && (
-                                        <div className="text-xs text-slate-500">
-                                          Regarding: {item.data.job.company}
-                                          {item.data.job.role ? ` — ${item.data.job.role}` : ''}
-                                          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase text-slate-600">
-                                            {item.data.job.stage.toLowerCase()}
-                                          </span>
+                                          <span>Personalization: {entry.item.data.personalizationScore}</span>
                                         </div>
-                                      )}
-                                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                                        <span className="font-medium text-slate-600">
-                                          Purpose: {outreachContextLabels[
-                                            (item.data.context as (typeof outreachContextOptions)[number])
-                                          ] ?? item.data.context}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => startEditingContext(item.data.id, item.data.context)}
-                                          className="rounded border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600"
-                                        >
-                                          Edit purpose
-                                        </button>
-                                      </div>
-                                      {editingContext?.id === item.data.id && (
-                                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                                          <span className="font-medium text-slate-700">Outcome</span>
                                           <select
-                                            value={editingContext.value}
-                                            onChange={(event) => {
-                                              const value = event.target.value;
-                                              if (isValidOutreachContext(value)) {
-                                                setEditingContext({ id: editingContext.id, value });
-                                              }
-                                            }}
-                                            className="rounded border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-200"
+                                            value={entry.item.data.outcome ?? 'NONE'}
+                                            onChange={(event) =>
+                                              handleOutcomeUpdate(entry.item.data.id, event.target.value)
+                                            }
+                                            disabled={updateOutreach.isPending}
+                                            className="rounded-md border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100"
                                           >
-                                            {outreachContextOptions.map((option) => (
+                                            {outreachOutcomeOptions.map((option) => (
                                               <option key={option} value={option}>
-                                                {outreachContextLabels[option]}
+                                                {outreachOutcomeLabels[option]}
                                               </option>
                                             ))}
                                           </select>
+                                          {updateOutreach.isPending && (
+                                            <span className="text-[10px] uppercase tracking-wide text-slate-400">
+                                              Saving…
+                                            </span>
+                                          )}
+                                        </div>
+                                        {entry.item.data.job && (
+                                          <div className="text-xs text-slate-500">
+                                            Regarding: {entry.item.data.job.company}
+                                            {entry.item.data.job.role ? ` — ${entry.item.data.job.role}` : ''}
+                                            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase text-slate-600">
+                                              {entry.item.data.job.stage.toLowerCase()}
+                                            </span>
+                                          </div>
+                                        )}
+                                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                                          <span className="font-medium text-slate-600">
+                                            Purpose: {outreachContextLabels[
+                                              (entry.item.data.context as (typeof outreachContextOptions)[number])
+                                            ] ?? entry.item.data.context}
+                                          </span>
                                           <button
                                             type="button"
-                                            onClick={handleContextSave}
-                                            disabled={updateOutreach.isPending}
-                                            className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-60"
+                                            onClick={() => startEditingContext(entry.item.data.id, entry.item.data.context)}
+                                            className="rounded border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600"
                                           >
-                                            Save
+                                            Edit purpose
                                           </button>
+                                        </div>
+                                        {editingContext?.id === entry.item.data.id && (
+                                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                                            <select
+                                              value={editingContext.value}
+                                              onChange={(event) => {
+                                                const value = event.target.value;
+                                                if (isValidOutreachContext(value)) {
+                                                  setEditingContext({ id: editingContext.id, value });
+                                                }
+                                              }}
+                                              className="rounded border border-slate-300 px-2 py-1 text-xs capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            >
+                                              {outreachContextOptions.map((option) => (
+                                                <option key={option} value={option}>
+                                                  {outreachContextLabels[option]}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <button
+                                              type="button"
+                                              onClick={handleContextSave}
+                                              disabled={updateOutreach.isPending}
+                                              className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-60"
+                                            >
+                                              Save
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingContext(null)}
+                                              disabled={updateOutreach.isPending}
+                                              className="rounded border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        )}
+                                        {entry.item.data.content && <div className="text-xs text-slate-500">Note: {entry.item.data.content}</div>}
+                                        <div className="flex flex-wrap items-center gap-3 pt-1">
                                           <button
                                             type="button"
-                                            onClick={() => setEditingContext(null)}
-                                            disabled={updateOutreach.isPending}
-                                            className="rounded border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-100"
+                                            onClick={() => handleDeleteOutreach(entry.item.data.id)}
+                                            disabled={deleteOutreach.isPending}
+                                            className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
                                           >
-                                            Cancel
+                                            Delete outreach
                                           </button>
                                         </div>
-                                      )}
-                                      {item.data.content && <div className="text-xs text-slate-500">Note: {item.data.content}</div>}
-                                      <div className="flex flex-wrap items-center gap-3 pt-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleDeleteOutreach(item.data.id)}
-                                          disabled={deleteOutreach.isPending}
-                                          className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
-                                        >
-                                          Delete outreach
-                                        </button>
                                       </div>
-                                    </div>
-                                  )}
-                                  {item.type === 'referral' && (
-                                    <div className="space-y-1">
-                                      <div>Kind: {item.data.kind}</div>
-                                      {item.data.job && <div>For: {item.data.job.company} - {item.data.job.role}</div>}
-                                    </div>
-                                  )}
-                                  {item.type === 'review' && (
-                                    <div className="space-y-1">
-                                      <div>Project: {item.data.project?.name}</div>
-                                      {item.data.qualityScore && <div>Score: {item.data.qualityScore}/100</div>}
-                                    </div>
-                                  )}
-                                  {item.type === 'followup' && (
-                                    <div className="space-y-1">
-                                      <div>Attempt #{item.data.attemptNo}</div>
-                                      <div>
-                                        Status:{' '}
-                                        {item.data.sentAt
-                                          ? `Completed ${formatDate(item.data.sentAt as string)}`
-                                          : `Due ${formatDate(item.data.dueAt as string)}`}
+                                    )}
+                                    {entry.item.type === 'referral' && (
+                                      <div className="space-y-1">
+                                        <div>Kind: {entry.item.data.kind}</div>
+                                        {entry.item.data.job && <div>For: {entry.item.data.job.company} - {entry.item.data.job.role}</div>}
                                       </div>
-                                      {item.data.job && (
-                                        <div className="text-xs text-slate-500">
-                                          Job: {item.data.job.company}
-                                          {item.data.job.role ? ` — ${item.data.job.role}` : ''}
+                                    )}
+                                    {entry.item.type === 'review' && (
+                                      <div className="space-y-1">
+                                        <div>Project: {entry.item.data.project?.name}</div>
+                                        <div>Status: {entry.item.data.status}</div>
+                                      </div>
+                                    )}
+                                    {entry.item.type === 'followup' && (
+                                      <div className="space-y-1 text-xs">
+                                        <div className="font-medium text-slate-600">
+                                          Due {formatDate(entry.item.data.dueAt)}
                                         </div>
-                                      )}
-                                      {item.data.note && <div className="text-xs text-slate-500">Note: {item.data.note}</div>}
-                                    </div>
-                                  )}
+                                        {entry.item.data.job && (
+                                          <div className="text-slate-500">
+                                            Related to {entry.item.data.job.company}
+                                            {entry.item.data.job.role ? ` — ${entry.item.data.job.role}` : ''}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          )}
                         </div>
                       ) : (
                         <div className="text-center py-12">
@@ -829,6 +890,64 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                       )}
                     </Tabs.Content>
                   )}
+                  {!isCreateMode && (
+                    <Tabs.Content value="jobs" className="flex-1 overflow-y-auto p-6">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-slate-600">
+                          {linkedJobs.length} linked {linkedJobs.length === 1 ? 'job' : 'jobs'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setLinkDialogOpen(true)}
+                          className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                        >
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                            <path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 010-2h4V5a1 1 0 011-1z" />
+                          </svg>
+                          Link job
+                        </button>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {linkedJobs.length > 0 ? (
+                          linkedJobs.map((job) => (
+                            <div
+                              key={job.id}
+                              className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                            >
+                              <div>
+                                <p className="text-sm font-semibold text-slate-800">{job.company}</p>
+                                {job.role && <p className="text-xs text-slate-500">{job.role}</p>}
+                                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                  Stage {job.stage.toLowerCase()}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingOutreachJob({
+                                      id: job.id,
+                                      company: job.company,
+                                      role: job.role,
+                                      stage: job.stage
+                                    })
+                                  }
+                                  className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                                >
+                                  Log outreach
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                            No jobs linked yet. Link a role to keep outreach and follow-ups tied together.
+                          </div>
+                        )}
+                      </div>
+                    </Tabs.Content>
+                  )}
                 </Tabs.Root>
               </div>
             )}
@@ -836,11 +955,54 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
         </Dialog.Portal>
       </Dialog.Root>
       {!isCreateMode && contact && contactId && (
-        <LinkJobDialog
-          contact={{ id: contact.id, name: contact.name, companyName: contact.company?.name }}
-          open={linkDialogOpen}
-          onOpenChange={(open) => setLinkDialogOpen(open)}
-        />
+        <>
+          <LinkJobDialog
+            contact={{ id: contact.id, name: contact.name, companyName: contact.company?.name }}
+            open={linkDialogOpen}
+            onOpenChange={(open) => setLinkDialogOpen(open)}
+            onLinked={(job) => {
+              setPendingOutreachJob({
+                id: job.id,
+                company: job.company,
+                role: job.role ?? null,
+                stage: job.stage
+              });
+            }}
+          />
+          {pendingOutreachJob && (
+            <AddOutreachDialog
+              mode="contact"
+              open={Boolean(pendingOutreachJob)}
+              job={{
+                id: pendingOutreachJob.id,
+                company: pendingOutreachJob.company,
+                role: pendingOutreachJob.role ?? '',
+                stage: pendingOutreachJob.stage ?? 'APPLIED',
+                heat: 0,
+                lastTouchAt: contact.updatedAt ?? contact.createdAt ?? '',
+                contactsCount: contact.linkedJobs?.length ?? 0
+              }}
+              contact={{
+                id: contact.id,
+                name: contact.name,
+                role: contact.role ?? undefined,
+                email: contact.email ?? undefined,
+                linkedinUrl: contact.linkedinUrl ?? undefined,
+                company: contact.company
+                  ? { id: contact.company.id, name: contact.company.name }
+                  : undefined
+              }}
+              onOpenChange={(nextOpen) => {
+                if (!nextOpen) {
+                  setPendingOutreachJob(null);
+                }
+              }}
+              onLinked={() => {
+                setPendingOutreachJob(null);
+              }}
+            />
+          )}
+        </>
       )}
     </>
   );

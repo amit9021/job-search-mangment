@@ -4,13 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  useCreateJobMutation,
-  useCreateJobOutreachMutation,
-  useJobSearchQuery,
-  JobOutreachPayload,
-  CreateJobMutationInput
-} from '../api/hooks';
+import { useCreateJobMutation, useJobSearchQuery } from '../api/hooks';
 
 type ContactSummaryForLink = {
   id: string;
@@ -26,27 +20,19 @@ type JobSearchResult = {
   contactsCount: number;
 };
 
+type LinkedJobSummary = {
+  id: string;
+  company: string;
+  role: string | null;
+  stage?: string;
+};
+
 const trimToUndefined = (value?: string | null) => {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
-};
-
-const outreachContextValues = ['JOB_OPPORTUNITY', 'CODE_REVIEW', 'CHECK_IN', 'REFERRAL_REQUEST', 'OTHER'] as const;
-const outreachContextLabels: Record<(typeof outreachContextValues)[number], string> = {
-  JOB_OPPORTUNITY: 'Job opportunity',
-  CODE_REVIEW: 'Code review',
-  CHECK_IN: 'Personal check-in',
-  REFERRAL_REQUEST: 'Referral request',
-  OTHER: 'Other'
-};
-
-const outreachOutcomeValues = ['NONE', 'NO_RESPONSE', 'POSITIVE', 'NEGATIVE'] as const;
-const outreachOutcomeLabels: Record<(typeof outreachOutcomeValues)[number], string> = {
-  NONE: 'Not set',
-  NO_RESPONSE: 'No response yet',
-  POSITIVE: 'Positive',
-  NEGATIVE: 'Negative'
 };
 
 const newJobSchema = z.object({
@@ -56,41 +42,10 @@ const newJobSchema = z.object({
     .string()
     .optional()
     .transform(trimToUndefined)
-    .refine((value) => !value || /^https?:\/\//i.test(value), 'Invalid URL'),
+    .refine((value) => !value || /^https?:\/\//i.test(value), 'Invalid URL')
 });
 
 type NewJobFormValues = z.infer<typeof newJobSchema>;
-
-const outreachSchema = z.object({
-  channel: z.enum(['EMAIL', 'LINKEDIN', 'PHONE', 'OTHER']),
-  messageType: z.string().min(1, 'Message type required'),
-  context: z.enum(outreachContextValues).default('JOB_OPPORTUNITY'),
-  outcome: z.enum(outreachOutcomeValues).default('NONE'),
-  personalizationScore: z
-    .union([z.string(), z.number()])
-    .transform((value) => {
-      if (typeof value === 'number') return value;
-      const trimmed = value.trim();
-      if (trimmed.length === 0) return undefined;
-      const parsed = Number(trimmed);
-      return Number.isNaN(parsed) ? undefined : parsed;
-    })
-    .optional()
-    .refine((value) => value === undefined || (value >= 0 && value <= 100), {
-      message: 'Score must be between 0 and 100'
-    }),
-  content: z
-    .string()
-    .optional()
-    .transform(trimToUndefined),
-  createFollowUp: z.boolean().default(true),
-  followUpNote: z
-    .string()
-    .optional()
-    .transform(trimToUndefined)
-});
-
-type OutreachFormValues = z.infer<typeof outreachSchema>;
 
 type SelectedJob =
   | { type: 'existing'; job: JobSearchResult }
@@ -100,11 +55,17 @@ interface LinkJobDialogProps {
   contact: ContactSummaryForLink;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLinked?: (result: { jobId: string; outreachId: string }) => void;
+  onLinked?: (job: LinkedJobSummary) => void;
   defaultTab?: 'existing' | 'new';
 }
 
-export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTab = 'existing' }: LinkJobDialogProps) => {
+export const LinkJobDialog = ({
+  contact,
+  open,
+  onOpenChange,
+  onLinked,
+  defaultTab = 'existing'
+}: LinkJobDialogProps) => {
   const [tab, setTab] = useState<'existing' | 'new'>(defaultTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
@@ -112,7 +73,6 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
   const [selectionError, setSelectionError] = useState<string | null>(null);
 
   const createJob = useCreateJobMutation();
-  const createOutreach = useCreateJobOutreachMutation();
 
   const { data: jobResults, isFetching: isSearching } = useJobSearchQuery(debouncedTerm, {
     enabled: tab === 'existing',
@@ -120,55 +80,33 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
   });
 
   const {
-    register: registerJob,
-    handleSubmit: handleSubmitJob,
-    reset: resetNewJob,
+    register,
+    handleSubmit,
+    reset,
     formState: { errors: jobErrors }
   } = useForm<NewJobFormValues>({
     resolver: zodResolver(newJobSchema),
     defaultValues: {
-      company: contact.companyName ?? ''
+      company: contact.companyName ?? '',
+      role: '',
+      sourceUrl: ''
     }
   });
-
-  const {
-    register: registerOutreach,
-    handleSubmit: handleSubmitOutreach,
-    reset: resetOutreachForm,
-    watch: watchOutreach,
-    formState: { errors: outreachErrors }
-  } = useForm<OutreachFormValues>({
-    resolver: zodResolver(outreachSchema),
-    defaultValues: {
-      channel: 'LINKEDIN',
-      messageType: 'intro_request',
-      context: 'JOB_OPPORTUNITY',
-      outcome: 'NONE',
-      personalizationScore: 70,
-      createFollowUp: true
-    }
-  });
-
-  const followUpEnabled = watchOutreach('createFollowUp');
 
   useEffect(() => {
     if (!open) {
-      setTab(defaultTab);
-      setSearchTerm('');
-      setDebouncedTerm('');
       setSelectedJob(null);
       setSelectionError(null);
-      resetNewJob({ company: contact.companyName ?? '', role: '', sourceUrl: '' });
-      resetOutreachForm({
-        channel: 'LINKEDIN',
-        messageType: 'intro_request',
-        context: 'JOB_OPPORTUNITY',
-        outcome: 'NONE',
-        personalizationScore: 70,
-        createFollowUp: true
+      setSearchTerm('');
+      setDebouncedTerm('');
+      setTab(defaultTab);
+      reset({
+        company: contact.companyName ?? '',
+        role: '',
+        sourceUrl: ''
       });
     }
-  }, [open, defaultTab, contact.companyName, resetNewJob, resetOutreachForm]);
+  }, [open, defaultTab, contact.companyName, reset]);
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedTerm(searchTerm.trim()), 250);
@@ -176,7 +114,9 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
   }, [searchTerm]);
 
   const selectedLabel = useMemo(() => {
-    if (!selectedJob) return null;
+    if (!selectedJob) {
+      return null;
+    }
     if (selectedJob.type === 'existing') {
       const job = selectedJob.job;
       return `${job.company} — ${job.role}`;
@@ -189,66 +129,48 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
     setSelectionError(null);
   };
 
-  const onPrepareNewJob = handleSubmitJob((values) => {
+  const onPrepareNewJob = handleSubmit((values) => {
     setSelectedJob({ type: 'new', draft: values });
     setSelectionError(null);
   });
 
-  const onSubmitOutreach = handleSubmitOutreach(async (values) => {
+  const handleConfirm = async () => {
     if (!selectedJob) {
-      setSelectionError('Select or create a job before adding outreach.');
+      setSelectionError('Select or create a job to continue.');
       return;
     }
 
-    let jobId = '';
     if (selectedJob.type === 'existing') {
-      jobId = selectedJob.job.id;
-    } else {
-      const payload: CreateJobMutationInput = {
-        company: selectedJob.draft.company,
-        role: selectedJob.draft.role,
-        sourceUrl: selectedJob.draft.sourceUrl ? selectedJob.draft.sourceUrl : undefined
-      };
-      try {
-        const createdJob = await createJob.mutateAsync(payload);
-        jobId = createdJob.id;
-      } catch {
-        return;
-      }
+      const job = selectedJob.job;
+      onLinked?.({
+        id: job.id,
+        company: job.company,
+        role: job.role,
+        stage: job.stage
+      });
+      onOpenChange(false);
+      return;
     }
-
-    const payload: JobOutreachPayload = {
-      jobId,
-      contactId: contact.id,
-      channel: values.channel,
-      messageType: values.messageType,
-      personalizationScore: values.personalizationScore ?? undefined,
-      content: values.content,
-      context: values.context,
-      outcome: values.outcome,
-      createFollowUp: values.createFollowUp,
-      followUpNote: values.followUpNote
-    };
 
     try {
-      const result = await createOutreach.mutateAsync(payload);
-      resetOutreachForm({
-        channel: 'LINKEDIN',
-        messageType: 'intro_request',
-        context: 'JOB_OPPORTUNITY',
-        outcome: 'NONE',
-        personalizationScore: 70,
-        createFollowUp: true
+      const createdJob = await createJob.mutateAsync({
+        company: selectedJob.draft.company,
+        role: selectedJob.draft.role,
+        sourceUrl: selectedJob.draft.sourceUrl
       });
-      setSelectedJob(null);
+      onLinked?.({
+        id: createdJob.id,
+        company: createdJob.company,
+        role: createdJob.role,
+        stage: createdJob.stage
+      });
       onOpenChange(false);
-      onLinked?.({ jobId: result.job.id, outreachId: result.outreach.id });
     } catch {
-      // handled by mutation toast
+      // handled via mutation toast
     }
-  });
+  };
 
-  const isSubmitting = createOutreach.isPending || createJob.isPending;
+  const isCreatingJob = createJob.isPending;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -256,10 +178,10 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
         <Dialog.Overlay className="fixed inset-0 z-[80] bg-slate-900/40" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-[90] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold text-slate-900">
-            Add outreach for {contact.name}
+            Link {contact.name} to a job
           </Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">
-            Link this contact to a job and capture what happened.
+            Pick an existing role or spin up a new one without leaving the drawer.
           </Dialog.Description>
 
           <Tabs.Root value={tab} onValueChange={(value) => setTab(value as 'existing' | 'new')}>
@@ -287,7 +209,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                 placeholder="Search by company or role…"
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
-              <div className="mt-3 max-h-44 overflow-y-auto rounded-md border border-slate-200">
+              <div className="mt-3 max-h-48 overflow-y-auto rounded-md border border-slate-200">
                 {debouncedTerm.length < 2 && (
                   <p className="p-3 text-sm text-slate-500">
                     Enter at least two characters to search jobs.
@@ -330,7 +252,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                     Company <span className="text-red-500">*</span>
                   </label>
                   <input
-                    {...registerJob('company')}
+                    {...register('company')}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   {jobErrors.company && (
@@ -342,7 +264,7 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                     Role <span className="text-red-500">*</span>
                   </label>
                   <input
-                    {...registerJob('role')}
+                    {...register('role')}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   />
                   {jobErrors.role && (
@@ -350,11 +272,9 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Source URL
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700">Source URL</label>
                   <input
-                    {...registerJob('sourceUrl')}
+                    {...register('sourceUrl')}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     placeholder="https://company.com/job-posting"
                   />
@@ -394,141 +314,25 @@ export const LinkJobDialog = ({ contact, open, onOpenChange, onLinked, defaultTa
             {selectionError && <p className="text-xs text-red-600">{selectionError}</p>}
           </div>
 
-          <form className="mt-4 space-y-4" onSubmit={onSubmitOutreach}>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Channel</label>
-                <select
-                  {...registerOutreach('channel')}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="LINKEDIN">LinkedIn</option>
-                  <option value="EMAIL">Email</option>
-                  <option value="PHONE">Phone</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Message type</label>
-                <select
-                  {...registerOutreach('messageType')}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="intro_request">Intro request</option>
-                  <option value="follow_up">Follow up</option>
-                  <option value="check_fit">Check fit</option>
-                  <option value="other">Other</option>
-                </select>
-                {outreachErrors.messageType && (
-                  <p className="mt-1 text-xs text-red-600">{outreachErrors.messageType.message}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Purpose</label>
-                <select
-                  {...registerOutreach('context')}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  {outreachContextValues.map((value) => (
-                    <option key={value} value={value}>
-                      {outreachContextLabels[value]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Outcome</label>
-                <select
-                  {...registerOutreach('outcome')}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  {outreachOutcomeValues.map((value) => (
-                    <option key={value} value={value}>
-                      {outreachOutcomeLabels[value]}
-                    </option>
-                  ))}
-                </select>
-                {outreachErrors.outcome && (
-                  <p className="mt-1 text-xs text-red-600">{outreachErrors.outcome.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  Personalization score
-                  <span className="text-xs text-slate-400" title="How customized was your message to the person/company (0-100)">
-                    ⓘ
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  {...registerOutreach('personalizationScore')}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
-                {outreachErrors.personalizationScore && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {outreachErrors.personalizationScore.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Follow-up note (queued task)
-                </label>
-                <input
-                  {...registerOutreach('followUpNote')}
-                  disabled={!followUpEnabled}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-slate-100"
-                  placeholder="Optional reminder for your follow-up"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Message notes</label>
-              <textarea
-                {...registerOutreach('content')}
-                rows={4}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="Optional notes about what you sent."
-              />
-              {outreachErrors.content && (
-                <p className="mt-1 text-xs text-red-600">{outreachErrors.content.message}</p>
-              )}
-            </div>
-
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-              <input
-                type="checkbox"
-                {...registerOutreach('createFollowUp')}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Schedule follow-up in 3 days
-            </label>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-              </Dialog.Close>
+          <div className="mt-6 flex justify-end gap-3">
+            <Dialog.Close asChild>
               <button
-                type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                disabled={isSubmitting}
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                disabled={isCreatingJob}
               >
-                {isSubmitting ? 'Saving…' : 'Add outreach'}
+                Cancel
               </button>
-            </div>
-          </form>
+            </Dialog.Close>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              disabled={!selectedJob || isCreatingJob}
+            >
+              {isCreatingJob ? 'Linking…' : 'Continue'}
+            </button>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

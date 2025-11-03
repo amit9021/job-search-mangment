@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Query, forwardRef } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, forwardRef } from '@nestjs/common';
 import { OutreachService } from './outreach.service';
+import { CreateOutreachDto, CreateOutreachInput } from './dto/create-outreach.dto';
 import { ListOutreachQueryDto } from './dto/list-outreach.query';
 import { UpdateOutreachDto } from './dto/update-outreach.dto';
 import { IdParamDto } from '../../common/dto/id-param.dto';
@@ -16,6 +17,12 @@ export class OutreachController {
   @Get()
   async list(@Query() query: ListOutreachQueryDto) {
     return this.outreachService.list(query);
+  }
+
+  @Post()
+  async create(@Body() body: CreateOutreachDto) {
+    const { jobId, ...rest } = body as CreateOutreachInput;
+    return this.jobsService.recordJobOutreach(jobId, rest);
   }
 
   @Patch(':id')

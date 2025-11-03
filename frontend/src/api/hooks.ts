@@ -359,7 +359,7 @@ export const useCreateJobOutreachMutation = () => {
   const toast = useToast();
   return useMutation({
     mutationFn: async ({ jobId, ...payload }: JobOutreachPayload) => {
-      const { data } = await api.post(`/jobs/${jobId}/outreach`, payload);
+      const { data } = await api.post('/outreach', { jobId, ...payload });
       return data as {
         outreach: {
           id: string;
@@ -524,12 +524,39 @@ export const useContactsQuery = (filters?: {
   includeArchived?: boolean;
   page?: number;
   pageSize?: number;
+  tags?: string[];
+  lastTouch?: '7d' | '30d' | 'stale' | 'never';
 }) => {
   const api = useApi();
+  const sanitizedFilters = filters
+    ? {
+        query: filters.query && filters.query.trim().length > 0 ? filters.query.trim() : undefined,
+        strength: filters.strength,
+        companyId: filters.companyId,
+        includeArchived: filters.includeArchived ? true : undefined,
+        page: filters.page,
+        pageSize: filters.pageSize,
+        tags: filters.tags && filters.tags.length > 0 ? [...filters.tags].sort() : undefined,
+        lastTouch: filters.lastTouch
+      }
+    : undefined;
+
   return useQuery({
-    queryKey: ['contacts', filters],
+    queryKey: ['contacts', sanitizedFilters],
     queryFn: async () => {
-      const { data } = await api.get('/contacts', { params: filters });
+      const params = sanitizedFilters
+        ? {
+            query: sanitizedFilters.query,
+            strength: sanitizedFilters.strength,
+            companyId: sanitizedFilters.companyId,
+            includeArchived: sanitizedFilters.includeArchived ? 'true' : undefined,
+            page: sanitizedFilters.page,
+            pageSize: sanitizedFilters.pageSize,
+            tags: sanitizedFilters.tags ? sanitizedFilters.tags.join(',') : undefined,
+            lastTouch: sanitizedFilters.lastTouch
+          }
+        : undefined;
+      const { data } = await api.get('/contacts', { params });
       return data as Array<{
         id: string;
         name: string;
@@ -555,6 +582,12 @@ export const useContactsQuery = (filters?: {
           stage: string;
         }>;
         nextFollowUpAt?: string | null;
+        engagement?: {
+          level: 'cold' | 'warm' | 'hot';
+          score?: number | null;
+          updatedAt?: string | null;
+          reason?: string | null;
+        };
       }>;
     }
   });
@@ -786,6 +819,14 @@ export const useContactDetailQuery = (id: string) => {
         strength: string;
         createdAt: string;
         updatedAt: string;
+        lastTouchAt: string;
+        nextFollowUpAt?: string | null;
+        engagement?: {
+          level: 'cold' | 'warm' | 'hot';
+          score?: number | null;
+          updatedAt?: string | null;
+          reason?: string | null;
+        };
         timeline: Array<{
           type: 'outreach' | 'referral' | 'review' | 'followup';
           date: string;
