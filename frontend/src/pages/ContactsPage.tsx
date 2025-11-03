@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useContactsQuery, useNetworkStarsQuery } from '../api/hooks';
 import { StrengthBadge } from '../components/StrengthBadge';
 import { ContactDrawer } from '../components/ContactDrawer';
@@ -11,6 +12,7 @@ const filters = [
 ];
 
 export const ContactsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [strength, setStrength] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
@@ -42,6 +44,22 @@ export const ContactsPage = () => {
     setSelectedContactId(null);
     setDrawerOpen(true);
   };
+
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || !contacts) {
+      return;
+    }
+    const exists = contacts.some((contact) => contact.id === focusId);
+    if (exists) {
+      setDrawerMode('edit');
+      setSelectedContactId(focusId);
+      setDrawerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, contacts, setSearchParams]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

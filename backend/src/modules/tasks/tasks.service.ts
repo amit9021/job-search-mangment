@@ -25,6 +25,48 @@ type QuickParseSuggestion = {
   matches: Array<{ id: string; label: string }>;
 };
 
+type TaskLinks = {
+  jobId?: string;
+  contactId?: string;
+  growType?: string;
+  growId?: string;
+  outreachId?: string;
+  [key: string]: unknown;
+};
+
+type TaskContext = {
+  job?: { id: string; company: string; role: string | null } | null;
+  contact?: { id: string; name: string | null } | null;
+  grow?: { type: string; id?: string | null } | null;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const extractLinks = (value: Prisma.JsonValue | null | undefined): TaskLinks => {
+  if (!isRecord(value)) {
+    return {};
+  }
+  const record = value as Record<string, unknown>;
+  const links: TaskLinks = {};
+  if (typeof record.jobId === 'string') {
+    links.jobId = record.jobId;
+  }
+  if (typeof record.contactId === 'string') {
+    links.contactId = record.contactId;
+  }
+  if (typeof record.growType === 'string') {
+    links.growType = record.growType;
+  }
+  if (typeof record.growId === 'string') {
+    links.growId = record.growId;
+  }
+  if (typeof record.outreachId === 'string') {
+    links.outreachId = record.outreachId;
+  }
+  return links;
+};
+
 @Injectable()
 export class TasksService {
   private readonly timezone = process.env.TIMEZONE ?? 'UTC';
@@ -121,9 +163,55 @@ export class TasksService {
       orderBy.push({ dueAt: 'asc' }, { priority: 'desc' }, { createdAt: 'asc' });
     }
 
-    return this.prisma.task.findMany({
+    const tasks = await this.prisma.task.findMany({
       where,
       orderBy
+    });
+
+    const parsedLinks = tasks.map((task) => extractLinks(task.links));
+    const jobIds = Array.from(
+      new Set(parsedLinks.map((link) => link.jobId).filter((id): id is string => Boolean(id)))
+    );
+    const contactIds = Array.from(
+      new Set(parsedLinks.map((link) => link.contactId).filter((id): id is string => Boolean(id)))
+    );
+
+    const [jobs, contacts] = await Promise.all([
+      jobIds.length
+        ? this.prisma.job.findMany({
+            where: { id: { in: jobIds } },
+            select: { id: true, company: true, role: true }
+          })
+        : Promise.resolve([]),
+      contactIds.length
+        ? this.prisma.contact.findMany({
+            where: { id: { in: contactIds } },
+            select: { id: true, name: true }
+          })
+        : Promise.resolve([])
+    ]);
+
+    const jobMap = new Map(jobs.map((job) => [job.id, job]));
+    const contactMap = new Map(contacts.map((contact) => [contact.id, contact]));
+
+    return tasks.map((task, index) => {
+      const links = parsedLinks[index];
+      const context: TaskContext = {};
+      if (links.jobId) {
+        context.job = jobMap.get(links.jobId) ?? null;
+      }
+      if (links.contactId) {
+        context.contact = contactMap.get(links.contactId) ?? null;
+      }
+      if (links.growType) {
+        context.grow = { type: links.growType, id: links.growId ?? null };
+      }
+
+      return {
+        ...task,
+        links,
+        context
+      };
     });
   }
 
