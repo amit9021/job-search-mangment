@@ -73,3 +73,9 @@ Keyboard shortcuts: `t` add, `e` edit, `space` done, `s` snooze, `/` search.
 Commit the plan:
 git add docs/PLANS/tasks-1.0.md
 git commit -m "Plan: TASKS module v1.0"
+
+## Status
+- ✅ Phase 0 — Plan committed
+- ✅ Phase 1 — Backend delivered
+- ✅ Phase 2 — Frontend delivered
+- ✅ Phase 3 — Verification & docs complete
