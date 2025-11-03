@@ -30,19 +30,19 @@ model Company {
 }
 
 model Job {
-  id          String            @id @default(cuid())
+  id          String    @id @default(cuid())
   company     String
   companyId   String?
-  companyRef  Company?          @relation(fields: [companyId], references: [id])
+  companyRef  Company?  @relation(fields: [companyId], references: [id])
   role        String
   sourceUrl   String?
   heat        Int
   deadline    DateTime?
-  stage       JobStage          @default(APPLIED)
-  lastTouchAt DateTime          @default(now())
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  archived    Boolean           @default(false)
+  stage       JobStage  @default(APPLIED)
+  lastTouchAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archived    Boolean   @default(false)
   archivedAt  DateTime?
 
   applications  JobApplication[]
@@ -86,23 +86,23 @@ model JobStatusHistory {
 }
 
 model Contact {
-  id          String           @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
   companyId   String?
-  company     Company?         @relation(fields: [companyId], references: [id])
+  company     Company?        @relation(fields: [companyId], references: [id])
   role        String?
-  strength    ContactStrength  @default(WEAK)
+  strength    ContactStrength @default(WEAK)
   email       String?
   phone       String?
   linkedinUrl String?
   githubUrl   String?
   location    String?
-  tags        String[]         @default([])
+  tags        String[]        @default([])
   notes       String?
-  archived    Boolean          @default(false)
+  archived    Boolean         @default(false)
   archivedAt  DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   outreaches    Outreach[]
   referrals     Referral[]
@@ -110,6 +110,7 @@ model Contact {
   eventLinks    EventContact[]
   followups     FollowUp[]
   notifications Notification[]
+  GrowthReview  GrowthReview[]
 
   @@index([strength])
   @@index([companyId])
@@ -123,18 +124,18 @@ enum ContactStrength {
 }
 
 model Outreach {
-  id                  String          @id @default(cuid())
-  jobId               String?
-  job                 Job?            @relation(fields: [jobId], references: [id])
-  contactId           String?
-  contact             Contact?        @relation(fields: [contactId], references: [id])
-  channel             OutreachChannel
-  messageType         String
+  id                   String          @id @default(cuid())
+  jobId                String?
+  job                  Job?            @relation(fields: [jobId], references: [id])
+  contactId            String?
+  contact              Contact?        @relation(fields: [contactId], references: [id])
+  channel              OutreachChannel
+  messageType          String
   personalizationScore Int
-  outcome             OutreachOutcome @default(NONE)
-  content             String?
-  context             OutreachContext @default(OTHER)
-  sentAt              DateTime        @default(now())
+  outcome              OutreachOutcome @default(NONE)
+  content              String?
+  context              OutreachContext @default(OTHER)
+  sentAt               DateTime        @default(now())
 }
 
 enum OutreachChannel {
@@ -160,11 +161,11 @@ enum OutreachContext {
 }
 
 model FollowUp {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   jobId     String?
-  job       Job?     @relation(fields: [jobId], references: [id])
+  job       Job?      @relation(fields: [jobId], references: [id])
   contactId String?
-  contact   Contact? @relation(fields: [contactId], references: [id])
+  contact   Contact?  @relation(fields: [contactId], references: [id])
   dueAt     DateTime
   sentAt    DateTime?
   attemptNo Int
@@ -202,24 +203,24 @@ model Project {
 }
 
 model CodeReview {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   projectId    String
-  project      Project  @relation(fields: [projectId], references: [id])
+  project      Project   @relation(fields: [projectId], references: [id])
   contactId    String
-  contact      Contact  @relation(fields: [contactId], references: [id])
-  requestedAt  DateTime @default(now())
+  contact      Contact   @relation(fields: [contactId], references: [id])
+  requestedAt  DateTime  @default(now())
   reviewedAt   DateTime?
   summary      String?
   qualityScore Int?
 }
 
 model Event {
-  id                      String       @id @default(cuid())
+  id                      String      @id @default(cuid())
   name                    String
   date                    DateTime
   location                String?
   topic                   String?
-  status                  EventStatus  @default(PLANNED)
+  status                  EventStatus @default(PLANNED)
   targetsMinConversations Int?
 
   eventContacts EventContact[]
@@ -231,19 +232,19 @@ enum EventStatus {
 }
 
 model EventContact {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   eventId       String
-  event         Event    @relation(fields: [eventId], references: [id])
+  event         Event     @relation(fields: [eventId], references: [id])
   contactId     String
-  contact       Contact  @relation(fields: [contactId], references: [id])
+  contact       Contact   @relation(fields: [contactId], references: [id])
   followupDueAt DateTime?
 }
 
 model BoostTask {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   impactScore Int
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   doneAt      DateTime?
 }
 
@@ -255,15 +256,15 @@ model MetricSnapshot {
 }
 
 model Recommendation {
-  id         String   @id @default(cuid())
-  createdAt  DateTime @default(now())
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
   kind       String
   payload    Json
   resolvedAt DateTime?
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   kind      String
   message   String
   dueAt     DateTime
@@ -272,4 +273,53 @@ model Notification {
   contactId String?
   job       Job?      @relation(fields: [jobId], references: [id])
   contact   Contact?  @relation(fields: [contactId], references: [id])
+}
+
+model GrowthReview {
+  id          String   @id @default(cuid())
+  reviewerId  String
+  projectName String
+  summary     String
+  score       Int
+  reviewedAt  DateTime @default(now())
+  takeaways   String?
+
+  contact Contact @relation(fields: [reviewerId], references: [id])
+}
+
+model GrowthEvent {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  location  String?
+  attended  Boolean  @default(false)
+  notes     String?
+  followUps String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GrowthBoostTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  category    String
+  impactLevel Int
+  tags        String[]  @default([])
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+}
+
+model ProjectHighlight {
+  id          String    @id @default(cuid())
+  projectName String
+  platformUrl String?
+  spotlight   Boolean   @default(false)
+  plannedPost String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

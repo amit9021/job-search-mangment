@@ -710,13 +710,74 @@ export const useNextActionQuery = () => {
   });
 };
 
+export type GrowthReview = {
+  id: string;
+  reviewerId: string;
+  projectName: string;
+  summary: string;
+  score: number;
+  reviewedAt: string;
+  takeaways?: string | null;
+  contact?: {
+    id: string;
+    name: string | null;
+    role?: string | null;
+    company?: { id: string; name: string } | null;
+  } | null;
+};
+
+export type GrowthEvent = {
+  id: string;
+  name: string;
+  date: string;
+  location?: string | null;
+  attended: boolean;
+  notes?: string | null;
+  followUps: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type GrowthBoostTask = {
+  id: string;
+  title: string;
+  description?: string | null;
+  category: 'skills-gap' | 'visibility-gap' | 'network-gap';
+  impactLevel: number;
+  tags: string[];
+  status: 'pending' | 'in-progress' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+};
+
+export type ProjectHighlight = {
+  id: string;
+  projectName: string;
+  platformUrl?: string | null;
+  spotlight: boolean;
+  plannedPost?: string | null;
+  published: boolean;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BoostSuggestion = {
+  title: string;
+  description?: string | null;
+  category: 'skills-gap' | 'visibility-gap' | 'network-gap';
+  impactLevel: number;
+  tags?: string[];
+};
+
 export const useReviewsQuery = () => {
   const api = useApi();
   return useQuery({
-    queryKey: ['reviews'],
+    queryKey: ['grow', 'reviews'],
     queryFn: async () => {
-      const { data } = await api.get('/reviews');
-      return data as Array<{ id: string; project: { name: string }; contact: { name: string }; qualityScore?: number }>;
+      const { data } = await api.get('/grow/reviews');
+      return data as GrowthReview[];
     }
   });
 };
@@ -724,16 +785,10 @@ export const useReviewsQuery = () => {
 export const useEventsQuery = () => {
   const api = useApi();
   return useQuery({
-    queryKey: ['events'],
+    queryKey: ['grow', 'events'],
     queryFn: async () => {
-      const { data } = await api.get('/events');
-      return data as Array<{
-        id: string;
-        name: string;
-        date: string;
-        status: string;
-        location?: string;
-      }>;
+      const { data } = await api.get('/grow/events');
+      return data as GrowthEvent[];
     }
   });
 };
@@ -741,10 +796,10 @@ export const useEventsQuery = () => {
 export const useBoostsQuery = () => {
   const api = useApi();
   return useQuery({
-    queryKey: ['boosts'],
+    queryKey: ['grow', 'boost'],
     queryFn: async () => {
-      const { data } = await api.get('/boosts');
-      return data as Array<{ id: string; title: string; impactScore: number; doneAt?: string }>;
+      const { data } = await api.get('/grow/boost');
+      return data as GrowthBoostTask[];
     }
   });
 };
@@ -752,10 +807,201 @@ export const useBoostsQuery = () => {
 export const useProjectsQuery = () => {
   const api = useApi();
   return useQuery({
-    queryKey: ['projects'],
+    queryKey: ['grow', 'projects'],
     queryFn: async () => {
-      const { data } = await api.get('/projects');
-      return data as Array<{ id: string; name: string; repoUrl: string; stack?: string; spotlight: boolean }>;
+      const { data } = await api.get('/grow/projects');
+      return data as ProjectHighlight[];
+    }
+  });
+};
+
+export const useCreateGrowthReviewMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { reviewerId: string; projectName: string; summary: string; score: number; takeaways?: string }) => {
+      const { data } = await api.post('/grow/reviews', payload);
+      return data as GrowthReview;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'reviews'] });
+      toast.add({ title: 'Review logged', description: 'Senior review saved successfully.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useCreateGrowthEventMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      name: string;
+      date: Date | string;
+      location?: string;
+      attended?: boolean;
+      notes?: string;
+      followUps?: string[];
+    }) => {
+      const { data } = await api.post('/grow/events', {
+        ...payload,
+        date: payload.date instanceof Date ? payload.date.toISOString() : payload.date
+      });
+      return data as GrowthEvent;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'events'] });
+      toast.add({ title: 'Event saved', description: 'Growth event added to your tracker.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useCreateGrowthBoostTaskMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      title: string;
+      description?: string;
+      category: 'skills-gap' | 'visibility-gap' | 'network-gap';
+      impactLevel: number;
+      tags?: string[];
+      status?: 'pending' | 'in-progress' | 'completed';
+    }) => {
+      const { data } = await api.post('/grow/boost', payload);
+      return data as GrowthBoostTask;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'boost'] });
+      toast.add({ title: 'Boost task added', description: 'Boost task is now in your queue.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useUpdateGrowthBoostTaskMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data
+    }: {
+      id: string;
+      data: Partial<{
+        title: string;
+        description: string | null;
+        category: 'skills-gap' | 'visibility-gap' | 'network-gap';
+        impactLevel: number;
+        tags: string[];
+        status: 'pending' | 'in-progress' | 'completed';
+      }>;
+    }) => {
+      const { data: response } = await api.patch(`/grow/boost/${id}`, data);
+      return response as GrowthBoostTask;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'boost'] });
+      toast.add({ title: 'Boost task updated', description: 'Task status synced.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useCreateProjectHighlightMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      projectName: string;
+      platformUrl?: string;
+      spotlight?: boolean;
+      plannedPost?: string;
+      published?: boolean;
+      publishedAt?: Date | string;
+    }) => {
+      const { data } = await api.post('/grow/projects', {
+        ...payload,
+        publishedAt:
+          payload.publishedAt instanceof Date ? payload.publishedAt.toISOString() : payload.publishedAt
+      });
+      return data as ProjectHighlight;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'projects'] });
+      toast.add({ title: 'Project highlight added', description: 'Visibility spotlight saved.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useUpdateProjectHighlightMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data
+    }: {
+      id: string;
+      data: Partial<{
+        projectName: string;
+        platformUrl: string | null;
+        spotlight: boolean;
+        plannedPost: string | null;
+        published: boolean;
+        publishedAt: Date | string | null;
+      }>;
+    }) => {
+      const payload = {
+        ...data,
+        ...(data.publishedAt !== undefined && {
+          publishedAt:
+            data.publishedAt instanceof Date
+              ? data.publishedAt.toISOString()
+              : data.publishedAt
+        })
+      };
+      const { data: response } = await api.patch(`/grow/projects/${id}`, payload);
+      return response as ProjectHighlight;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grow', 'projects'] });
+      toast.add({ title: 'Project highlight updated', description: 'Spotlight details refreshed.' });
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
+    }
+  });
+};
+
+export const useBoostSuggestionsMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.get('/grow/boost/suggest');
+      return data as BoostSuggestion[];
+    },
+    onError: (error) => {
+      toast.add(getErrorToastContent(parseApiError(error)));
     }
   });
 };
