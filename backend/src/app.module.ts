@@ -15,6 +15,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { RecommendationModule } from './modules/recommendation/recommendation.module';
 import { ReferralsModule } from './modules/referrals/referrals.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './common/health.controller';
 
@@ -39,7 +40,8 @@ import { HealthController } from './common/health.controller';
     ReviewsModule,
     EventsModule,
     BoostsModule,
-    NotificationsModule
+    NotificationsModule,
+    TasksModule
   ],
   controllers: [HealthController]
 })

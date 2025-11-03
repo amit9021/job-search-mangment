@@ -273,3 +273,23 @@ model Notification {
   job       Job?      @relation(fields: [jobId], references: [id])
   contact   Contact?  @relation(fields: [contactId], references: [id])
 }
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("Todo")
+  priority    String   @default("Med")
+  tags        String[] @default([])
+  dueAt       DateTime?
+  startAt     DateTime?
+  recurrence  String?
+  source      String   @default("Manual")
+  links       Json?
+  checklist   Json?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([dueAt])
+  @@index([status])
+}
