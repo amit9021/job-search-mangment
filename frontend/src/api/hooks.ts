@@ -804,6 +804,198 @@ export const useBoostsQuery = () => {
   });
 };
 
+// ==================== Tasks API ====================
+
+export type TaskView = 'today' | 'upcoming' | 'backlog' | 'completed';
+
+export type TaskModel = {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: 'Todo' | 'Doing' | 'Done' | 'Blocked';
+  priority: 'Low' | 'Med' | 'High';
+  tags: string[];
+  dueAt?: string | null;
+  startAt?: string | null;
+  recurrence?: string | null;
+  source: string;
+  checklist: Array<{ text: string; done: boolean }>;
+  createdAt: string;
+  completedAt?: string | null;
+  links: {
+    jobId?: string;
+    contactId?: string;
+    growType?: string;
+    growId?: string;
+    outreachId?: string;
+  };
+  context: {
+    job?: { id: string; company: string; role: string | null } | null;
+    contact?: { id: string; name: string | null } | null;
+    grow?: { type: string; id?: string | null } | null;
+  };
+};
+
+export type TaskQuickParseSuggestion = {
+  kind: 'job' | 'contact';
+  query: string;
+  matches: Array<{ id: string; label: string }>;
+};
+
+export type TaskQuickParseResult = {
+  title: string;
+  tags: string[];
+  priority?: 'Low' | 'Med' | 'High';
+  dueAt?: string | null;
+  recurrence?: string | null;
+  links: Record<string, string | undefined>;
+  contexts: {
+    jobQuery?: string;
+    contactQuery?: string;
+    growType?: string;
+    growRef?: string;
+  };
+  suggestions: TaskQuickParseSuggestion[];
+};
+
+export const useTasksQuery = (params: { view: TaskView; search?: string; priority?: string }) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['tasks', params],
+    queryFn: async () => {
+      const search =
+        params.search && params.search.trim().length > 0 ? params.search.trim() : undefined;
+      const { data } = await api.get('/tasks', {
+        params: {
+          view: params.view,
+          search,
+          priority: params.priority && params.priority !== 'all' ? params.priority : undefined
+        }
+      });
+      return data as TaskModel[];
+    }
+  });
+};
+
+export const useTaskKpisQuery = () => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['tasks', 'kpis'],
+    queryFn: async () => {
+      const { data } = await api.get('/tasks/kpis');
+      return data as {
+        dueToday: number;
+        overdue: number;
+        velocity7d: number;
+        streak: number;
+      };
+    }
+  });
+};
+
+export const useTaskQuickParseMutation = () => {
+  const api = useApi();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async (payload: { text: string }) => {
+      const { data } = await api.post('/tasks/quick-parse', payload);
+      return data as TaskQuickParseResult;
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useTaskCreateMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const { data } = await api.post('/tasks', payload);
+      return data as TaskModel;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Task created');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useTaskUpdateMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
+      const { data } = await api.patch(`/tasks/${id}`, updates);
+      return data as TaskModel;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Task updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useTaskDeleteMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/tasks/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Task deleted');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useTaskSnoozeMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id, preset }: { id: string; preset: '1h' | 'tonight' | 'tomorrow' | 'nextweek' }) => {
+      const { data } = await api.post(`/tasks/snooze/${id}`, { preset });
+      return data as TaskModel;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Task snoozed');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
 export const useProjectsQuery = () => {
   const api = useApi();
   return useQuery({

@@ -3,6 +3,7 @@ import { OutreachChannel, OutreachContext, OutreachOutcome } from '@prisma/clien
 import dayjs from '../../utils/dayjs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FollowupsService } from '../followups/followups.service';
+import { TasksService } from '../tasks/tasks.service';
 
 type OutreachInput = {
   contactId?: string;
@@ -20,7 +21,8 @@ type OutreachInput = {
 export class OutreachService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly followupsService: FollowupsService
+    private readonly followupsService: FollowupsService,
+    private readonly tasksService: TasksService
   ) {}
 
   async createJobOutreach(jobId: string, payload: OutreachInput) {
@@ -63,6 +65,13 @@ export class OutreachService {
       });
     }
 
+    await this.tasksService.handleOutreachAutomation({
+      outreachId: outreach.id,
+      jobId,
+      contactId: payload.contactId,
+      outcome: payload.outcome ?? OutreachOutcome.NONE
+    });
+
     await this.handleOutcomeEffects(outreach.contactId, payload.outcome);
     return outreach;
   }
@@ -104,6 +113,12 @@ export class OutreachService {
         note: payload.followUpNote
       });
     }
+
+    await this.tasksService.handleOutreachAutomation({
+      outreachId: outreach.id,
+      contactId,
+      outcome: payload.outcome ?? OutreachOutcome.NONE
+    });
 
     await this.handleOutcomeEffects(contactId, payload.outcome);
     return outreach;

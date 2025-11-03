@@ -1,6 +1,7 @@
 import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useMemo, useState, KeyboardEvent } from 'react';
+import { useMemo, useState, KeyboardEvent, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useJobsQuery, useDeleteJobMutation } from '../api/hooks';
 import { HeatBadge } from '../components/HeatBadge';
 import { JobWizardModal } from '../components/JobWizardModal';
@@ -100,6 +101,7 @@ const formatFollowUpCountdown = (dateString?: string | null) => {
 };
 
 export const JobsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showArchived, setShowArchived] = useState(false);
   const { data: allJobs, isLoading } = useJobsQuery({ includeArchived: showArchived });
   const deleteJob = useDeleteJobMutation();
@@ -157,6 +159,20 @@ export const JobsPage = () => {
       ),
     [allJobs]
   );
+
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || !allJobs || allJobs.length === 0) {
+      return;
+    }
+    const jobExists = allJobs.some((job) => job.id === focusId);
+    if (jobExists) {
+      setHistoryJobId(focusId);
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, allJobs, setSearchParams]);
 
   const activeJobs = useMemo(
     () =>

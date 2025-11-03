@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
+
+import { useSearchParams } from 'react-router-dom';
 import { useContactsQuery, useNetworkStarsQuery } from '../api/hooks';
 import { StrengthBadge } from '../components/StrengthBadge';
 import { ContactDrawer } from '../components/ContactDrawer';
@@ -163,6 +165,8 @@ export const ContactsPage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [lastTouchFilter, setLastTouchFilter] = useState<'any' | '7d' | '30d' | 'stale' | 'never'>('any');
   const [searchInput, setSearchInput] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [strength, setStrength] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -228,6 +232,28 @@ export const ContactsPage = () => {
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((value) => value !== tag) : [...prev, tag]));
   };
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || !contacts) {
+      return;
+    }
+    const exists = contacts.some((contact) => contact.id === focusId);
+    if (exists) {
+      setDrawerMode('edit');
+      setSelectedContactId(focusId);
+      setDrawerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, contacts, setSearchParams]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }
 
   const addTagFilter = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
