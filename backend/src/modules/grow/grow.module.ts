@@ -4,6 +4,7 @@ import { GrowController } from './grow.controller';
 
 @Module({
   controllers: [GrowController],
-  providers: [GrowService]
+  providers: [GrowService],
+  exports: [GrowService]
 })
 export class GrowModule {}

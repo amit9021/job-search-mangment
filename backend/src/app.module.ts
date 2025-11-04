@@ -19,12 +19,16 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './common/health.controller';
 import { GrowModule } from './modules/grow/grow.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { StatsModule } from './modules/stats/stats.module';
+import appConfig from './config/app';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['../../.env', '.env']
+      envFilePath: ['../../.env', '.env'],
+      load: [appConfig]
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -43,7 +47,9 @@ import { GrowModule } from './modules/grow/grow.module';
     BoostsModule,
     GrowModule,
     NotificationsModule,
-    TasksModule
+    TasksModule,
+    DashboardModule,
+    StatsModule
   ],
   controllers: [HealthController]
 })

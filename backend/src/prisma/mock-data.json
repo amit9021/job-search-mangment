@@ -1,0 +1,117 @@
+{
+  "companies": [
+    { "name": "Alpha Labs", "domain": "alphalabs.com" },
+    { "name": "Beta Systems", "domain": "betasystems.io" },
+    { "name": "Gamma Ventures", "domain": "gammaventures.vc" },
+    { "name": "Delta Robotics", "domain": "deltarobotics.ai" },
+    { "name": "Epsilon Analytics", "domain": "epsilonanalytics.com" },
+    { "name": "Nimbus Cloud", "domain": "nimbuscloud.dev" },
+    { "name": "Aurora Health", "domain": "aurorahealth.org" },
+    { "name": "Vertex Security", "domain": "vertexsecurity.co" },
+    { "name": "Orbit Finance", "domain": "orbitfinance.app" },
+    { "name": "Catalyst Mobility", "domain": "catalystmobility.io" },
+    { "name": "Quantum Labs", "domain": "quantumlabs.ai" },
+    { "name": "Zephyr Media", "domain": "zephyrmedia.tv" },
+    { "name": "Lumen Energy", "domain": "lumenenergy.com" },
+    { "name": "Atlas Logistics", "domain": "atlaslogistics.io" },
+    { "name": "Summit Retail", "domain": "summitretail.co" }
+  ],
+  "jobRoles": [
+    "Backend Engineer",
+    "Full Stack Developer",
+    "Product Manager",
+    "Data Scientist",
+    "DevOps Engineer",
+    "Mobile Engineer",
+    "Frontend Engineer",
+    "ML Engineer",
+    "Security Analyst",
+    "Solutions Architect"
+  ],
+  "jobSources": [
+    "Referral",
+    "Inbound Lead",
+    "Cold Outreach",
+    "Recruiter Intro",
+    "Career Portal"
+  ],
+  "contactFirstNames": [
+    "Alex",
+    "Jordan",
+    "Taylor",
+    "Morgan",
+    "Sam",
+    "Casey",
+    "Jamie",
+    "Riley",
+    "Avery",
+    "Reese",
+    "Skyler",
+    "Rowan",
+    "Harper",
+    "Devon",
+    "Bailey"
+  ],
+  "contactLastNames": [
+    "Anderson",
+    "Patel",
+    "Ramirez",
+    "Nguyen",
+    "Kim",
+    "Cohen",
+    "Singh",
+    "Peters",
+    "Hansen",
+    "Garcia",
+    "Lopez",
+    "Fletcher",
+    "Griffin",
+    "Morgan",
+    "Jenkins"
+  ],
+  "contactRoles": [
+    "Engineering Manager",
+    "Recruiter",
+    "Director of Product",
+    "Technical Lead",
+    "Principal Engineer",
+    "Talent Partner",
+    "CTO",
+    "VP Engineering"
+  ],
+  "taskTemplates": [
+    { "title": "Follow up with {{company}} recruiter", "priority": "High", "status": "Todo" },
+    { "title": "Draft tailored CV for {{company}}", "priority": "Med", "status": "In Progress" },
+    { "title": "Research interview prep for {{role}}", "priority": "Med", "status": "Todo" },
+    { "title": "Send thank-you note to {{contact}}", "priority": "Low", "status": "Done" },
+    { "title": "Update portfolio with latest project", "priority": "Med", "status": "Todo" },
+    { "title": "Schedule coffee chat with {{contact}}", "priority": "Low", "status": "Todo" }
+  ],
+  "growthEventNames": [
+    "Tech Leaders Meetup",
+    "AI Product Circle",
+    "DevOps Guild",
+    "Product Ops Roundtable",
+    "Startup Hiring Summit",
+    "Security Champions Forum",
+    "Cloud Architecture Jam",
+    "Design Systems Collective"
+  ],
+  "growthReviewProjects": [
+    "Realtime Analytics Engine",
+    "Mobile Ordering Platform",
+    "DevOps Observability Stack",
+    "Customer Success Dashboard",
+    "Streaming Media Pipeline",
+    "Healthcare Intake Portal"
+  ],
+  "growthBoostIdeas": [
+    "Publish case study on latest migration",
+    "Record Loom walkthrough of analytics stack",
+    "Ship personal site performance improvements",
+    "Draft LinkedIn thread on interview prep tips",
+    "Compile weekly highlights newsletter",
+    "Design outreach drip sequence template"
+  ]
+}
+

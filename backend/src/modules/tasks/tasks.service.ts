@@ -40,6 +40,13 @@ type TaskContext = {
   grow?: { type: string; id?: string | null } | null;
 };
 
+type ActionableTask = {
+  id: string;
+  title: string;
+  dueAt: Date | null;
+  links: TaskLinks;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -392,6 +399,101 @@ export class TasksService {
       where: { id },
       data: { dueAt }
     });
+  }
+
+  async getActionableTasks(limitPerBucket = 25) {
+    const now = this.now();
+    const startOfDay = now.clone().startOf('day').toDate();
+    const endOfDay = now.clone().endOf('day').toDate();
+
+    const select = {
+      id: true,
+      title: true,
+      dueAt: true,
+      links: true
+    } satisfies Prisma.TaskSelect;
+
+    const [dueTodayRaw, overdueRaw] = await Promise.all([
+      this.prisma.task.findMany({
+        where: {
+          status: { not: 'Done' },
+          dueAt: { gte: startOfDay, lte: endOfDay }
+        },
+        orderBy: { dueAt: 'asc' },
+        take: limitPerBucket,
+        select
+      }),
+      this.prisma.task.findMany({
+        where: {
+          status: { not: 'Done' },
+          dueAt: { lt: startOfDay }
+        },
+        orderBy: { dueAt: 'asc' },
+        take: limitPerBucket,
+        select
+      })
+    ]);
+
+    const jobIds = new Set<string>();
+    const contactIds = new Set<string>();
+
+    const normalize = (task: ActionableTask) => {
+      const links = extractLinks(task.links);
+      if (links.jobId) {
+        jobIds.add(links.jobId);
+      }
+      if (links.contactId) {
+        contactIds.add(links.contactId);
+      }
+      return {
+        id: task.id,
+        title: task.title,
+        dueAt: task.dueAt,
+        links
+      };
+    };
+
+    const dueTodayMapped = dueTodayRaw.map((task) => normalize(task));
+    const overdueMapped = overdueRaw.map((task) => normalize(task));
+
+    const jobs = jobIds.size
+      ? await this.prisma.job.findMany({
+          where: { id: { in: Array.from(jobIds) } },
+          select: { id: true, archived: true, stage: true }
+        })
+      : [];
+
+    const contacts = contactIds.size
+      ? await this.prisma.contact.findMany({
+          where: { id: { in: Array.from(contactIds) } },
+          select: { id: true, archived: true }
+        })
+      : [];
+
+    const archivedJobStages = new Set(['REJECTED', 'DORMANT']);
+    const jobState = new Map(jobs.map((job) => [job.id, job]));
+    const contactState = new Map(contacts.map((contact) => [contact.id, contact]));
+
+    const filterTask = (task: ReturnType<typeof normalize>) => {
+      if (task.links.jobId) {
+        const job = jobState.get(task.links.jobId);
+        if (!job || job.archived || (job.stage && archivedJobStages.has(job.stage))) {
+          return false;
+        }
+      }
+      if (task.links.contactId) {
+        const contact = contactState.get(task.links.contactId);
+        if (!contact || contact.archived) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    return {
+      dueToday: dueTodayMapped.filter(filterTask),
+      overdue: overdueMapped.filter(filterTask)
+    };
   }
 
   async getKpis() {

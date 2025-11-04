@@ -1,6 +1,6 @@
-import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
+import { differenceInCalendarDays, formatDistanceToNow, isSameDay, startOfDay } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useMemo, useState, KeyboardEvent, useEffect } from 'react';
+import { useMemo, useState, KeyboardEvent, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useJobsQuery, useDeleteJobMutation } from '../api/hooks';
 import { HeatBadge } from '../components/HeatBadge';
@@ -103,7 +103,35 @@ const formatFollowUpCountdown = (dateString?: string | null) => {
 export const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showArchived, setShowArchived] = useState(false);
-  const { data: allJobs, isLoading } = useJobsQuery({ includeArchived: showArchived });
+
+  const heatParam = searchParams.get('heat');
+  const parsedHeat = heatParam !== null && heatParam !== '' ? Number(heatParam) : undefined;
+  const heatFilter = Number.isFinite(parsedHeat) ? (parsedHeat as number) : undefined;
+  const followupsFilter = searchParams.get('followups');
+  const initialViewParam = searchParams.get('view');
+
+  const [viewMode, setViewModeState] = useState<'pipeline' | 'table'>(
+    initialViewParam === 'table' ? 'table' : 'pipeline'
+  );
+
+  const setViewMode = useCallback(
+    (mode: 'pipeline' | 'table') => {
+      setViewModeState(mode);
+      const next = new URLSearchParams(searchParams);
+      if (mode === 'pipeline') {
+        next.delete('view');
+      } else {
+        next.set('view', 'table');
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const { data: allJobs, isLoading } = useJobsQuery({
+    includeArchived: showArchived,
+    heat: heatFilter
+  });
   const deleteJob = useDeleteJobMutation();
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -113,7 +141,6 @@ export const JobsPage = () => {
     role: string;
   } | null>(null);
   const [historyJobId, setHistoryJobId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'pipeline' | 'table'>('pipeline');
   const [outreachJob, setOutreachJob] = useState<JobListItem | null>(null);
   const [stageJob, setStageJob] = useState<{
     id: string;
@@ -181,6 +208,44 @@ export const JobsPage = () => {
       ),
     [allJobs]
   );
+
+  const filteredActiveJobs = useMemo(() => {
+    let list = activeJobs;
+    if (followupsFilter === 'overdue' || followupsFilter === 'today') {
+      const todayStart = startOfDay(new Date());
+      list = list.filter((job) => {
+        if (!job.nextFollowUpAt) {
+          return false;
+        }
+        const dueDate = new Date(job.nextFollowUpAt);
+        if (Number.isNaN(dueDate.getTime())) {
+          return false;
+        }
+        if (followupsFilter === 'overdue') {
+          return dueDate.getTime() < todayStart.getTime();
+        }
+        return isSameDay(dueDate, todayStart);
+      });
+    }
+    return list;
+  }, [activeJobs, followupsFilter]);
+
+  useEffect(() => {
+    if (heatFilter !== undefined || followupsFilter) {
+      if (viewMode !== 'table') {
+        setViewMode('table');
+      }
+    }
+  }, [heatFilter, followupsFilter, viewMode, setViewMode]);
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('heat');
+    next.delete('followups');
+    next.delete('view');
+    setViewModeState('pipeline');
+    setSearchParams(next, { replace: true });
+  };
 
   const openJobActions = (job: JobListItem) => {
     setActionsJob(job);
@@ -350,6 +415,8 @@ export const JobsPage = () => {
   );
 
   const jobs = allJobs ?? [];
+  const hasActiveFilter = heatFilter !== undefined || Boolean(followupsFilter);
+  const visibleActiveJobs = filteredActiveJobs;
 
   return (
     <div className="space-y-6">
@@ -368,6 +435,28 @@ export const JobsPage = () => {
           <p className="text-sm text-slate-500">Keep heat high by touching each role every 3 days.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {hasActiveFilter && (
+            <div className="flex flex-wrap items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <span>Filters:</span>
+              {heatFilter !== undefined && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
+                  Heat {heatFilter}
+                </span>
+              )}
+              {followupsFilter && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-slate-700">
+                  Follow-ups {followupsFilter === 'overdue' ? 'Overdue' : 'Due today'}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs font-semibold text-brand underline-offset-2 hover:underline"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           <div className="flex rounded-full border border-slate-200 bg-white p-1 text-xs font-semibold text-slate-500">
             <button
               type="button"
@@ -439,7 +528,7 @@ export const JobsPage = () => {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {columns.map((column) => {
-              const stageJobs = activeJobs.filter((job) => job.stage === column.stage);
+              const stageJobs = visibleActiveJobs.filter((job) => job.stage === column.stage);
               return (
                 <div key={column.stage} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between">
@@ -461,7 +550,7 @@ export const JobsPage = () => {
         )
       ) : (
         <JobListTable
-          jobs={(showArchived ? archivedJobs : activeJobs).map((job) => ({
+          jobs={(showArchived ? archivedJobs : visibleActiveJobs).map((job) => ({
             id: job.id,
             company: job.company,
             role: job.role,

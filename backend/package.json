@@ -13,7 +13,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate": "bash -lc 'set -a && source ../.env && set +a && npx prisma migrate dev'",
     "prisma:generate": "bash -lc 'set -a && source ../.env && set +a && npx prisma generate'",
-    "prisma:seed": "bash -lc 'set -a && source ../.env && set +a && ts-node --transpile-only src/prisma/seed.ts'"
+    "prisma:seed": "bash -lc 'set -a && source ../.env && set +a && ts-node --transpile-only src/prisma/seed.ts'",
+    "prisma:reset": "bash -lc 'set -a && source ../.env && set +a && npx prisma migrate reset --force --skip-generate --skip-seed && npm run prisma:seed'"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

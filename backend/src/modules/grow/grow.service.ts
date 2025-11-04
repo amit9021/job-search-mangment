@@ -171,6 +171,25 @@ export class GrowService {
     });
   }
 
+  async countRecentActivity(days = 7) {
+    const since = dayjs().subtract(days, 'day').startOf('day').toDate();
+    const now = dayjs().endOf('day').toDate();
+
+    const [eventsAttended, boostsCompleted, reviewsThisWeek] = await Promise.all([
+      this.prisma.growthEvent.count({
+        where: { attended: true, date: { gte: since, lte: now } }
+      }),
+      this.prisma.growthBoostTask.count({
+        where: { status: 'completed', completedAt: { gte: since, lte: now } }
+      }),
+      this.prisma.growthReview.count({
+        where: { reviewedAt: { gte: since, lte: now } }
+      })
+    ]);
+
+    return { eventsAttended, boostsCompleted, reviewsThisWeek };
+  }
+
   async suggestBoostTasks(): Promise<BoostSuggestion[]> {
     const [projects, recentOutreachCount, eventsAttended, boostsCompleted, highlightsPublished, activeBoosts] = await Promise.all([
       this.prisma.project.findMany({ select: { stack: true } }),

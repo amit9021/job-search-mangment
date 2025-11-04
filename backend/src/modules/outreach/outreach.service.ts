@@ -220,4 +220,23 @@ export class OutreachService {
       contactId: outreach.contactId ?? null
     };
   }
+
+  async findStaleWithoutOutcome(hours = 48) {
+    const threshold = dayjs().subtract(hours, 'hour').toDate();
+    return this.prisma.outreach.findMany({
+      where: {
+        sentAt: { lt: threshold },
+        outcome: { in: [OutreachOutcome.NONE, OutreachOutcome.NO_RESPONSE] }
+      },
+      orderBy: { sentAt: 'asc' },
+      include: {
+        job: {
+          select: { id: true, company: true, role: true, heat: true, archived: true, stage: true }
+        },
+        contact: {
+          select: { id: true, name: true, strength: true, archived: true }
+        }
+      }
+    });
+  }
 }

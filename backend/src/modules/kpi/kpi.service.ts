@@ -9,27 +9,56 @@ export class KpiService {
   async getToday() {
     const start = dayjs().startOf('day').toDate();
     const end = dayjs().endOf('day').toDate();
+    const archivedJobStages = ['REJECTED', 'DORMANT'];
+
+    const jobActiveFilter = {
+      OR: [
+        { jobId: null },
+        {
+          job: {
+            archived: false,
+            stage: { notIn: archivedJobStages }
+          }
+        }
+      ]
+    } as const;
+
+    const contactActiveFilter = {
+      OR: [{ contactId: null }, { contact: { archived: false } }]
+    } as const;
 
     const [cvSentToday, outreachToday, followupsDue, seniorReviewsThisWeek, heatBreakdown] = await Promise.all([
       this.prisma.jobApplication.count({
         where: {
-          dateSent: { gte: start, lte: end }
+          dateSent: { gte: start, lte: end },
+          job: {
+            archived: false,
+            stage: { notIn: archivedJobStages }
+          }
         }
       }),
       this.prisma.outreach.count({
         where: {
-          sentAt: { gte: start, lte: end }
+          sentAt: { gte: start, lte: end },
+          ...jobActiveFilter,
+          ...contactActiveFilter
         }
       }),
       this.prisma.followUp.count({
         where: {
           dueAt: { gte: start, lte: end },
-          sentAt: null
+          sentAt: null,
+          ...jobActiveFilter,
+          ...contactActiveFilter
         }
       }),
       this.countSeniorReviewsThisWeek(),
       this.prisma.job.groupBy({
         by: ['heat'],
+        where: {
+          archived: false,
+          stage: { notIn: archivedJobStages }
+        },
         _count: { _all: true }
       })
     ]);
@@ -51,6 +80,23 @@ export class KpiService {
   async getWeek() {
     const start = dayjs().startOf('week').toDate();
     const end = dayjs().endOf('week').toDate();
+    const archivedJobStages = ['REJECTED', 'DORMANT'];
+
+    const jobActiveFilter = {
+      OR: [
+        { jobId: null },
+        {
+          job: {
+            archived: false,
+            stage: { notIn: archivedJobStages }
+          }
+        }
+      ]
+    } as const;
+
+    const contactActiveFilter = {
+      OR: [{ contactId: null }, { contact: { archived: false } }]
+    } as const;
 
     const [
       cvSent,
@@ -62,13 +108,27 @@ export class KpiService {
       boostTasksCompletedGrow
     ] = await Promise.all([
         this.prisma.jobApplication.count({
-          where: { dateSent: { gte: start, lte: end } }
+          where: {
+            dateSent: { gte: start, lte: end },
+            job: {
+              archived: false,
+              stage: { notIn: archivedJobStages }
+            }
+          }
         }),
         this.prisma.outreach.count({
-          where: { sentAt: { gte: start, lte: end } }
+          where: {
+            sentAt: { gte: start, lte: end },
+            ...jobActiveFilter,
+            ...contactActiveFilter
+          }
       }),
       this.prisma.followUp.count({
-        where: { sentAt: { gte: start, lte: end } }
+        where: {
+          sentAt: { gte: start, lte: end },
+          ...jobActiveFilter,
+          ...contactActiveFilter
+        }
         }),
         this.prisma.event.count({
           where: { status: 'ATTENDED', date: { gte: start, lte: end } }
@@ -93,6 +153,85 @@ export class KpiService {
       followupsSent,
       eventsAttended: eventsAttendedLegacy + eventsAttendedGrow,
       boostTasksDone: boostTasksDoneLegacy + boostTasksCompletedGrow
+    };
+  }
+
+  async getRollingSevenDays() {
+    const start = dayjs().subtract(6, 'day').startOf('day').toDate();
+    const end = dayjs().endOf('day').toDate();
+    const archivedJobStages = ['REJECTED', 'DORMANT'];
+
+    const jobActiveFilter = {
+      OR: [
+        { jobId: null },
+        {
+          job: {
+            archived: false,
+            stage: { notIn: archivedJobStages }
+          }
+        }
+      ]
+    } as const;
+
+    const contactActiveFilter = {
+      OR: [{ contactId: null }, { contact: { archived: false } }]
+    } as const;
+
+    const [
+      cvSent,
+      outreach,
+      followupsCompleted,
+      eventsAttendedLegacy,
+      boostTasksDoneLegacy,
+      eventsAttendedGrow,
+      boostsDoneGrow
+    ] = await Promise.all([
+      this.prisma.jobApplication.count({
+        where: {
+          dateSent: { gte: start, lte: end },
+          job: {
+            archived: false,
+            stage: { notIn: archivedJobStages }
+          }
+        }
+      }),
+      this.prisma.outreach.count({
+        where: {
+          sentAt: { gte: start, lte: end },
+          ...jobActiveFilter,
+          ...contactActiveFilter
+        }
+      }),
+      this.prisma.followUp.count({
+        where: {
+          sentAt: { gte: start, lte: end },
+          ...jobActiveFilter,
+          ...contactActiveFilter
+        }
+      }),
+      this.prisma.event.count({
+        where: { status: 'ATTENDED', date: { gte: start, lte: end } }
+      }),
+      this.prisma.boostTask.count({
+        where: { doneAt: { gte: start, lte: end } }
+      }),
+      this.prisma.growthEvent.count({
+        where: { attended: true, date: { gte: start, lte: end } }
+      }),
+      this.prisma.growthBoostTask.count({
+        where: {
+          status: 'completed',
+          completedAt: { gte: start, lte: end }
+        }
+      })
+    ]);
+
+    return {
+      cvSent,
+      outreach,
+      followUpsCompleted: followupsCompleted,
+      eventsAttended: eventsAttendedLegacy + eventsAttendedGrow,
+      boostTasksDone: boostTasksDoneLegacy + boostsDoneGrow
     };
   }
 
