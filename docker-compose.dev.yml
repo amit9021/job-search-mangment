@@ -1,0 +1,59 @@
+version: '3.9'
+
+name: jobhunt-dev
+
+services:
+  db_dev:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobhunt_dev
+    ports:
+      - '5433:5432'
+    volumes:
+      - db_data_dev:/var/lib/postgresql/data
+    networks:
+      - prephase0_dev_net
+
+  backend_dev:
+    build:
+      context: ./backend
+    env_file:
+      - .env.development
+    environment:
+      NODE_ENV: development
+      DATABASE_URL_DEV: postgresql://postgres:postgres@db_dev:5432/jobhunt_dev
+      DATABASE_URL: postgresql://postgres:postgres@db_dev:5432/jobhunt_dev
+    depends_on:
+      - db_dev
+    ports:
+      - '3001:3001'
+    command: sh -c "npx prisma migrate deploy && node dist/main.js"
+    networks:
+      - prephase0_dev_net
+
+  frontend_dev:
+    build:
+      context: ./frontend
+    env_file:
+      - .env.development
+    environment:
+      NODE_ENV: development
+      FRONT_PORT: 5174
+      VITE_API_URL: http://backend_dev:3001
+    depends_on:
+      - backend_dev
+    ports:
+      - '5174:5174'
+    command: npm run dev -- --host 0.0.0.0 --port 5174
+    networks:
+      - prephase0_dev_net
+
+volumes:
+  db_data_dev: {}
+
+networks:
+  prephase0_dev_net:
+    driver: bridge

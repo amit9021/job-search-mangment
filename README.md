@@ -31,11 +31,12 @@ npm install
 ```
 
 ### 2. Environment
-Copy `.env.example` to `.env` (adjust values as needed):
+Copy the template into mode-specific files and populate secrets:
 ```bash
-cp .env.example .env
+cp .env.example .env.development
+cp .env.example .env.production
 ```
-The backend reads `DATABASE_URL`, `JWT_SECRET`, `ADMIN_*`, and `TIMEZONE`. The frontend consumes `VITE_API_URL`.
+Use unique database names, secrets, and allowed origins per file. Package scripts automatically load the right env file via `scripts/use-env.sh`.
 
 ### 3. Database
 ```bash
@@ -45,23 +46,25 @@ npm run prisma:seed
 ```
 
 ### 4. Run locally
-- Backend: `npm run start:dev` (binds to `PORT` from `.env`, defaults to 3000)
-- Frontend: `npm run dev` (binds to `FRONT_PORT` from `.env`, proxies `/api` to `VITE_API_URL`)
+- Backend: `npm run start:dev` (uses `.env.development`, defaults to port `3001`)
+- Frontend: `npm run dev` (uses `.env.development`, serves on `5174`)
 
-Log in with the admin credentials defined in your `.env`.
+Log in with the admin credentials defined in your `.env.development`.
 
 ---
 
 ## Docker Compose
-```bash
-docker-compose up --build
-```
-Services:
-- `db` (PostgreSQL 15)
-- `backend` (NestJS build, runs migrations on start)
-- `frontend` (Vite dev server proxied to backend)
+To run isolated stacks:
 
-Stop with `docker-compose down` (data persisted in `db_data` volume).
+```bash
+# Development stack
+docker compose --env-file .env.development -f docker-compose.dev.yml up -d
+
+# Production stack (sample)
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+```
+
+Each compose file provisions its own Postgres instance, network, volumes, and port mapping. Tear down with `docker compose -f <file> down -v`.
 
 ---
 

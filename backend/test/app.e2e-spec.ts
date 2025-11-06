@@ -53,9 +53,9 @@ describe('App e2e (happy path smoke tests)', () => {
   });
 
   it('POST /auth/login returns token for valid credentials', async () => {
-    const password = 'test123';
+    const password = '123123zz';
     const passwordHash = await argon2.hash(password);
-    prisma.user.findUnique.mockResolvedValue({ id: 'user_1', username: 'admin', passwordHash });
+    prisma.user.findUnique.mockResolvedValue({ id: 'user_1', username: 'admin', password });
 
     const response = await request(app.getHttpServer()).post('/auth/login').send({ username: 'admin', password });
 

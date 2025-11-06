@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { join, resolve } from 'path';
 import { AuthModule } from './modules/auth/auth.module';
 import { BoostsModule } from './modules/boosts/boosts.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -23,11 +24,26 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { StatsModule } from './modules/stats/stats.module';
 import appConfig from './config/app';
 
+const nodeEnv = process.env.NODE_ENV?.trim() ?? 'development';
+const envFileNames = [
+  `.env.${nodeEnv}.local`,
+  `.env.${nodeEnv}`,
+  '.env.local',
+  '.env'
+];
+const envSearchDirs = [
+  resolve(__dirname, '..', '..', '..'),
+  resolve(__dirname, '..', '..')
+];
+const envFilePath = Array.from(
+  new Set(envSearchDirs.flatMap((dir) => envFileNames.map((file) => join(dir, file))))
+);
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['../../.env', '.env'],
+      envFilePath,
       load: [appConfig]
     }),
     ScheduleModule.forRoot(),
