@@ -28,7 +28,7 @@ export class OutreachController {
   @Patch(':id')
   async update(@Param() params: IdParamDto, @Body() body: UpdateOutreachDto) {
     const result = await this.outreachService.update(params.id, body);
-    if (result.job?.id) {
+    if ('job' in result && result.job?.id) {
       await this.jobsService.recalculateHeat(result.job.id);
     }
     return result;

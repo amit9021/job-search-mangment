@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: job-hunt-frontend:latest
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: job-hunt-backend:latest

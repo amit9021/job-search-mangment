@@ -165,7 +165,9 @@ describe('DashboardService', () => {
     outreachService.findStaleWithoutOutcome.mockResolvedValue([]);
     kpiService.getToday.mockResolvedValue({
       cvSentToday: 2,
+      cvTarget: dashboardConfig.dailyTargetCv,
       outreachToday: 3,
+      outreachTarget: dashboardConfig.dailyTargetWarm,
       followupsDue: 0,
       seniorReviewsThisWeek: 1,
       heatBreakdown: []
@@ -190,7 +192,8 @@ describe('DashboardService', () => {
         h2: 0,
         h3: 0,
         delta: { h0: 0, h1: 0, h2: 0, h3: 0 }
-      }
+      },
+      degraded: false
     });
 
     const result = await service.getSummary('user-1');

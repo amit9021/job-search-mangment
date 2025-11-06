@@ -4,6 +4,7 @@ import { differenceInCalendarDays } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
 
+
 @Injectable()
 export class ContactsService {
   constructor(
@@ -87,7 +88,7 @@ export class ContactsService {
       }
     });
 
-    const contactIds = contacts.map((contact) => contact.id);
+    const contactIds: string[] = contacts.map((contact) => contact.id);
 
     const outreachLinks = contactIds.length
       ? await this.prisma.outreach.findMany({
@@ -120,12 +121,12 @@ export class ContactsService {
       : [];
 
     const linkedJobsByContact = new Map<
-      string,
-      Map<string, { id: string; company: string; role: string | null; stage: string }>
+      string | null,
+      Map<string, { id: string; company: string | null; role: string | null; stage: string }>
     >();
 
     const upsertJob = (
-      contactId: string,
+      contactId: string | null,
       job:
         | {
             id: string;
@@ -153,9 +154,11 @@ export class ContactsService {
     });
 
     const computed = contacts.map((contact) => {
-      const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort((a, b) =>
-        `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
-      );
+      const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort((a, b) => {
+        const labelA = `${a.company ?? ''} ${a.role ?? ''}`;
+        const labelB = `${b.company ?? ''} ${b.role ?? ''}`;
+        return labelA.localeCompare(labelB);
+      });
       const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
       const nextFollowUp = contact.followups[0];
       const nextFollowUpAt = nextFollowUp?.dueAt ?? null;

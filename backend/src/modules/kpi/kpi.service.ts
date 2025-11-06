@@ -9,7 +9,7 @@ export class KpiService {
   async getToday() {
     const start = dayjs().startOf('day').toDate();
     const end = dayjs().endOf('day').toDate();
-    const archivedJobStages = ['REJECTED', 'DORMANT'];
+    const archivedJobStages = ['REJECTED', 'DORMANT'] as const;
 
     const jobActiveFilter = {
       OR: [
@@ -17,15 +17,15 @@ export class KpiService {
         {
           job: {
             archived: false,
-            stage: { notIn: archivedJobStages }
+            stage: { notIn: [...archivedJobStages] }
           }
         }
       ]
-    } as const;
+    };
 
     const contactActiveFilter = {
       OR: [{ contactId: null }, { contact: { archived: false } }]
-    } as const;
+    };
 
     const [cvSentToday, outreachToday, followupsDue, seniorReviewsThisWeek, heatBreakdown] = await Promise.all([
       this.prisma.jobApplication.count({
@@ -33,7 +33,7 @@ export class KpiService {
           dateSent: { gte: start, lte: end },
           job: {
             archived: false,
-            stage: { notIn: archivedJobStages }
+            stage: { notIn: [...archivedJobStages] }
           }
         }
       }),
@@ -41,7 +41,7 @@ export class KpiService {
         where: {
           sentAt: { gte: start, lte: end },
           ...jobActiveFilter,
-          ...contactActiveFilter
+          OR: [...contactActiveFilter.OR]
         }
       }),
       this.prisma.followUp.count({
@@ -49,7 +49,7 @@ export class KpiService {
           dueAt: { gte: start, lte: end },
           sentAt: null,
           ...jobActiveFilter,
-          ...contactActiveFilter
+          OR: [...contactActiveFilter.OR]
         }
       }),
       this.countSeniorReviewsThisWeek(),
@@ -57,7 +57,7 @@ export class KpiService {
         by: ['heat'],
         where: {
           archived: false,
-          stage: { notIn: archivedJobStages }
+          stage: { notIn: [...archivedJobStages] }
         },
         _count: { _all: true }
       })
@@ -72,7 +72,7 @@ export class KpiService {
       seniorReviewsThisWeek,
       heatBreakdown: [0, 1, 2, 3].map((heat) => ({
         heat,
-        count: heatBreakdown.find((item) => item.heat === heat)?._count._all ?? 0
+        count: (heatBreakdown.find((item) => item.heat === heat)?._count as { _all: number } | undefined)?._all ?? 0
       }))
     };
   }
@@ -80,7 +80,7 @@ export class KpiService {
   async getWeek() {
     const start = dayjs().startOf('week').toDate();
     const end = dayjs().endOf('week').toDate();
-    const archivedJobStages = ['REJECTED', 'DORMANT'];
+    const archivedJobStages = ['REJECTED', 'DORMANT'] as const;
 
     const jobActiveFilter = {
       OR: [
@@ -88,15 +88,15 @@ export class KpiService {
         {
           job: {
             archived: false,
-            stage: { notIn: archivedJobStages }
+            stage: { notIn: [...archivedJobStages] }
           }
         }
       ]
-    } as const;
+    };
 
     const contactActiveFilter = {
       OR: [{ contactId: null }, { contact: { archived: false } }]
-    } as const;
+    };
 
     const [
       cvSent,
@@ -112,7 +112,7 @@ export class KpiService {
             dateSent: { gte: start, lte: end },
             job: {
               archived: false,
-              stage: { notIn: archivedJobStages }
+              stage: { notIn: [...archivedJobStages] }
             }
           }
         }),
@@ -120,14 +120,14 @@ export class KpiService {
           where: {
             sentAt: { gte: start, lte: end },
             ...jobActiveFilter,
-            ...contactActiveFilter
+            OR: [...contactActiveFilter.OR]
           }
       }),
       this.prisma.followUp.count({
         where: {
           sentAt: { gte: start, lte: end },
           ...jobActiveFilter,
-          ...contactActiveFilter
+          OR: [...contactActiveFilter.OR]
         }
         }),
         this.prisma.event.count({
@@ -159,7 +159,7 @@ export class KpiService {
   async getRollingSevenDays() {
     const start = dayjs().subtract(6, 'day').startOf('day').toDate();
     const end = dayjs().endOf('day').toDate();
-    const archivedJobStages = ['REJECTED', 'DORMANT'];
+    const archivedJobStages = ['REJECTED', 'DORMANT'] as const;
 
     const jobActiveFilter = {
       OR: [
@@ -167,15 +167,15 @@ export class KpiService {
         {
           job: {
             archived: false,
-            stage: { notIn: archivedJobStages }
+            stage: { notIn: [...archivedJobStages] }
           }
         }
       ]
-    } as const;
+    };
 
     const contactActiveFilter = {
       OR: [{ contactId: null }, { contact: { archived: false } }]
-    } as const;
+    };
 
     const [
       cvSent,
@@ -191,7 +191,7 @@ export class KpiService {
           dateSent: { gte: start, lte: end },
           job: {
             archived: false,
-            stage: { notIn: archivedJobStages }
+            stage: { notIn: [...archivedJobStages] }
           }
         }
       }),
@@ -199,14 +199,14 @@ export class KpiService {
         where: {
           sentAt: { gte: start, lte: end },
           ...jobActiveFilter,
-          ...contactActiveFilter
+          OR: [...contactActiveFilter.OR]
         }
       }),
       this.prisma.followUp.count({
         where: {
           sentAt: { gte: start, lte: end },
           ...jobActiveFilter,
-          ...contactActiveFilter
+          OR: [...contactActiveFilter.OR]
         }
       }),
       this.prisma.event.count({

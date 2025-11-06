@@ -1,17 +1,22 @@
 import { z } from 'zod';
 
-type ZodShape = Record<string, z.ZodTypeAny>;
+type ZodDtoConstructor<TSchema extends z.ZodTypeAny> = {
+  new (payload?: z.infer<TSchema>): z.infer<TSchema>;
+  zodSchema: TSchema;
+};
 
-export function createZodDto<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
+export function createZodDto<TSchema extends z.ZodTypeAny>(schema: TSchema): ZodDtoConstructor<TSchema> {
   class ZodDtoClass {
     static zodSchema = schema;
 
-    constructor(payload: z.infer<typeof schema>) {
-      Object.assign(this, payload);
+    constructor(payload?: z.infer<TSchema>) {
+      if (payload) {
+        Object.assign(this, payload);
+      }
     }
   }
 
-  return ZodDtoClass;
+  return ZodDtoClass as unknown as ZodDtoConstructor<TSchema>;
 }
 
 export const idParamSchema = z.object({

@@ -26,7 +26,7 @@ export interface HeatRules {
   }>;
 }
 
-let cachedRules: HeatRules | null = null;
+let cachedRules: HeatRules | null | unknown = null;
 
 const parseScalar = (value: string) => {
   if (value === 'true') {
@@ -220,7 +220,7 @@ const findHeatRulesYaml = () => {
   return null;
 };
 
-export const loadHeatRules = (): HeatRules => {
+export const loadHeatRules = (): HeatRules | unknown => {
   if (cachedRules) {
     return cachedRules;
   }
@@ -232,7 +232,7 @@ export const loadHeatRules = (): HeatRules => {
   }
 
   const raw = readFileSync(filePath, 'utf8');
-  const parsed = parseYaml(raw) as HeatRules;
+  const parsed = parseYaml(raw);
   cachedRules = parsed;
   return cachedRules;
 };

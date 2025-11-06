@@ -500,7 +500,7 @@ export class JobsService {
       const contactList = contactSet
         ? Array.from(contactSet)
             .map((contactId) => contactMap.get(contactId))
-            .filter((value): value is { id: string; name: string | null; role: string | null } => Boolean(value))
+            .filter((value): value is NonNullable<typeof value> => Boolean(value))
         : [];
 
       metrics.set(id, {
@@ -522,7 +522,7 @@ export class JobsService {
     return this.computeHeatResult(jobId);
   }
 
-  private async computeHeatResult(jobId: string, rules: HeatRules = loadHeatRules()): Promise<HeatComputationResult> {
+  private async computeHeatResult(jobId: string, rules: HeatRules = loadHeatRules() as HeatRules): Promise<HeatComputationResult> {
     const job = await this.prisma.job.findUnique({
       where: { id: jobId },
       include: {

@@ -437,7 +437,7 @@ export class TasksService {
     const jobIds = new Set<string>();
     const contactIds = new Set<string>();
 
-    const normalize = (task: ActionableTask) => {
+    const normalize = (task: { id: string; title: string; dueAt: Date | null; links: Prisma.JsonValue }) => {
       const links = extractLinks(task.links);
       if (links.jobId) {
         jobIds.add(links.jobId);

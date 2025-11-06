@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "bash -lc 'set -a && source ../.env && set +a && vite'",
-    "build": "bash -lc 'set -a && source ../.env && set +a && vite build'",
-    "preview": "bash -lc 'set -a && source ../.env && set +a && vite preview'",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings=0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
     "test": "bash -lc 'set -a && source ../.env && set +a && vitest'"
   },
   "dependencies": {

@@ -1,0 +1,20 @@
+FROM node:20-bullseye-slim AS base
+ENV NODE_ENV=production
+
+FROM base AS deps
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+
+FROM deps AS build
+COPY frontend/. .
+# Allow overriding API url / other vars at build time (falls back to local dev default)
+ARG VITE_API_URL=http://localhost:3001
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
+
+FROM nginx:1.25-alpine AS runtime
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/dist ./
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

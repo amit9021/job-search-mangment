@@ -6,7 +6,7 @@ import { StatsWeeklySummaryDto, StatsSeriesPoint } from './dto/stats-weekly.dto'
 type TimedResult<T> = { value: T; degraded: boolean };
 
 const SUPPORTED_RANGES = new Set([7, 14, 30]);
-const ARCHIVED_JOB_STAGES = ['REJECTED', 'DORMANT'];
+const ARCHIVED_JOB_STAGES = ['REJECTED', 'DORMANT'] as const;
 
 @Injectable()
 export class StatsService {
@@ -147,7 +147,7 @@ export class StatsService {
         dateSent: { gte: start.toDate(), lte: end.toDate() },
         job: {
           archived: false,
-          stage: { notIn: ARCHIVED_JOB_STAGES }
+          stage: { notIn: [...ARCHIVED_JOB_STAGES] }
         }
       },
       select: { dateSent: true }
@@ -169,7 +169,7 @@ export class StatsService {
 
     return records
       .filter((record) => {
-        if (record.job && (record.job.archived || ARCHIVED_JOB_STAGES.includes(record.job.stage ?? ''))) {
+        if (record.job && (record.job.archived || (ARCHIVED_JOB_STAGES as readonly string[]).includes(record.job.stage ?? ''))) {
           return false;
         }
         if (record.contact && record.contact.archived) {
@@ -191,7 +191,7 @@ export class StatsService {
               {
                 job: {
                   archived: false,
-                  stage: { notIn: ARCHIVED_JOB_STAGES }
+                  stage: { notIn: [...ARCHIVED_JOB_STAGES] }
                 }
               }
             ]
@@ -225,7 +225,7 @@ export class StatsService {
               {
                 job: {
                   archived: false,
-                  stage: { notIn: ARCHIVED_JOB_STAGES }
+                  stage: { notIn: [...ARCHIVED_JOB_STAGES] }
                 }
               }
             ]
