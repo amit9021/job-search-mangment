@@ -1,9 +1,11 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { NotificationsService } from './notifications.service';
-import { FollowupsService } from '../followups/followups.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 import dayjs from '../../utils/dayjs';
+import { FollowupsService } from '../followups/followups.service';
+
+import { NotificationsService } from './notifications.service';
 
 @Injectable()
 export class NotificationsScheduler {
@@ -28,7 +30,11 @@ export class NotificationsScheduler {
     const dueToday = await this.followupsService.getDue('today');
     const now = dayjs();
     for (const item of dueToday) {
-      const label = item.jobId ? `Job ${item.jobId}` : item.contactId ? `Contact ${item.contactId}` : 'General';
+      const label = item.jobId
+        ? `Job ${item.jobId}`
+        : item.contactId
+          ? `Contact ${item.contactId}`
+          : 'General';
       await this.notificationsService.ensureNotification(
         'followup_due',
         `Follow-up due: ${label}`,

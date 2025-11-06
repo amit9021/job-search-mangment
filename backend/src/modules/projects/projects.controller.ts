@@ -1,7 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { ProjectsService } from './projects.service';
+
 import { CreateProjectDto, UpdateProjectDto } from './dto';
+import { ProjectsService } from './projects.service';
 
 @Controller('projects')
 export class ProjectsController {

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { EventStatus, JobStage } from '@prisma/client';
-import dayjs from '../../utils/dayjs';
+import { BoostTask, CodeReview, Event, EventStatus, Job, JobStage } from '@prisma/client';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 
 export type RecommendationResult = {
   score: number;
@@ -15,34 +16,48 @@ export class RecommendationService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getNextRecommendation() {
-    const [jobs, followupsDue, cvToday, outreachToday, contactsWithReferrals, pendingReviews, eventsToday, openBoosts] =
-      await Promise.all([
-        this.prisma.job.findMany({
-          where: { stage: { notIn: [JobStage.REJECTED, JobStage.DORMANT] } },
-          include: { outreaches: { orderBy: { sentAt: 'desc' }, take: 1 } }
-        }),
-        this.getDueFollowupsCount(),
-        this.getCvSentToday(),
-        this.getOutreachToday(),
-        this.prisma.contact.count({
-          where: {
-            referrals: { some: {} }
+    const [
+      jobs,
+      followupsDue,
+      cvToday,
+      outreachToday,
+      contactsWithReferrals,
+      pendingReviews,
+      eventsToday,
+      openBoosts
+    ] = await Promise.all([
+      this.prisma.job.findMany({
+        where: { stage: { notIn: [JobStage.REJECTED, JobStage.DORMANT] } },
+        include: { outreaches: { orderBy: { sentAt: 'desc' }, take: 1 } }
+      }),
+      this.getDueFollowupsCount(),
+      this.getCvSentToday(),
+      this.getOutreachToday(),
+      this.prisma.contact.count({
+        where: {
+          referrals: { some: {} }
+        }
+      }),
+      this.prisma.codeReview.findMany({
+        where: { reviewedAt: null },
+        include: { project: true, contact: true }
+      }),
+      this.prisma.event.findMany({
+        where: {
+          date: {
+            gte: dayjs().startOf('day').toDate(),
+            lte: dayjs().endOf('day').toDate()
           }
-        }),
-        this.prisma.codeReview.findMany({ where: { reviewedAt: null }, include: { project: true, contact: true } }),
-        this.prisma.event.findMany({
-          where: {
-            date: {
-              gte: dayjs().startOf('day').toDate(),
-              lte: dayjs().endOf('day').toDate()
-            }
-          }
-        }),
-        this.prisma.boostTask.findMany({ where: { doneAt: null }, orderBy: { impactScore: 'desc' } })
-      ]);
+        }
+      }),
+      this.prisma.boostTask.findMany({ where: { doneAt: null }, orderBy: { impactScore: 'desc' } })
+    ]);
 
     const jobSuggestion = this.computeJobSuggestion(jobs, followupsDue, cvToday, outreachToday);
-    const networkingSuggestion = this.computeNetworkingSuggestion(contactsWithReferrals, followupsDue);
+    const networkingSuggestion = this.computeNetworkingSuggestion(
+      contactsWithReferrals,
+      followupsDue
+    );
     const growthSuggestion = this.computeGrowthSuggestion({
       cvToday,
       outreachToday,
@@ -51,7 +66,9 @@ export class RecommendationService {
       openBoosts
     });
 
-    const suggestions = [jobSuggestion, networkingSuggestion, growthSuggestion].filter(Boolean) as RecommendationResult[];
+    const suggestions = [jobSuggestion, networkingSuggestion, growthSuggestion].filter(
+      Boolean
+    ) as RecommendationResult[];
     if (suggestions.length === 0) {
       return {
         title: 'Great job!',
@@ -64,7 +81,12 @@ export class RecommendationService {
     return suggestions[0];
   }
 
-  private computeJobSuggestion(jobs: any[], followupsDue: number, cvToday: number, outreachToday: number): RecommendationResult | null {
+  private computeJobSuggestion(
+    jobs: Job[],
+    followupsDue: number,
+    cvToday: number,
+    outreachToday: number
+  ): RecommendationResult | null {
     if (!jobs.length) {
       return null;
     }
@@ -75,21 +97,27 @@ export class RecommendationService {
         ? job.deadline < dayjs().add(3, 'day').toDate()
           ? 20
           : job.deadline < dayjs().add(7, 'day').toDate()
-          ? 10
-          : 0
+            ? 10
+            : 0
         : 0;
       const lastTouch = job.lastTouchAt ? dayjs(job.lastTouchAt) : dayjs(job.createdAt);
       const staleness = lastTouch.isBefore(dayjs().subtract(7, 'day'))
         ? 20
         : lastTouch.isBefore(dayjs().subtract(3, 'day'))
-        ? 10
-        : 0;
+          ? 10
+          : 0;
       const followupPressure = followupsDue > 0 ? 10 : 0;
       const cvGapPenalty = cvToday < 5 ? 5 : 0;
       const outreachGapPenalty = outreachToday < 5 ? 5 : 0;
       return {
         job,
-        score: heatWeight + deadlineScore + staleness + followupPressure + cvGapPenalty + outreachGapPenalty
+        score:
+          heatWeight +
+          deadlineScore +
+          staleness +
+          followupPressure +
+          cvGapPenalty +
+          outreachGapPenalty
       };
     });
 
@@ -103,7 +131,10 @@ export class RecommendationService {
     };
   }
 
-  private computeNetworkingSuggestion(contactsWithReferrals: number, followupsDue: number): RecommendationResult | null {
+  private computeNetworkingSuggestion(
+    contactsWithReferrals: number,
+    followupsDue: number
+  ): RecommendationResult | null {
     const networkingScore = contactsWithReferrals * 20 + followupsDue * 10;
     if (networkingScore <= 0) {
       return null;
@@ -125,9 +156,9 @@ export class RecommendationService {
   }: {
     cvToday: number;
     outreachToday: number;
-    pendingReviews: any[];
-    eventsToday: any[];
-    openBoosts: any[];
+    pendingReviews: CodeReview[];
+    eventsToday: Event[];
+    openBoosts: BoostTask[];
   }): RecommendationResult | null {
     let score = 0;
     if (cvToday < 5) score += 15;
@@ -141,12 +172,12 @@ export class RecommendationService {
     }
 
     const primaryAction = pendingReviews.length
-      ? `Request feedback on ${pendingReviews[0].project.name}`
+      ? `Request feedback on ${pendingReviews[0].projectId}`
       : eventsToday.length
-      ? `Prep for ${eventsToday[0].name}`
-      : openBoosts.length
-      ? `Tackle boost task: ${openBoosts[0].title}`
-      : 'Close the daily CV/outreach gap';
+        ? `Prep for ${eventsToday[0].name}`
+        : openBoosts.length
+          ? `Tackle boost task: ${openBoosts[0].title}`
+          : 'Close the daily CV/outreach gap';
 
     return {
       score,

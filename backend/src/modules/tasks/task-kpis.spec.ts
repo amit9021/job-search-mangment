@@ -1,4 +1,5 @@
 import dayjs from '../../utils/dayjs';
+
 import { calculateCompletionStreak } from './task-kpis';
 
 describe('calculateCompletionStreak', () => {

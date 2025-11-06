@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ReferralsService } from './referrals.service';
+
 import { CreateReferralBodyDto } from './dto/create-referral.dto';
+import { ReferralsService } from './referrals.service';
 
 @Controller('referrals')
 export class ReferralsController {
@@ -13,7 +14,7 @@ export class ReferralsController {
 
   @Post()
   async create(@Body() body: CreateReferralBodyDto) {
-    const { contactId, ...params } = body as any;
+    const { contactId, ...params } = body;
     return this.referralsService.createForContact(contactId, params);
   }
 }

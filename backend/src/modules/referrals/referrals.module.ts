@@ -1,7 +1,9 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { ReferralsService } from './referrals.service';
-import { ReferralsController } from './referrals.controller';
+
 import { JobsModule } from '../jobs/jobs.module';
+
+import { ReferralsController } from './referrals.controller';
+import { ReferralsService } from './referrals.service';
 
 @Module({
   imports: [forwardRef(() => JobsModule)],

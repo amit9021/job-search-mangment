@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { BoostsService } from './boosts.service';
+
 import { BoostsController } from './boosts.controller';
+import { BoostsService } from './boosts.service';
 
 @Module({
   controllers: [BoostsController],

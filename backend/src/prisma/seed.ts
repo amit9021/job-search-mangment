@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+
+import type { Prisma } from '@prisma/client';
 import {
   PrismaClient,
   ContactStrength,
@@ -5,12 +9,9 @@ import {
   OutreachChannel,
   OutreachOutcome,
   ReferralKind,
-  Prisma,
   EventStatus
 } from '@prisma/client';
 import argon2 from 'argon2';
-import fs from 'fs';
-import path from 'path';
 
 type MockData = {
   companies: { name: string; domain: string }[];
@@ -34,9 +35,12 @@ const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max 
 const randomBool = (probability = 0.5) => Math.random() < probability;
 const now = new Date();
 
-const shiftFromNow = (days: number, hours = 0) => new Date(now.getTime() + days * DAY_MS + hours * HOUR_MS);
-const randomPastDate = (maxDaysAgo: number) => shiftFromNow(-randomInt(0, maxDaysAgo), randomInt(-6, 6));
-const randomFutureDate = (maxDaysAhead: number) => shiftFromNow(randomInt(0, maxDaysAhead), randomInt(-6, 6));
+const shiftFromNow = (days: number, hours = 0) =>
+  new Date(now.getTime() + days * DAY_MS + hours * HOUR_MS);
+const randomPastDate = (maxDaysAgo: number) =>
+  shiftFromNow(-randomInt(0, maxDaysAgo), randomInt(-6, 6));
+const randomFutureDate = (maxDaysAhead: number) =>
+  shiftFromNow(randomInt(0, maxDaysAhead), randomInt(-6, 6));
 
 const loadMockData = (): MockData => {
   const mockPath = path.join(__dirname, 'mock-data.json');
@@ -74,19 +78,23 @@ async function seedCompanies(companies: MockData['companies']) {
   return Promise.all(companies.map((company) => prisma.company.create({ data: company })));
 }
 
-async function seedContacts(
-  companies: Awaited<ReturnType<typeof seedCompanies>>,
-  mock: MockData
-) {
+async function seedContacts(companies: Awaited<ReturnType<typeof seedCompanies>>, mock: MockData) {
   const contacts: Awaited<ReturnType<typeof prisma.contact.create>>[] = [];
-  const contactsByCompanyId = new Map<string, Awaited<ReturnType<typeof prisma.contact.create>>[]>();
+  const contactsByCompanyId = new Map<
+    string,
+    Awaited<ReturnType<typeof prisma.contact.create>>[]
+  >();
 
   for (let i = 0; i < 50; i += 1) {
     const company = companies[i % companies.length];
     const firstName = randomItem(mock.contactFirstNames);
     const lastName = randomItem(mock.contactLastNames);
     const role = randomItem(mock.contactRoles);
-    const strength = randomItem([ContactStrength.WEAK, ContactStrength.MEDIUM, ContactStrength.STRONG]);
+    const strength = randomItem([
+      ContactStrength.WEAK,
+      ContactStrength.MEDIUM,
+      ContactStrength.STRONG
+    ]);
     const isArchived = i < 5; // keep a few archived to validate filters
     const emailDomain = company.domain ?? 'example.com';
     const email = `${firstName}.${lastName}@${emailDomain}`.toLowerCase();
@@ -102,7 +110,10 @@ async function seedContacts(
         linkedinUrl: `https://www.linkedin.com/in/${linkedinSlug}`,
         location: randomItem(['Remote', 'NYC', 'Berlin', 'Tel Aviv', 'London']),
         tags: strength === ContactStrength.STRONG ? ['warm', 'advocate'] : ['prospect', 'demo'],
-        notes: strength === ContactStrength.STRONG ? 'Regular check-ins every other week.' : 'Met during recent outreach.',
+        notes:
+          strength === ContactStrength.STRONG
+            ? 'Regular check-ins every other week.'
+            : 'Met during recent outreach.',
         archived: isArchived,
         archivedAt: isArchived ? randomPastDate(10) : undefined
       }
@@ -168,7 +179,9 @@ async function seedJobs(companies: Awaited<ReturnType<typeof seedCompanies>>, mo
     const stage = stages[i % stages.length];
     const createdAt = randomPastDate(21);
     const lastTouchOffset = randomInt(0, 7);
-    const lastTouch = new Date(createdAt.getTime() + lastTouchOffset * DAY_MS + randomInt(0, 6) * HOUR_MS);
+    const lastTouch = new Date(
+      createdAt.getTime() + lastTouchOffset * DAY_MS + randomInt(0, 6) * HOUR_MS
+    );
     const heat = randomInt(0, 3);
     const isArchived = i < 6;
     const deadline =
@@ -221,7 +234,7 @@ async function seedOutreachAndFollowUps(
 
   for (let i = 0; i < jobs.length; i += 1) {
     const job = jobs[i];
-    const companyContacts = job.companyId ? contactsByCompanyId.get(job.companyId) ?? [] : [];
+    const companyContacts = job.companyId ? (contactsByCompanyId.get(job.companyId) ?? []) : [];
     const cleanPool = companyContacts.filter((contact) => !contact.archived);
     const fallbackPool = cleanPool.length ? cleanPool : activeContacts;
     const contact = fallbackPool.length ? randomItem(fallbackPool) : undefined;
@@ -251,7 +264,11 @@ async function seedOutreachAndFollowUps(
     if (i % 2 === 0) {
       const dueCategory = i % 3;
       const dueAt =
-        dueCategory === 0 ? randomPastDate(5) : dueCategory === 1 ? shiftFromNow(0, randomInt(1, 4)) : randomFutureDate(5);
+        dueCategory === 0
+          ? randomPastDate(5)
+          : dueCategory === 1
+            ? shiftFromNow(0, randomInt(1, 4))
+            : randomFutureDate(5);
       const sentAtFollowUp = dueCategory === 0 ? randomPastDate(1) : undefined;
 
       await prisma.followUp.create({
@@ -353,10 +370,7 @@ async function seedTasks(
   await prisma.task.createMany({ data: tasksData });
 }
 
-async function seedGrowth(
-  contacts: Awaited<ReturnType<typeof seedContacts>>,
-  mock: MockData
-) {
+async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mock: MockData) {
   const strongContacts = contacts.contacts.filter(
     (contact) => !contact.archived && contact.strength !== ContactStrength.WEAK
   );
@@ -431,7 +445,7 @@ async function seedGrowth(
 
 async function seedNetworkingEvents(
   contacts: Awaited<ReturnType<typeof seedContacts>>,
-  mock: MockData
+  _mock: MockData
 ) {
   const strongContacts = contacts.contacts.filter(
     (contact) => !contact.archived && contact.strength !== ContactStrength.WEAK

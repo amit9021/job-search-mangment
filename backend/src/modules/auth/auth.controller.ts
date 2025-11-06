@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/user.decorator';
+
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -15,7 +17,7 @@ export class AuthController {
   }
 
   @Get('me')
-  async me(@CurrentUser() user: { username: string }) {
+  me(@CurrentUser() user: { username: string }) {
     return user;
   }
 }

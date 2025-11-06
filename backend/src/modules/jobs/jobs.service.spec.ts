@@ -1,7 +1,8 @@
 import { ConflictException } from '@nestjs/common';
 import { JobStage, Prisma, ReferralKind } from '@prisma/client';
-import { JobsService } from './jobs.service';
+
 import { setHeatRules } from './heat-rules.loader';
+import { JobsService } from './jobs.service';
 
 type PrismaMock = {
   $transaction: jest.Mock;
@@ -103,7 +104,9 @@ describe('JobsService', () => {
       contacts as any
     );
     recalcSpy = jest.spyOn(service, 'recalculateHeat').mockResolvedValue();
-    jest.spyOn(service as unknown as { touchJob: (id: string) => Promise<void> }, 'touchJob').mockResolvedValue();
+    jest
+      .spyOn(service as unknown as { touchJob: (id: string) => Promise<void> }, 'touchJob')
+      .mockResolvedValue();
   });
 
   afterEach(() => {
@@ -113,15 +116,32 @@ describe('JobsService', () => {
 
   describe('create', () => {
     it('creates a job with default stage and logs history', async () => {
-      prisma.job.create.mockResolvedValue({ id: 'job_1', company: 'Acme', role: 'Engineer', stage: JobStage.APPLIED, heat: 0 });
+      prisma.job.create.mockResolvedValue({
+        id: 'job_1',
+        company: 'Acme',
+        role: 'Engineer',
+        stage: JobStage.APPLIED,
+        heat: 0
+      });
       prisma.jobStatusHistory.create.mockResolvedValue({ id: 'hist_1' });
-      prisma.job.findUnique.mockResolvedValue({ id: 'job_1', company: 'Acme', role: 'Engineer', stage: JobStage.APPLIED, heat: 0, archived: false });
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_1',
+        company: 'Acme',
+        role: 'Engineer',
+        stage: JobStage.APPLIED,
+        heat: 0,
+        archived: false
+      });
 
       const result = await service.create({ company: 'Acme', role: 'Engineer' } as any);
 
       expect(prisma.job.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ company: 'Acme', role: 'Engineer', stage: JobStage.APPLIED })
+          data: expect.objectContaining({
+            company: 'Acme',
+            role: 'Engineer',
+            stage: JobStage.APPLIED
+          })
         })
       );
       expect(prisma.jobStatusHistory.create).toHaveBeenCalledWith(
@@ -134,12 +154,27 @@ describe('JobsService', () => {
     });
 
     it('creates related application and outreach when provided', async () => {
-      prisma.job.create.mockResolvedValue({ id: 'job_2', company: 'Globex', role: 'PM', stage: JobStage.APPLIED, heat: 0 });
+      prisma.job.create.mockResolvedValue({
+        id: 'job_2',
+        company: 'Globex',
+        role: 'PM',
+        stage: JobStage.APPLIED,
+        heat: 0
+      });
       prisma.jobStatusHistory.create.mockResolvedValue({ id: 'hist_2' });
       prisma.jobApplication.create.mockResolvedValue({ id: 'app_1' });
       prisma.job.update.mockResolvedValue({ id: 'job_2' });
-      prisma.job.findUnique.mockResolvedValue({ id: 'job_2', company: 'Globex', role: 'PM', stage: JobStage.APPLIED, heat: 0, archived: false });
-      const outreachSpy = jest.spyOn(service, 'recordJobOutreach').mockResolvedValue({ id: 'outreach_1' } as any);
+      prisma.job.findUnique.mockResolvedValue({
+        id: 'job_2',
+        company: 'Globex',
+        role: 'PM',
+        stage: JobStage.APPLIED,
+        heat: 0,
+        archived: false
+      });
+      const outreachSpy = jest
+        .spyOn(service, 'recordJobOutreach')
+        .mockResolvedValue({ id: 'outreach_1' } as any);
 
       await service.create({
         company: 'Globex',
@@ -152,16 +187,29 @@ describe('JobsService', () => {
         }
       } as any);
 
-      expect(prisma.jobApplication.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ tailoringScore: 75 }) }));
-      expect(prisma.job.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'job_2' } }));
-      expect(outreachSpy).toHaveBeenCalledWith('job_2', expect.objectContaining({ channel: 'EMAIL' }));
+      expect(prisma.jobApplication.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ tailoringScore: 75 }) })
+      );
+      expect(prisma.job.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'job_2' } })
+      );
+      expect(outreachSpy).toHaveBeenCalledWith(
+        'job_2',
+        expect.objectContaining({ channel: 'EMAIL' })
+      );
     });
   });
 
   describe('recordJobOutreach', () => {
     it('returns job snapshot including linked contacts', async () => {
       prisma.job.findUnique
-        .mockResolvedValueOnce({ id: 'job_link', company: 'Acme', role: 'Engineer', stage: JobStage.APPLIED, heat: 1 })
+        .mockResolvedValueOnce({
+          id: 'job_link',
+          company: 'Acme',
+          role: 'Engineer',
+          stage: JobStage.APPLIED,
+          heat: 1
+        })
         .mockResolvedValueOnce({
           id: 'job_link',
           company: 'Acme',
@@ -179,7 +227,10 @@ describe('JobsService', () => {
       outreach.createJobOutreach.mockResolvedValue(outreachResponse);
 
       jest
-        .spyOn(service as unknown as { computeJobMetrics: (ids: string[]) => Promise<Map<string, any>> }, 'computeJobMetrics')
+        .spyOn(
+          service as unknown as { computeJobMetrics: (ids: string[]) => Promise<Map<string, any>> },
+          'computeJobMetrics'
+        )
         .mockResolvedValue(
           new Map([
             [
@@ -254,10 +305,15 @@ describe('JobsService', () => {
     });
 
     it('throws ConflictException when hard delete violates FK constraints', async () => {
-      const error = new Prisma.PrismaClientKnownRequestError('fail', { code: 'P2003', clientVersion: '5.22.0' });
+      const error = new Prisma.PrismaClientKnownRequestError('fail', {
+        code: 'P2003',
+        clientVersion: '5.22.0'
+      });
       prisma.$transaction.mockRejectedValue(error);
 
-      await expect(service.delete('job_del', { hard: true })).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.delete('job_del', { hard: true })).rejects.toBeInstanceOf(
+        ConflictException
+      );
     });
   });
 

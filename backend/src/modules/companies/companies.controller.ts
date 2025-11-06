@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+
+import { IdParamDto } from '../../common/dto/id-param.dto';
+
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto, UpdateCompanyDto } from './dto';
-import { IdParamDto } from '../../common/dto/id-param.dto';
 
 @Controller('companies')
 export class CompaniesController {
@@ -9,7 +11,7 @@ export class CompaniesController {
 
   @Post()
   async create(@Body() body: CreateCompanyDto) {
-    return this.companiesService.create(body as any);
+    return this.companiesService.create(body);
   }
 
   @Get()
@@ -19,11 +21,11 @@ export class CompaniesController {
 
   @Get(':id')
   async findById(@Param() params: IdParamDto) {
-    return this.companiesService.findById((params as any).id);
+    return this.companiesService.findById(params.id);
   }
 
   @Patch(':id')
   async update(@Param() params: IdParamDto, @Body() body: UpdateCompanyDto) {
-    return this.companiesService.update((params as any).id, body as any);
+    return this.companiesService.update(params.id, body);
   }
 }

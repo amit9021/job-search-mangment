@@ -1,11 +1,12 @@
 import dayjs from '../../utils/dayjs';
+import type { FollowupsService } from '../followups/followups.service';
+import type { JobsService } from '../jobs/jobs.service';
+import type { KpiService } from '../kpi/kpi.service';
+import type { OutreachService } from '../outreach/outreach.service';
+import type { StatsService } from '../stats/stats.service';
+import type { TasksService } from '../tasks/tasks.service';
+
 import { DashboardService } from './dashboard.service';
-import { TasksService } from '../tasks/tasks.service';
-import { JobsService } from '../jobs/jobs.service';
-import { OutreachService } from '../outreach/outreach.service';
-import { FollowupsService } from '../followups/followups.service';
-import { KpiService } from '../kpi/kpi.service';
-import { StatsService } from '../stats/stats.service';
 
 describe('DashboardService', () => {
   const dashboardConfig = {
@@ -203,9 +204,7 @@ describe('DashboardService', () => {
     expect(result.payload.kpis.tailoredCvs.targetDaily).toBe(dashboardConfig.dailyTargetCv);
     expect(result.payload.kpis.outreach.targetDaily).toBe(dashboardConfig.dailyTargetWarm);
     expect(result.payload.kpis.tailoredCvs.spark).toEqual(baseSeries.map((point) => point.v));
-    expect(result.payload.kpis.outreach.spark).toEqual(
-      baseSeries.map((point) => point.v + 1)
-    );
+    expect(result.payload.kpis.outreach.spark).toEqual(baseSeries.map((point) => point.v + 1));
     expect(result.cacheHit).toBe(false);
 
     // Subsequent request should be served from cache.

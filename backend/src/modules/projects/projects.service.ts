@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../../prisma/prisma.service';
 
 type CreateProjectParams = {
@@ -16,10 +17,7 @@ export class ProjectsService {
 
   async list() {
     return this.prisma.project.findMany({
-      orderBy: [
-        { spotlight: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ spotlight: 'desc' }, { createdAt: 'desc' }]
     });
   }
 

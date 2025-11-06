@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
 import { OutreachService } from '../outreach/outreach.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { ReviewsService } from '../reviews/reviews.service';
+
 import { ContactsService } from './contacts.service';
 import {
   CreateContactDto,
@@ -51,12 +53,12 @@ export class ContactsController {
 
   @Post()
   async create(@Body() body: CreateContactDto) {
-    return this.contactsService.create(body as any);
+    return this.contactsService.create(body);
   }
 
   @Patch(':id')
   async update(@Param() params: IdParamDto, @Body() body: UpdateContactDto) {
-    return this.contactsService.update(params.id, body as any);
+    return this.contactsService.update(params.id, body);
   }
 
   @Delete(':id')

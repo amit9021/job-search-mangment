@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { FollowupsService } from './followups.service';
+
 import { FollowupQueryDto } from './dto/get-followups.query';
 import { SendFollowupDto } from './dto/send-followup.dto';
+import { FollowupsService } from './followups.service';
 
 @Controller('followups')
 export class FollowupsController {

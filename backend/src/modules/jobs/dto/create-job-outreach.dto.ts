@@ -1,33 +1,28 @@
 import { OutreachChannel, OutreachContext, OutreachOutcome } from '@prisma/client';
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 const scoreSchema = z
-  .preprocess(
-    (value) => {
-      if (value === undefined || value === null || value === '') {
-        return undefined;
-      }
-      if (typeof value === 'string') {
-        return Number(value);
-      }
-      return value;
-    },
-    z.number().min(0).max(100).optional()
-  )
+  .preprocess((value) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      return Number(value);
+    }
+    return value;
+  }, z.number().min(0).max(100).optional())
   .transform((val) => (val === undefined ? undefined : Number(val)));
 
 const emptyToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
   z
-    .preprocess(
-      (value) => {
-        if (value === '') {
-          return undefined;
-        }
-        return value;
-      },
-      schema
-    )
+    .preprocess((value) => {
+      if (value === '') {
+        return undefined;
+      }
+      return value;
+    }, schema)
     .optional();
 
 const contactCreateSchema = z.object({

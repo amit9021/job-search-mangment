@@ -1,59 +1,51 @@
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 import { TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES } from '../task.constants';
 
-const optionalDate = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null || value === '') {
-      return undefined;
-    }
-    if (value instanceof Date) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) {
-        return parsed;
-      }
-    }
+const optionalDate = z.preprocess((value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (value instanceof Date) {
     return value;
-  },
-  z.date().optional()
-);
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  return value;
+}, z.date().optional());
 
-const optionalTags = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    if (Array.isArray(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-    }
+const optionalTags = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
     return value;
-  },
-  z.array(z.string()).optional()
-);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+  return value;
+}, z.array(z.string()).optional());
 
 const optionalChecklistItem = z.object({
   text: z.string().min(1),
   done: z.boolean().optional()
 });
 
-const optionalChecklist = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    return value;
-  },
-  z.array(optionalChecklistItem).optional()
-);
+const optionalChecklist = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  return value;
+}, z.array(optionalChecklistItem).optional());
 
 const optionalLinks = z
   .object({

@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { EventsService } from './events.service';
+
 import { AddEventContactDto, AttendEventDto, CreateEventDto, UpdateEventDto } from './dto';
+import { EventsService } from './events.service';
 
 @Controller('events')
 export class EventsController {

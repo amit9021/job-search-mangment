@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ContactStrength } from '@prisma/client';
+import { Contact, ContactStrength } from '@prisma/client';
 import { differenceInCalendarDays } from 'date-fns';
+
 import { PrismaService } from '../../prisma/prisma.service';
 import { CompaniesService } from '../companies/companies.service';
-
 
 @Injectable()
 export class ContactsService {
@@ -154,11 +154,13 @@ export class ContactsService {
     });
 
     const computed = contacts.map((contact) => {
-      const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort((a, b) => {
-        const labelA = `${a.company ?? ''} ${a.role ?? ''}`;
-        const labelB = `${b.company ?? ''} ${b.role ?? ''}`;
-        return labelA.localeCompare(labelB);
-      });
+      const linkedJobs = Array.from(linkedJobsByContact.get(contact.id)?.values() ?? []).sort(
+        (a, b) => {
+          const labelA = `${a.company ?? ''} ${a.role ?? ''}`;
+          const labelB = `${b.company ?? ''} ${b.role ?? ''}`;
+          return labelA.localeCompare(labelB);
+        }
+      );
       const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
       const nextFollowUp = contact.followups[0];
       const nextFollowUpAt = nextFollowUp?.dueAt ?? null;
@@ -187,7 +189,7 @@ export class ContactsService {
       : computed;
 
     return filtered.map((entry) => {
-      const { hadOutreach, ...rest } = entry;
+      const { hadOutreach: _hadOutreach, ...rest } = entry;
       return rest;
     });
   }
@@ -379,7 +381,9 @@ export class ContactsService {
         date: f.dueAt,
         data: f
       }))
-    ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 20);
+    ]
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 20);
 
     const linkedJobsMap = new Map<
       string,
@@ -414,7 +418,10 @@ export class ContactsService {
       `${a.company} ${a.role ?? ''}`.localeCompare(`${b.company} ${b.role ?? ''}`)
     );
     const lastTouchFromOutreach = contact.outreaches[0]?.sentAt ?? null;
-    const nextFollowUp = contact.followups.find((followup: any) => followup.sentAt === null) ?? contact.followups[0] ?? null;
+    const nextFollowUp =
+      contact.followups.find((followup: any) => followup.sentAt === null) ??
+      contact.followups[0] ??
+      null;
     const nextFollowUpAt = nextFollowUp?.dueAt ?? null;
     const engagement = this.computeEngagement({
       lastTouch: lastTouchFromOutreach,

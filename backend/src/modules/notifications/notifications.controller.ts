@@ -1,7 +1,9 @@
 import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { NotificationsService } from './notifications.service';
+
 import { ListNotificationsQueryDto } from './dto/list-notifications.query';
+import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
 export class NotificationsController {

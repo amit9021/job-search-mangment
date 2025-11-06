@@ -1,20 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OutreachChannel, OutreachContext, OutreachOutcome } from '@prisma/client';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 import { FollowupsService } from '../followups/followups.service';
 import { TasksService } from '../tasks/tasks.service';
 
 type OutreachInput = {
   contactId?: string;
-  channel: OutreachChannel | string;
+  channel: OutreachChannel;
   messageType: string;
   personalizationScore?: number;
   outcome?: OutreachOutcome;
   content?: string | null;
-  context?: OutreachContext | string;
+  context?: OutreachContext;
   createFollowUp?: boolean;
   followUpNote?: string;
+};
+
+type PayloadUpdate = {
+  context?: OutreachContext;
+  outcome?: OutreachOutcome;
+  content?: string;
+  messageType?: string;
+  personalizationScore?: number;
 };
 
 @Injectable()
@@ -50,7 +59,7 @@ export class OutreachService {
         context:
           typeof payload.context === 'string'
             ? (payload.context.toUpperCase() as OutreachContext)
-            : payload.context ?? OutreachContext.OTHER
+            : (payload.context ?? OutreachContext.OTHER)
       },
       include: { contact: true }
     });
@@ -101,7 +110,7 @@ export class OutreachService {
         context:
           typeof payload.context === 'string'
             ? (payload.context.toUpperCase() as OutreachContext)
-            : payload.context ?? OutreachContext.OTHER
+            : (payload.context ?? OutreachContext.OTHER)
       }
     });
 
@@ -151,22 +160,13 @@ export class OutreachService {
     });
   }
 
-  async update(
-    id: string,
-    payload: {
-      context?: OutreachContext;
-      outcome?: OutreachOutcome;
-      content?: string;
-      messageType?: string;
-      personalizationScore?: number;
-    }
-  ) {
+  async update(id: string, payload: PayloadUpdate) {
     const outreach = await this.prisma.outreach.findUnique({ where: { id } });
     if (!outreach) {
       return { id, jobId: null, contactId: null };
     }
 
-    const updateData: any = {};
+    const updateData: PayloadUpdate = {};
     if (payload.context !== undefined) {
       updateData.context = payload.context;
     }

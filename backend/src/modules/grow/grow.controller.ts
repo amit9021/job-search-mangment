@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { GrowService } from './grow.service';
+
 import {
   CreateGrowthReviewDto,
   CreateGrowthEventDto,
@@ -9,6 +10,7 @@ import {
   CreateProjectHighlightDto,
   UpdateProjectHighlightDto
 } from './dto';
+import { GrowService } from './grow.service';
 
 @Controller('grow')
 export class GrowController {
@@ -65,7 +67,10 @@ export class GrowController {
   }
 
   @Patch('projects/:id')
-  async updateProjectHighlight(@Param() params: IdParamDto, @Body() body: UpdateProjectHighlightDto) {
+  async updateProjectHighlight(
+    @Param() params: IdParamDto,
+    @Body() body: UpdateProjectHighlightDto
+  ) {
     return this.growService.updateProjectHighlight(params.id, body);
   }
 }

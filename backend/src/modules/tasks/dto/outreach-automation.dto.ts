@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 export const outreachAutomationSchema = z.object({

@@ -1,6 +1,9 @@
 import type { Dayjs } from 'dayjs';
+
 import dayjs from '../../utils/dayjs';
-import { DEFAULT_TASK_TIME, TaskPriority } from './task.constants';
+
+import type { TaskPriority } from './task.constants';
+import { DEFAULT_TASK_TIME } from './task.constants';
 
 type QuickParseOptions = {
   now?: Dayjs;
@@ -240,8 +243,7 @@ function parseInDuration(working: string, now: Dayjs): DueParseResult | undefine
 
 function parseRecurrenceSegment(text: string, now: Dayjs): ParsedRecurrence {
   const cleaned = text.trim();
-  const regex =
-    /\bevery\s+([a-z,\s]+?)(?:\s*(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/i;
+  const regex = /\bevery\s+([a-z,\s]+?)(?:\s*(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?$/i;
   const match = cleaned.match(regex);
   if (!match) {
     return { matched: cleaned };
@@ -324,13 +326,7 @@ function findNextOccurrence(now: Dayjs, dayIndices: number[], hour: number, minu
       return candidate;
     }
   }
-  const fallback = now
-    .clone()
-    .add(1, 'week')
-    .hour(hour)
-    .minute(minute)
-    .second(0)
-    .millisecond(0);
+  const fallback = now.clone().add(1, 'week').hour(hour).minute(minute).second(0).millisecond(0);
   return fallback;
 }
 

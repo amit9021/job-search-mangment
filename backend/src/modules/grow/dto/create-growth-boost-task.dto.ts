@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 const category = z.enum(['skills-gap', 'visibility-gap', 'network-gap']);

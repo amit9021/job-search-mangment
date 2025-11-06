@@ -1,5 +1,6 @@
 import { ContactStrength } from '@prisma/client';
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 const schema = z.object({
@@ -8,7 +9,12 @@ const schema = z.object({
   companyName: z.string().optional(), // Auto-creates company if provided
   role: z.string().optional().nullable(),
   email: z.string().email().optional().or(z.literal('')).nullable(),
-  phone: z.string().regex(/^[\d\s+()-]*$/).optional().or(z.literal('')).nullable(),
+  phone: z
+    .string()
+    .regex(/^[\d\s+()-]*$/)
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
   linkedinUrl: z.string().url().optional().or(z.literal('')).nullable(),
   githubUrl: z.string().url().optional().or(z.literal('')).nullable(),
   location: z.string().max(200).optional().nullable(),

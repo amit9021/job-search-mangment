@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 
 @Injectable()
 export class BoostsService {
@@ -8,10 +9,7 @@ export class BoostsService {
 
   async list() {
     return this.prisma.boostTask.findMany({
-      orderBy: [
-        { doneAt: 'asc' },
-        { impactScore: 'desc' }
-      ]
+      orderBy: [{ doneAt: 'asc' }, { impactScore: 'desc' }]
     });
   }
 

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
+
 import { StatsWeeklySummaryDto, StatsSeriesPoint } from './dto/stats-weekly.dto';
 
 type TimedResult<T> = { value: T; degraded: boolean };
@@ -19,9 +21,15 @@ export class StatsService {
   async getWeeklySummary(rangeInput: number): Promise<StatsWeeklySummaryDto> {
     const range = SUPPORTED_RANGES.has(rangeInput) ? rangeInput : 7;
     const end = this.now().endOf('day');
-    const start = end.clone().subtract(range - 1, 'day').startOf('day');
+    const start = end
+      .clone()
+      .subtract(range - 1, 'day')
+      .startOf('day');
     const prevEnd = start.clone().subtract(1, 'day').endOf('day');
-    const prevStart = prevEnd.clone().subtract(range - 1, 'day').startOf('day');
+    const prevStart = prevEnd
+      .clone()
+      .subtract(range - 1, 'day')
+      .startOf('day');
 
     const days: string[] = [];
     const dayIndex = new Map<string, number>();
@@ -43,9 +51,17 @@ export class StatsService {
     ] = await Promise.all([
       this.callWithTimeout(() => this.fetchApplications(start, end), [] as Date[], 'applications'),
       this.callWithTimeout(() => this.fetchOutreach(start, end), [] as Date[], 'outreach'),
-      this.callWithTimeout(() => this.fetchFollowupsDone(start, end), [] as Date[], 'followups.done'),
+      this.callWithTimeout(
+        () => this.fetchFollowupsDone(start, end),
+        [] as Date[],
+        'followups.done'
+      ),
       this.callWithTimeout(() => this.fetchFollowupsDue(start, end), [] as Date[], 'followups.due'),
-      this.callWithTimeout(() => this.fetchHeatCounts(end), [] as Array<{ heat: number; count: number }>, 'heat.current'),
+      this.callWithTimeout(
+        () => this.fetchHeatCounts(end),
+        [] as Array<{ heat: number; count: number }>,
+        'heat.current'
+      ),
       this.callWithTimeout(
         () => this.fetchHeatCounts(prevEnd, prevStart),
         [] as Array<{ heat: number; count: number }>,
@@ -169,7 +185,11 @@ export class StatsService {
 
     return records
       .filter((record) => {
-        if (record.job && (record.job.archived || (ARCHIVED_JOB_STAGES as readonly string[]).includes(record.job.stage ?? ''))) {
+        if (
+          record.job &&
+          (record.job.archived ||
+            (ARCHIVED_JOB_STAGES as readonly string[]).includes(record.job.stage ?? ''))
+        ) {
           return false;
         }
         if (record.contact && record.contact.archived) {
@@ -244,7 +264,7 @@ export class StatsService {
       },
       select: { dueAt: true }
     });
-    return records.map((record) => record.dueAt as Date);
+    return records.map((record) => record.dueAt);
   }
 
   private async fetchHeatCounts(

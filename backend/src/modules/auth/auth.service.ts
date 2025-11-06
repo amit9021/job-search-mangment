@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -13,10 +14,14 @@ export class AuthService {
 
   async validateUser(username: string, password: string) {
     const adminUsername = (
-      this.configService.get<string>('ADMIN_USERNAME') ?? process.env.ADMIN_USERNAME ?? 'admin'
+      this.configService.get<string>('ADMIN_USERNAME') ??
+      process.env.ADMIN_USERNAME ??
+      'admin'
     ).trim();
     const adminPassword = (
-      this.configService.get<string>('ADMIN_PASSWORD') ?? process.env.ADMIN_PASSWORD ?? 'change_me'
+      this.configService.get<string>('ADMIN_PASSWORD') ??
+      process.env.ADMIN_PASSWORD ??
+      'change_me'
     ).trim();
 
     if (username.trim() !== adminUsername || password.trim() !== adminPassword) {

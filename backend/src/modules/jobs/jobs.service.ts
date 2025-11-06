@@ -1,16 +1,14 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { JobStage, Prisma, ReferralKind } from '@prisma/client';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import { InferDto } from '../../utils/create-zod-dto';
+import { ContactsService } from '../contacts/contacts.service';
 import { FollowupsService } from '../followups/followups.service';
 import { OutreachService } from '../outreach/outreach.service';
-import { ContactsService } from '../contacts/contacts.service';
-import {
-  CreateJobDto,
-  AddApplicationDto,
-  UpdateJobStageDto
-} from './dto';
+
+import { CreateJobDto, AddApplicationDto, UpdateJobStageDto } from './dto';
 import { CreateJobOutreachInput } from './dto/create-job-outreach.dto';
-import { InferDto } from '../../utils/create-zod-dto';
 import { loadHeatRules, HeatRules } from './heat-rules.loader';
 
 type HeatBreakdownCategory =
@@ -120,7 +118,7 @@ export class JobsService {
     const job = await this.prisma.job.findUnique({
       where: { id: jobId },
       include: {
-        companyRef: true  // Use the relation field, not the scalar 'company' field
+        companyRef: true // Use the relation field, not the scalar 'company' field
       }
     });
     if (!job) {
@@ -192,12 +190,15 @@ export class JobsService {
     return this.getById(createdJob.id);
   }
 
-  async update(jobId: string, data: {
-    company?: string;
-    role?: string;
-    sourceUrl?: string | null;
-    companyId?: string | null;
-  }) {
+  async update(
+    jobId: string,
+    data: {
+      company?: string;
+      role?: string;
+      sourceUrl?: string | null;
+      companyId?: string | null;
+    }
+  ) {
     await this.ensureJobExists(jobId);
 
     const job = await this.prisma.job.update({
@@ -433,7 +434,14 @@ export class JobsService {
   }
 
   private async computeJobMetrics(jobIds: string[]) {
-    const metrics = new Map<string, { contactsCount: number; contacts: Array<{ id: string; name: string | null; role: string | null }>; nextFollowUpAt: Date | null }>();
+    const metrics = new Map<
+      string,
+      {
+        contactsCount: number;
+        contacts: Array<{ id: string; name: string | null; role: string | null }>;
+        nextFollowUpAt: Date | null;
+      }
+    >();
     if (jobIds.length === 0) {
       return metrics;
     }
@@ -444,8 +452,8 @@ export class JobsService {
           jobId: { in: jobIds },
           contactId: { not: null }
         },
-      select: { jobId: true, contactId: true }
-    }),
+        select: { jobId: true, contactId: true }
+      }),
       this.prisma.followUp.findMany({
         where: {
           jobId: { in: jobIds },
@@ -522,7 +530,10 @@ export class JobsService {
     return this.computeHeatResult(jobId);
   }
 
-  private async computeHeatResult(jobId: string, rules: HeatRules = loadHeatRules() as HeatRules): Promise<HeatComputationResult> {
+  private async computeHeatResult(
+    jobId: string,
+    rules: HeatRules = loadHeatRules()
+  ): Promise<HeatComputationResult> {
     const job = await this.prisma.job.findUnique({
       where: { id: jobId },
       include: {
@@ -594,7 +605,10 @@ export class JobsService {
       value: this.round(stageBase),
       rawValue: this.round(stageBase),
       maxValue: this.round(stageMax),
-      note: typeof stageCap === 'number' ? `Baseline for stage; capped at ${this.round(stageCap)}` : 'Baseline score for current stage'
+      note:
+        typeof stageCap === 'number'
+          ? `Baseline for stage; capped at ${this.round(stageCap)}`
+          : 'Baseline score for current stage'
     });
 
     const dynamicComponents: Array<{
@@ -645,7 +659,10 @@ export class JobsService {
       }
     }
 
-    if (latestOutreach?.personalizationScore !== null && latestOutreach?.personalizationScore !== undefined) {
+    if (
+      latestOutreach?.personalizationScore !== null &&
+      latestOutreach?.personalizationScore !== undefined
+    ) {
       const personalizationRaw =
         latestOutreach.personalizationScore / Math.max(1, rules.personalizationDivisor);
       if (personalizationRaw !== 0) {
@@ -659,7 +676,10 @@ export class JobsService {
       }
     }
 
-    if (latestApplication?.tailoringScore !== null && latestApplication?.tailoringScore !== undefined) {
+    if (
+      latestApplication?.tailoringScore !== null &&
+      latestApplication?.tailoringScore !== undefined
+    ) {
       const tailoringRaw = latestApplication.tailoringScore / Math.max(1, rules.tailoringDivisor);
       if (tailoringRaw !== 0) {
         dynamicComponents.push({

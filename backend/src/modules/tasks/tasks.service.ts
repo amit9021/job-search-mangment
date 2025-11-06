@@ -1,7 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
+
+import { CreateTaskInput } from './dto/create-task.dto';
+import { ListTasksQuery } from './dto/list-tasks.query';
+import { OutreachAutomationInput } from './dto/outreach-automation.dto';
+import { QuickParseInput } from './dto/quick-parse.dto';
+import { UpdateTaskInput } from './dto/update-task.dto';
+import { calculateCompletionStreak } from './task-kpis';
+import { parseQuickTaskInput } from './task-parser';
+import { computeSnoozedDueAt } from './task-snooze';
 import {
   ACTIVE_TASK_STATUSES,
   DEFAULT_TASK_TIME,
@@ -10,14 +20,6 @@ import {
   TaskSource,
   TaskStatus
 } from './task.constants';
-import { CreateTaskInput } from './dto/create-task.dto';
-import { UpdateTaskInput } from './dto/update-task.dto';
-import { ListTasksQuery } from './dto/list-tasks.query';
-import { QuickParseInput } from './dto/quick-parse.dto';
-import { computeSnoozedDueAt } from './task-snooze';
-import { parseQuickTaskInput } from './task-parser';
-import { calculateCompletionStreak } from './task-kpis';
-import { OutreachAutomationInput } from './dto/outreach-automation.dto';
 
 type QuickParseSuggestion = {
   kind: 'job' | 'contact';
@@ -40,12 +42,13 @@ type TaskContext = {
   grow?: { type: string; id?: string | null } | null;
 };
 
-type ActionableTask = {
-  id: string;
-  title: string;
-  dueAt: Date | null;
-  links: TaskLinks;
-};
+// Unused but kept for future use
+// type ActionableTask = {
+//   id: string;
+//   title: string;
+//   dueAt: Date | null;
+//   links: TaskLinks;
+// };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -244,8 +247,7 @@ export class TasksService {
     if (payload.status !== undefined) {
       data.status = payload.status;
       if (payload.status === 'Done') {
-        data.completedAt =
-          payload.completedAt ?? existing.completedAt ?? this.now().toDate();
+        data.completedAt = payload.completedAt ?? existing.completedAt ?? this.now().toDate();
       } else if (payload.completedAt === undefined) {
         data.completedAt = null;
       }
@@ -437,7 +439,12 @@ export class TasksService {
     const jobIds = new Set<string>();
     const contactIds = new Set<string>();
 
-    const normalize = (task: { id: string; title: string; dueAt: Date | null; links: Prisma.JsonValue }) => {
+    const normalize = (task: {
+      id: string;
+      title: string;
+      dueAt: Date | null;
+      links: Prisma.JsonValue;
+    }) => {
       const links = extractLinks(task.links);
       if (links.jobId) {
         jobIds.add(links.jobId);

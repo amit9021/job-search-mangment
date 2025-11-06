@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReferralKind } from '@prisma/client';
+
 import { PrismaService } from '../../prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 
@@ -11,7 +12,10 @@ type CreateReferralParams = {
 
 @Injectable()
 export class ReferralsService {
-  constructor(private readonly prisma: PrismaService, private readonly jobsService: JobsService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jobsService: JobsService
+  ) {}
 
   async list() {
     return this.prisma.referral.findMany({

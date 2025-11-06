@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, forwardRef } from '@nestjs/common';
-import { OutreachService } from './outreach.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  forwardRef
+} from '@nestjs/common';
+
+import { IdParamDto } from '../../common/dto/id-param.dto';
+import { JobsService } from '../jobs/jobs.service';
+
 import { CreateOutreachDto, CreateOutreachInput } from './dto/create-outreach.dto';
 import { ListOutreachQueryDto } from './dto/list-outreach.query';
 import { UpdateOutreachDto } from './dto/update-outreach.dto';
-import { IdParamDto } from '../../common/dto/id-param.dto';
-import { JobsService } from '../jobs/jobs.service';
+import { OutreachService } from './outreach.service';
 
 @Controller('outreach')
 export class OutreachController {

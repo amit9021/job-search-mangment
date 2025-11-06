@@ -1,5 +1,6 @@
 import { JobStage } from '@prisma/client';
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 const heatSchema = z.preprocess(
@@ -7,35 +8,29 @@ const heatSchema = z.preprocess(
   z.number().min(0).max(3).optional()
 );
 
-const includeArchivedSchema = z.preprocess(
-  (value) => {
-    if (value === undefined) {
-      return undefined;
-    }
-    if (typeof value === 'string') {
-      return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
-    }
-    if (typeof value === 'number') {
-      return value === 1;
-    }
-    return value;
-  },
-  z.boolean().optional()
-);
+const includeArchivedSchema = z.preprocess((value) => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  return value;
+}, z.boolean().optional());
 
-const querySchema = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null) {
-      return undefined;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : undefined;
-    }
-    return value;
-  },
-  z.string().min(1).max(200).optional()
-);
+const querySchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  return value;
+}, z.string().min(1).max(200).optional());
 
 const schema = z.object({
   stage: z.nativeEnum(JobStage).optional(),

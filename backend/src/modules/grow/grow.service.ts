@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
 import { InferDto } from '../../utils/create-zod-dto';
+import dayjs from '../../utils/dayjs';
+
+import { BoostSuggestion, suggestBoostTasks } from './boost-recommender';
 import {
   CreateGrowthReviewDto,
   CreateGrowthEventDto,
@@ -10,7 +13,6 @@ import {
   CreateProjectHighlightDto,
   UpdateProjectHighlightDto
 } from './dto';
-import { BoostSuggestion, suggestBoostTasks } from './boost-recommender';
 
 type CreateReviewInput = InferDto<typeof CreateGrowthReviewDto>;
 type CreateEventInput = InferDto<typeof CreateGrowthEventDto>;
@@ -87,11 +89,7 @@ export class GrowService {
 
   async listBoostTasks() {
     return this.prisma.growthBoostTask.findMany({
-      orderBy: [
-        { status: 'asc' },
-        { impactLevel: 'desc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: [{ status: 'asc' }, { impactLevel: 'desc' }, { createdAt: 'asc' }]
     });
   }
 
@@ -122,18 +120,14 @@ export class GrowService {
         ...(dto.impactLevel !== undefined && { impactLevel: dto.impactLevel }),
         ...(dto.tags !== undefined && { tags: dto.tags }),
         status,
-        completedAt: status === 'completed' ? boostTask.completedAt ?? new Date() : null
+        completedAt: status === 'completed' ? (boostTask.completedAt ?? new Date()) : null
       }
     });
   }
 
   async listProjectHighlights() {
     return this.prisma.projectHighlight.findMany({
-      orderBy: [
-        { spotlight: 'desc' },
-        { published: 'desc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ spotlight: 'desc' }, { published: 'desc' }, { createdAt: 'desc' }]
     });
   }
 
@@ -145,9 +139,7 @@ export class GrowService {
         spotlight: dto.spotlight ?? false,
         plannedPost: dto.plannedPost ?? null,
         published: dto.published ?? false,
-        publishedAt: dto.published
-          ? dto.publishedAt ?? new Date()
-          : null
+        publishedAt: dto.published ? (dto.publishedAt ?? new Date()) : null
       }
     });
   }
@@ -191,7 +183,14 @@ export class GrowService {
   }
 
   async suggestBoostTasks(): Promise<BoostSuggestion[]> {
-    const [projects, recentOutreachCount, eventsAttended, boostsCompleted, highlightsPublished, activeBoosts] = await Promise.all([
+    const [
+      projects,
+      recentOutreachCount,
+      eventsAttended,
+      boostsCompleted,
+      highlightsPublished,
+      activeBoosts
+    ] = await Promise.all([
       this.prisma.project.findMany({ select: { stack: true } }),
       this.prisma.outreach.count({
         where: {

@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { StatsService } from './stats.service';
+
 import { StatsWeeklySummaryDto } from './dto/stats-weekly.dto';
+import { StatsService } from './stats.service';
 
 @Controller('stats')
 export class StatsController {

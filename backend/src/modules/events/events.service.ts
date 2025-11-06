@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventStatus } from '@prisma/client';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 import { FollowupsService } from '../followups/followups.service';
 
 type CreateEventParams = {
@@ -25,7 +26,10 @@ type AttendEventParams = {
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService, private readonly followupsService: FollowupsService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly followupsService: FollowupsService
+  ) {}
 
   async list() {
     return this.prisma.event.findMany({
@@ -58,7 +62,8 @@ export class EventsService {
     if (params.location !== undefined) data.location = params.location;
     if (params.topic !== undefined) data.topic = params.topic;
     if (params.status !== undefined) data.status = params.status;
-    if (params.targetsMinConversations !== undefined) data.targetsMinConversations = params.targetsMinConversations;
+    if (params.targetsMinConversations !== undefined)
+      data.targetsMinConversations = params.targetsMinConversations;
 
     return this.prisma.event.update({
       where: { id },

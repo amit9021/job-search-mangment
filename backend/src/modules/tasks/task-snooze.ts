@@ -1,6 +1,9 @@
 import type { Dayjs } from 'dayjs';
+
 import dayjs from '../../utils/dayjs';
-import { DEFAULT_TASK_TIME, SnoozePreset } from './task.constants';
+
+import type { SnoozePreset } from './task.constants';
+import { DEFAULT_TASK_TIME } from './task.constants';
 
 type SnoozeOptions = {
   now?: Dayjs;

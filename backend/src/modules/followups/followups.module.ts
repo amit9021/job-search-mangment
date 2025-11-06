@@ -1,7 +1,9 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { FollowupsService } from './followups.service';
-import { FollowupsController } from './followups.controller';
+
 import { NotificationsModule } from '../notifications/notifications.module';
+
+import { FollowupsController } from './followups.controller';
+import { FollowupsService } from './followups.service';
 
 @Module({
   imports: [forwardRef(() => NotificationsModule)],

@@ -1,59 +1,51 @@
 import { z } from 'zod';
+
 import { createZodDto } from '../../../utils/create-zod-dto';
 import { TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES } from '../task.constants';
 
-const dateOptional = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null || value === '') {
-      return undefined;
-    }
-    if (value instanceof Date) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) {
-        return parsed;
-      }
-    }
+const dateOptional = z.preprocess((value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (value instanceof Date) {
     return value;
-  },
-  z.date().optional()
-);
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  return value;
+}, z.date().optional());
 
-const tagsSchema = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null) {
-      return [];
-    }
-    if (Array.isArray(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-    }
+const tagsSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (Array.isArray(value)) {
     return value;
-  },
-  z.array(z.string()).default([])
-);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+  return value;
+}, z.array(z.string()).default([]));
 
 const checklistItemSchema = z.object({
   text: z.string().min(1),
   done: z.boolean().optional()
 });
 
-const checklistSchema = z.preprocess(
-  (value) => {
-    if (value === undefined || value === null) {
-      return [];
-    }
-    return value;
-  },
-  z.array(checklistItemSchema).default([])
-);
+const checklistSchema = z.preprocess((value) => {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  return value;
+}, z.array(checklistItemSchema).default([]));
 
 const linksSchema = z
   .object({

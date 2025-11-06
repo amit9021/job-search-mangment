@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 
 @Injectable()
 export class KpiService {
@@ -27,41 +28,42 @@ export class KpiService {
       OR: [{ contactId: null }, { contact: { archived: false } }]
     };
 
-    const [cvSentToday, outreachToday, followupsDue, seniorReviewsThisWeek, heatBreakdown] = await Promise.all([
-      this.prisma.jobApplication.count({
-        where: {
-          dateSent: { gte: start, lte: end },
-          job: {
+    const [cvSentToday, outreachToday, followupsDue, seniorReviewsThisWeek, heatBreakdown] =
+      await Promise.all([
+        this.prisma.jobApplication.count({
+          where: {
+            dateSent: { gte: start, lte: end },
+            job: {
+              archived: false,
+              stage: { notIn: [...archivedJobStages] }
+            }
+          }
+        }),
+        this.prisma.outreach.count({
+          where: {
+            sentAt: { gte: start, lte: end },
+            ...jobActiveFilter,
+            OR: [...contactActiveFilter.OR]
+          }
+        }),
+        this.prisma.followUp.count({
+          where: {
+            dueAt: { gte: start, lte: end },
+            sentAt: null,
+            ...jobActiveFilter,
+            OR: [...contactActiveFilter.OR]
+          }
+        }),
+        this.countSeniorReviewsThisWeek(),
+        this.prisma.job.groupBy({
+          by: ['heat'],
+          where: {
             archived: false,
             stage: { notIn: [...archivedJobStages] }
-          }
-        }
-      }),
-      this.prisma.outreach.count({
-        where: {
-          sentAt: { gte: start, lte: end },
-          ...jobActiveFilter,
-          OR: [...contactActiveFilter.OR]
-        }
-      }),
-      this.prisma.followUp.count({
-        where: {
-          dueAt: { gte: start, lte: end },
-          sentAt: null,
-          ...jobActiveFilter,
-          OR: [...contactActiveFilter.OR]
-        }
-      }),
-      this.countSeniorReviewsThisWeek(),
-      this.prisma.job.groupBy({
-        by: ['heat'],
-        where: {
-          archived: false,
-          stage: { notIn: [...archivedJobStages] }
-        },
-        _count: { _all: true }
-      })
-    ]);
+          },
+          _count: { _all: true }
+        })
+      ]);
 
     return {
       cvSentToday,
@@ -72,7 +74,9 @@ export class KpiService {
       seniorReviewsThisWeek,
       heatBreakdown: [0, 1, 2, 3].map((heat) => ({
         heat,
-        count: (heatBreakdown.find((item) => item.heat === heat)?._count as { _all: number } | undefined)?._all ?? 0
+        count:
+          (heatBreakdown.find((item) => item.heat === heat)?._count as { _all: number } | undefined)
+            ?._all ?? 0
       }))
     };
   }
@@ -107,21 +111,21 @@ export class KpiService {
       eventsAttendedGrow,
       boostTasksCompletedGrow
     ] = await Promise.all([
-        this.prisma.jobApplication.count({
-          where: {
-            dateSent: { gte: start, lte: end },
-            job: {
-              archived: false,
-              stage: { notIn: [...archivedJobStages] }
-            }
+      this.prisma.jobApplication.count({
+        where: {
+          dateSent: { gte: start, lte: end },
+          job: {
+            archived: false,
+            stage: { notIn: [...archivedJobStages] }
           }
-        }),
-        this.prisma.outreach.count({
-          where: {
-            sentAt: { gte: start, lte: end },
-            ...jobActiveFilter,
-            OR: [...contactActiveFilter.OR]
-          }
+        }
+      }),
+      this.prisma.outreach.count({
+        where: {
+          sentAt: { gte: start, lte: end },
+          ...jobActiveFilter,
+          OR: [...contactActiveFilter.OR]
+        }
       }),
       this.prisma.followUp.count({
         where: {
@@ -129,13 +133,13 @@ export class KpiService {
           ...jobActiveFilter,
           OR: [...contactActiveFilter.OR]
         }
-        }),
-        this.prisma.event.count({
-          where: { status: 'ATTENDED', date: { gte: start, lte: end } }
-        }),
-        this.prisma.boostTask.count({
-          where: { doneAt: { gte: start, lte: end } }
-        }),
+      }),
+      this.prisma.event.count({
+        where: { status: 'ATTENDED', date: { gte: start, lte: end } }
+      }),
+      this.prisma.boostTask.count({
+        where: { doneAt: { gte: start, lte: end } }
+      }),
       this.prisma.growthEvent.count({
         where: { attended: true, date: { gte: start, lte: end } }
       }),

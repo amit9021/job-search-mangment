@@ -1,12 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import dayjs from '../../utils/dayjs';
-import { TasksService } from '../tasks/tasks.service';
-import { JobsService } from '../jobs/jobs.service';
-import { OutreachService } from '../outreach/outreach.service';
 import { FollowupsService } from '../followups/followups.service';
+import { JobsService } from '../jobs/jobs.service';
 import { KpiService } from '../kpi/kpi.service';
+import { OutreachService } from '../outreach/outreach.service';
+import { StatsWeeklySummaryDto } from '../stats/dto/stats-weekly.dto';
 import { StatsService } from '../stats/stats.service';
+import { TasksService } from '../tasks/tasks.service';
+
 import {
   DashboardNextBestAction,
   DashboardNotification,
@@ -14,10 +17,10 @@ import {
   DashboardSummaryDto,
   DashboardSummaryWithMeta
 } from './dto/dashboard-summary.dto';
-import { StatsWeeklySummaryDto } from '../stats/dto/stats-weekly.dto';
 
 type JobListItem = Awaited<ReturnType<JobsService['list']>> extends Array<infer T> ? T : never;
-type FollowupItem = Awaited<ReturnType<FollowupsService['getDue']>> extends Array<infer T> ? T : never;
+type FollowupItem =
+  Awaited<ReturnType<FollowupsService['getDue']>> extends Array<infer T> ? T : never;
 
 type DashboardConfig = {
   dailyTargetCv: number;
@@ -105,12 +108,36 @@ export class DashboardService {
         },
         'kpi.today'
       ),
-      this.callWithTimeout(() => this.jobsService.list({ includeArchived: false }), [] as JobListItem[], 'jobs.list'),
-      this.callWithTimeout(() => this.tasksService.getActionableTasks(), DEFAULT_ACTIONABLE_TASKS, 'tasks.actionable'),
-      this.callWithTimeout(() => this.followupsService.getDue('today'), [] as FollowupItem[], 'followups.today'),
-      this.callWithTimeout(() => this.followupsService.getDue('overdue'), [] as FollowupItem[], 'followups.overdue'),
-      this.callWithTimeout(() => this.outreachService.findStaleWithoutOutcome(48), [] as StaleOutreachList, 'outreach.stale'),
-      this.callWithTimeout(() => this.statsService.getWeeklySummary(range), defaultStats, 'stats.weekly')
+      this.callWithTimeout(
+        () => this.jobsService.list({ includeArchived: false }),
+        [] as JobListItem[],
+        'jobs.list'
+      ),
+      this.callWithTimeout(
+        () => this.tasksService.getActionableTasks(),
+        DEFAULT_ACTIONABLE_TASKS,
+        'tasks.actionable'
+      ),
+      this.callWithTimeout(
+        () => this.followupsService.getDue('today'),
+        [] as FollowupItem[],
+        'followups.today'
+      ),
+      this.callWithTimeout(
+        () => this.followupsService.getDue('overdue'),
+        [] as FollowupItem[],
+        'followups.overdue'
+      ),
+      this.callWithTimeout(
+        () => this.outreachService.findStaleWithoutOutcome(48),
+        [] as StaleOutreachList,
+        'outreach.stale'
+      ),
+      this.callWithTimeout(
+        () => this.statsService.getWeeklySummary(range),
+        defaultStats,
+        'stats.weekly'
+      )
     ]);
 
     const degraded =
@@ -131,11 +158,15 @@ export class DashboardService {
     const statsSummary = statsSummaryResult.value;
 
     const filterFollowup = (followup: FollowupItem) => {
-      const job = followup.job as (FollowupItem['job'] & { archived?: boolean; stage?: string }) | undefined;
+      const job = followup.job as
+        | (FollowupItem['job'] & { archived?: boolean; stage?: string })
+        | undefined;
       if (job && (job.archived || (job.stage && ARCHIVED_JOB_STAGES.has(job.stage)))) {
         return false;
       }
-      const contact = followup.contact as (FollowupItem['contact'] & { archived?: boolean }) | undefined;
+      const contact = followup.contact as
+        | (FollowupItem['contact'] & { archived?: boolean })
+        | undefined;
       if (contact && contact.archived) {
         return false;
       }
@@ -147,7 +178,9 @@ export class DashboardService {
     const overdueFollowupIds = new Set(followupsOverdue.map((item) => item.id));
 
     const staleOutreach = staleOutreachRaw.filter((entry) => {
-      const job = entry.job as (typeof entry.job & { archived?: boolean; stage?: string }) | undefined;
+      const job = entry.job as
+        | (typeof entry.job & { archived?: boolean; stage?: string })
+        | undefined;
       if (job && (job.archived || (job.stage && ARCHIVED_JOB_STAGES.has(job.stage)))) {
         return false;
       }
@@ -274,13 +307,7 @@ export class DashboardService {
 
     if (mediumHeatCandidate) {
       const daysSinceTouch = mediumHeatCandidate.lastTouchAt
-        ? Math.max(
-            3,
-            now.diff(
-              dayjs(mediumHeatCandidate.lastTouchAt),
-              'day'
-            )
-          )
+        ? Math.max(3, now.diff(dayjs(mediumHeatCandidate.lastTouchAt), 'day'))
         : config.nba.staleTouchDays;
       return {
         title: `Reconnect with ${mediumHeatCandidate.company}`,
@@ -318,7 +345,8 @@ export class DashboardService {
     actionableTasks: ActionableTasks;
     staleOutreach: StaleOutreachList;
   }): DashboardQueueItem[] {
-    const { followupsToday, followupsOverdue, overdueFollowupIds, actionableTasks, staleOutreach } = params;
+    const { followupsToday, followupsOverdue, overdueFollowupIds, actionableTasks, staleOutreach } =
+      params;
     const items: DashboardQueueItem[] = [];
     const seen = new Set<string>();
 
@@ -331,17 +359,13 @@ export class DashboardService {
     };
 
     const mapFollowup = (followup: FollowupItem): DashboardQueueItem => {
-      const titleBase =
-        followup.contact?.name ??
-        followup.job?.company ??
-        'Follow-up';
+      const titleBase = followup.contact?.name ?? followup.job?.company ?? 'Follow-up';
       const title = `Follow up with ${titleBase}`;
 
       const followupScope = overdueFollowupIds.has(followup.id) ? 'overdue' : 'today';
-      let ctaLink =
-        followup.jobId
-          ? `/jobs?focus=${followup.jobId}&followups=${followupScope}&view=table`
-          : followup.contactId
+      let ctaLink = followup.jobId
+        ? `/jobs?focus=${followup.jobId}&followups=${followupScope}&view=table`
+        : followup.contactId
           ? `/contacts?focus=${followup.contactId}&section=followups`
           : '/tasks?view=today';
       const separator = ctaLink.includes('?') ? '&' : '?';
@@ -359,7 +383,12 @@ export class DashboardService {
       pushItem(followup.id, mapFollowup(followup));
     });
 
-    const mapTask = (task: { id: string; title: string; dueAt: Date | null; links: Record<string, unknown> }): DashboardQueueItem => {
+    const mapTask = (task: {
+      id: string;
+      title: string;
+      dueAt: Date | null;
+      links: Record<string, unknown>;
+    }): DashboardQueueItem => {
       let ctaLink = `/tasks?highlight=${task.id}`;
       if (typeof task.links.jobId === 'string') {
         ctaLink = `/jobs?focus=${task.links.jobId}&view=table`;
@@ -383,8 +412,8 @@ export class DashboardService {
       let ctaLink = entry.jobId
         ? `/jobs?focus=${entry.jobId}&section=outreach&view=table`
         : entry.contactId
-        ? `/contacts?focus=${entry.contactId}&section=outreach`
-        : '/outreach';
+          ? `/contacts?focus=${entry.contactId}&section=outreach`
+          : '/outreach';
       const separator = ctaLink.includes('?') ? '&' : '?';
       ctaLink = `${ctaLink}${separator}outreachId=${entry.id}`;
       pushItem(entry.id, {
@@ -499,13 +528,18 @@ export class DashboardService {
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
-      this.logger.warn(`Dashboard aggregation degraded for ${label}: ${String((error as Error)?.message ?? error)}`);
+      this.logger.warn(
+        `Dashboard aggregation degraded for ${label}: ${String((error as Error)?.message ?? error)}`
+      );
       return { value: fallback, degraded: true };
     }
   }
 
   private createEmptyStats(range: number): StatsWeeklySummaryDto {
-    const start = this.now().clone().subtract(range - 1, 'day').startOf('day');
+    const start = this.now()
+      .clone()
+      .subtract(range - 1, 'day')
+      .startOf('day');
     const points: { d: string; v: number }[] = [];
     for (let i = 0; i < range; i += 1) {
       points.push({ d: start.clone().add(i, 'day').format('YYYY-MM-DD'), v: 0 });

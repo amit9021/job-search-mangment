@@ -1,4 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+
+import { IdParamDto } from '../../common/dto/id-param.dto';
+
 import {
   AddApplicationDto,
   CreateJobDto,
@@ -7,7 +10,6 @@ import {
   UpdateJobStageDto,
   UpdateJobDto
 } from './dto';
-import { IdParamDto } from '../../common/dto/id-param.dto';
 import { JobsService } from './jobs.service';
 
 @Controller('jobs')
@@ -43,7 +45,8 @@ export class JobsController {
 
   @Delete(':id')
   async delete(@Param() params: IdParamDto, @Query('hard') hard?: string) {
-    const hardDelete = typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
+    const hardDelete =
+      typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
     return this.jobsService.delete(params.id, { hard: hardDelete });
   }
 
@@ -58,10 +61,7 @@ export class JobsController {
   }
 
   @Post(':id/outreach')
-  async addOutreach(
-    @Param() params: IdParamDto,
-    @Body() body: CreateJobOutreachDto
-  ) {
+  async addOutreach(@Param() params: IdParamDto, @Body() body: CreateJobOutreachDto) {
     return this.jobsService.recordJobOutreach(params.id, body);
   }
 

@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { TasksService } from './tasks.service';
+
 import { OutreachAutomationDto } from './dto/outreach-automation.dto';
+import { TasksService } from './tasks.service';
 
 @Controller('automation')
 export class AutomationController {

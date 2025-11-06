@@ -5,7 +5,9 @@ type ZodDtoConstructor<TSchema extends z.ZodTypeAny> = {
   zodSchema: TSchema;
 };
 
-export function createZodDto<TSchema extends z.ZodTypeAny>(schema: TSchema): ZodDtoConstructor<TSchema> {
+export function createZodDto<TSchema extends z.ZodTypeAny>(
+  schema: TSchema
+): ZodDtoConstructor<TSchema> {
   class ZodDtoClass {
     static zodSchema = schema;
 
@@ -23,4 +25,8 @@ export const idParamSchema = z.object({
   id: z.string().cuid()
 });
 
-export type InferDto<T> = T extends { zodSchema: infer Schema } ? Schema extends z.ZodTypeAny ? z.infer<Schema> : never : never;
+export type InferDto<T> = T extends { zodSchema: infer Schema }
+  ? Schema extends z.ZodTypeAny
+    ? z.infer<Schema>
+    : never
+  : never;

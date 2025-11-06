@@ -1,4 +1,5 @@
 import dayjs from '../../utils/dayjs';
+
 import { StatsService } from './stats.service';
 
 describe('StatsService', () => {
@@ -43,9 +44,7 @@ describe('StatsService', () => {
         { sentAt: new Date('2025-11-02T08:00:00Z') },
         { sentAt: new Date('2025-11-07T08:30:00Z') }
       ])
-      .mockResolvedValueOnce([
-        { dueAt: new Date('2025-11-03T08:00:00Z') }
-      ]);
+      .mockResolvedValueOnce([{ dueAt: new Date('2025-11-03T08:00:00Z') }]);
 
     prismaMock.job.groupBy
       .mockResolvedValueOnce([

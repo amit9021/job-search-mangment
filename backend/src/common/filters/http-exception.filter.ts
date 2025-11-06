@@ -1,6 +1,14 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Logger
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { ZodError } from 'zod';
 
@@ -29,7 +37,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         if (typeof responseMessage === 'string') {
           message = responseMessage;
         }
-        const { statusCode: _ignoredStatusCode, error: _ignoredError, message: _ignoredMessage, ...rest } = payload;
+        const {
+          statusCode: _ignoredStatusCode,
+          error: _ignoredError,
+          message: _ignoredMessage,
+          ...rest
+        } = payload;
         if (Object.keys(rest).length > 0) {
           details = rest;
         }

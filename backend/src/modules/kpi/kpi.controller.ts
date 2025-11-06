@@ -1,10 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
-import { KpiService } from './kpi.service';
+
 import { RecommendationService } from '../recommendation/recommendation.service';
+
+import { KpiService } from './kpi.service';
 
 @Controller('kpis')
 export class KpiController {
-  constructor(private readonly kpiService: KpiService, private readonly recommendationService: RecommendationService) {}
+  constructor(
+    private readonly kpiService: KpiService,
+    private readonly recommendationService: RecommendationService
+  ) {}
 
   @Get('today')
   async today() {

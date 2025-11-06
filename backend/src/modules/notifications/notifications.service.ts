@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import dayjs from '../../utils/dayjs';
+
 import { PrismaService } from '../../prisma/prisma.service';
+import dayjs from '../../utils/dayjs';
 
 type DormantCandidateParams = {
   jobId?: string;
@@ -50,8 +51,8 @@ export class NotificationsService {
     const message = jobId
       ? `Review job ${jobId} for dormancy`
       : contactId
-      ? `Review contact ${contactId} for dormancy`
-      : 'Review dormant candidates';
+        ? `Review contact ${contactId} for dormancy`
+        : 'Review dormant candidates';
     await this.prisma.notification.create({
       data: {
         kind: 'dormant_candidate',
@@ -67,7 +68,12 @@ export class NotificationsService {
     await this.ensureNotification('daily_nudge', message, dueAt);
   }
 
-  async ensureNotification(kind: string, message: string, dueAt: Date, extras?: { jobId?: string; contactId?: string }) {
+  async ensureNotification(
+    kind: string,
+    message: string,
+    dueAt: Date,
+    extras?: { jobId?: string; contactId?: string }
+  ) {
     const existing = await this.prisma.notification.findFirst({
       where: {
         kind,

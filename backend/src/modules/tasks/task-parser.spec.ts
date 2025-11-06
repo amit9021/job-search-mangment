@@ -1,4 +1,5 @@
 import dayjs from '../../utils/dayjs';
+
 import { parseQuickTaskInput } from './task-parser';
 
 describe('parseQuickTaskInput', () => {
@@ -27,7 +28,9 @@ describe('parseQuickTaskInput', () => {
     });
 
     expect(result.tags).toEqual(['skills']);
-    expect(result.recurrence).toBe('RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0');
+    expect(result.recurrence).toBe(
+      'RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0'
+    );
     expect(result.dueAt).not.toBeUndefined();
     expect(dayjs(result.dueAt).day()).toBe(1); // Next Monday
     expect(dayjs(result.dueAt).hour()).toBe(9);

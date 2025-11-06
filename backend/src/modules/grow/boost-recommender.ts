@@ -46,7 +46,8 @@ export function suggestBoostTasks(
   if (activityStats.outreach7d < 3) {
     suggestions.push({
       title: 'Reach out to 3 new senior engineers',
-      description: 'Share a recent project update and ask for a quick 15-minute sync or async feedback.',
+      description:
+        'Share a recent project update and ask for a quick 15-minute sync or async feedback.',
       category: 'network-gap',
       impactLevel: 3,
       tags: ['networking', 'mentors']
@@ -56,7 +57,8 @@ export function suggestBoostTasks(
   if (activityStats.eventsAttended30d < 1) {
     suggestions.push({
       title: 'Register for a live meetup or webinar',
-      description: 'Pick an event aligned with desired roles and commit to at least one new connection.',
+      description:
+        'Pick an event aligned with desired roles and commit to at least one new connection.',
       category: 'network-gap',
       impactLevel: 4,
       tags: ['events', 'exposure']
@@ -66,7 +68,8 @@ export function suggestBoostTasks(
   if (activityStats.highlightsPublished30d < 1) {
     suggestions.push({
       title: 'Publish a project highlight post',
-      description: 'Summarize a recent project win with before/after metrics and publish on LinkedIn.',
+      description:
+        'Summarize a recent project win with before/after metrics and publish on LinkedIn.',
       category: 'visibility-gap',
       impactLevel: 4,
       tags: ['brand', 'linkedin']
@@ -76,14 +79,17 @@ export function suggestBoostTasks(
   if (activityStats.boostsCompleted30d < 2) {
     suggestions.push({
       title: 'Ship a micro-optimisation write-up',
-      description: 'Identify a small product or infrastructure improvement, ship it, and write a short teardown.',
+      description:
+        'Identify a small product or infrastructure improvement, ship it, and write a short teardown.',
       category: 'visibility-gap',
       impactLevel: 5,
       tags: ['storytelling', 'impact']
     });
   }
 
-  const filtered = suggestions.filter((suggestion) => !normalizedExistingTitles.has(suggestion.title.toLowerCase()));
+  const filtered = suggestions.filter(
+    (suggestion) => !normalizedExistingTitles.has(suggestion.title.toLowerCase())
+  );
   const deduped: BoostSuggestion[] = [];
   const seen = new Set<string>();
 

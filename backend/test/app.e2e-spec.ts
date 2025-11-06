@@ -1,26 +1,73 @@
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import request from 'supertest';
 import argon2 from 'argon2';
+import request from 'supertest';
+
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 class MockPrismaService {
   user = { findUnique: jest.fn() };
   jobApplication = { count: jest.fn(), create: jest.fn() };
-  outreach = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() };
-  followUp = { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn(), deleteMany: jest.fn() };
+  outreach = {
+    count: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn()
+  };
+  followUp = {
+    count: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    deleteMany: jest.fn()
+  };
   codeReview = { count: jest.fn(), findMany: jest.fn() };
-  job = { findMany: jest.fn(), groupBy: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn(), findUnique: jest.fn() };
-  contact = { count: jest.fn(), findUnique: jest.fn(), update: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn() };
+  job = {
+    findMany: jest.fn(),
+    groupBy: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    create: jest.fn(),
+    findUnique: jest.fn()
+  };
+  contact = {
+    count: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
+    create: jest.fn()
+  };
   company = { findFirst: jest.fn(), create: jest.fn() };
-  event = { findMany: jest.fn(), count: jest.fn(), update: jest.fn(), create: jest.fn(), findUnique: jest.fn() };
+  event = {
+    findMany: jest.fn(),
+    count: jest.fn(),
+    update: jest.fn(),
+    create: jest.fn(),
+    findUnique: jest.fn()
+  };
   eventContact = { create: jest.fn() };
   boostTask = { findMany: jest.fn(), count: jest.fn() };
   referral = { findFirst: jest.fn(), create: jest.fn(), count: jest.fn() };
-  notification = { create: jest.fn(), findFirst: jest.fn(), update: jest.fn(), findMany: jest.fn() };
+  notification = {
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
+    findMany: jest.fn()
+  };
   jobStatusHistory = { create: jest.fn() };
-  project = { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn(), create: jest.fn(), findMany: jest.fn() };
+  project = {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    create: jest.fn(),
+    findMany: jest.fn()
+  };
   outreachCreateResponse: any = null;
   $connect = jest.fn();
   $disconnect = jest.fn();
@@ -57,7 +104,9 @@ describe('App e2e (happy path smoke tests)', () => {
     const passwordHash = await argon2.hash(password);
     prisma.user.findUnique.mockResolvedValue({ id: 'user_1', username: 'admin', passwordHash });
 
-    const response = await request(app.getHttpServer()).post('/auth/login').send({ username: 'admin', password });
+    const response = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ username: 'admin', password });
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('token');
@@ -174,7 +223,9 @@ describe('App e2e (happy path smoke tests)', () => {
 
     expect(response.status).toBe(201);
     expect(prisma.job.create).toHaveBeenCalledWith(expect.any(Object));
-    expect(response.body).toEqual(expect.objectContaining({ company: 'Acme Corp', contactsCount: 0 }));
+    expect(response.body).toEqual(
+      expect.objectContaining({ company: 'Acme Corp', contactsCount: 0 })
+    );
   });
 
   it('POST /jobs/:id/outreach with existing contact links job and contact', async () => {
@@ -208,7 +259,9 @@ describe('App e2e (happy path smoke tests)', () => {
     prisma.referral.findFirst.mockResolvedValue(null);
     prisma.outreach.findFirst.mockResolvedValue(null);
     prisma.outreach.count.mockResolvedValue(0);
-    prisma.outreach.findMany.mockResolvedValue([{ jobId: 'job_link', contactId: 'contact_existing' }]);
+    prisma.outreach.findMany.mockResolvedValue([
+      { jobId: 'job_link', contactId: 'contact_existing' }
+    ]);
     prisma.followUp.findMany.mockResolvedValue([]);
 
     const response = await request(app.getHttpServer())
@@ -223,8 +276,12 @@ describe('App e2e (happy path smoke tests)', () => {
       });
 
     expect(response.status).toBe(201);
-    expect(prisma.outreach.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ contactId: 'contact_existing' }) }));
-    expect(response.body.job).toEqual(expect.objectContaining({ id: 'job_link', contactsCount: 1 }));
+    expect(prisma.outreach.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ contactId: 'contact_existing' }) })
+    );
+    expect(response.body.job).toEqual(
+      expect.objectContaining({ id: 'job_link', contactsCount: 1 })
+    );
   });
 
   it('POST /jobs/:id/outreach with contactCreate creates contact inline', async () => {
@@ -244,7 +301,11 @@ describe('App e2e (happy path smoke tests)', () => {
     prisma.job.update.mockResolvedValue(jobRecord);
     prisma.company.findFirst.mockResolvedValue(null);
     prisma.company.create.mockResolvedValue({ id: 'company_1', name: 'Soylent' });
-    prisma.contact.create.mockResolvedValue({ id: 'contact_new', name: 'Jane New', companyId: 'company_1' });
+    prisma.contact.create.mockResolvedValue({
+      id: 'contact_new',
+      name: 'Jane New',
+      companyId: 'company_1'
+    });
     prisma.outreach.create.mockResolvedValue({
       id: 'out_new',
       jobId: 'job_new_contact',
@@ -261,7 +322,9 @@ describe('App e2e (happy path smoke tests)', () => {
     prisma.referral.findFirst.mockResolvedValue(null);
     prisma.outreach.findFirst.mockResolvedValue(null);
     prisma.outreach.count.mockResolvedValue(0);
-    prisma.outreach.findMany.mockResolvedValue([{ jobId: 'job_new_contact', contactId: 'contact_new' }]);
+    prisma.outreach.findMany.mockResolvedValue([
+      { jobId: 'job_new_contact', contactId: 'contact_new' }
+    ]);
     prisma.followUp.findMany.mockResolvedValue([]);
 
     const response = await request(app.getHttpServer())
@@ -279,7 +342,9 @@ describe('App e2e (happy path smoke tests)', () => {
       });
 
     expect(response.status).toBe(201);
-    expect(prisma.contact.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ name: 'Jane New' }) }));
+    expect(prisma.contact.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ name: 'Jane New' }) })
+    );
     expect(response.body.outreach.contact.name).toBe('Jane New');
     expect(response.body.job.contactsCount).toBe(1);
   });
@@ -299,7 +364,12 @@ describe('App e2e (happy path smoke tests)', () => {
 
     prisma.job.findUnique.mockResolvedValue(jobRecord);
     prisma.job.update.mockResolvedValue({ ...jobRecord, stage: 'HR' });
-    prisma.jobStatusHistory.create.mockResolvedValue({ id: 'status_hist', stage: 'HR', note: 'scheduled HR', at: new Date().toISOString() });
+    prisma.jobStatusHistory.create.mockResolvedValue({
+      id: 'status_hist',
+      stage: 'HR',
+      note: 'scheduled HR',
+      at: new Date().toISOString()
+    });
     prisma.followUp.updateMany.mockResolvedValue({ count: 0 });
     prisma.referral.findFirst.mockResolvedValue(null);
     prisma.outreach.findFirst.mockResolvedValue(null);
@@ -313,7 +383,9 @@ describe('App e2e (happy path smoke tests)', () => {
       .send({ stage: 'HR', note: 'scheduled HR' });
 
     expect(response.status).toBe(201);
-    expect(prisma.job.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ stage: 'HR' }) }));
+    expect(prisma.job.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ stage: 'HR' }) })
+    );
     expect(response.body.job).toEqual(expect.objectContaining({ id: 'job_stage', stage: 'HR' }));
     expect(response.body.history).toEqual(expect.objectContaining({ note: 'scheduled HR' }));
   });

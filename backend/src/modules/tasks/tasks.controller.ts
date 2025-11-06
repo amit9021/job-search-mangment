@@ -1,12 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+
 import { IdParamDto } from '../../common/dto/id-param.dto';
-import { TasksService } from './tasks.service';
-import { ListTasksQueryDto } from './dto/list-tasks.query';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
+
 import { BulkCreateTasksDto } from './dto/bulk-create-tasks.dto';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { ListTasksQueryDto } from './dto/list-tasks.query';
 import { QuickParseDto } from './dto/quick-parse.dto';
 import { SnoozeTaskDto } from './dto/snooze-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { TasksService } from './tasks.service';
 
 @Controller('tasks')
 export class TasksController {
