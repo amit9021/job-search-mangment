@@ -10,12 +10,23 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   const configService = app.get(ConfigService);
-  const frontendOrigin =
-    configService.get<string>('FRONTEND_ORIGIN') ??
-    process.env.FRONTEND_ORIGIN ??
-    'http://localhost:5174';
+  const rawOrigins =
+    configService.get<string>('BACKEND_ALLOWED_ORIGINS') ?? process.env.BACKEND_ALLOWED_ORIGINS ?? '';
+  const parsedOrigins = rawOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+  const allowedOrigins = parsedOrigins.length > 0 ? parsedOrigins : ['http://localhost:5174'];
+  const allowedOriginsSet = new Set(allowedOrigins);
+
   app.enableCors({
-    origin: frontendOrigin,
+    origin: (origin, callback) => {
+      if (!origin || allowedOriginsSet.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     credentials: true
   });
   app.useGlobalPipes(new ZodValidationPipe());

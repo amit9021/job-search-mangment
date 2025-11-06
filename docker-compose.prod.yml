@@ -1,0 +1,59 @@
+version: '3.9'
+
+name: jobhunt-prod
+
+services:
+  db_prod:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobhunt_prod
+    ports:
+      - '5434:5432'
+    volumes:
+      - db_data_prod:/var/lib/postgresql/data
+    networks:
+      - prephase0_prod_net
+
+  backend_prod:
+    build:
+      context: ./backend
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL_PROD: postgresql://username:password@db_prod:5432/jobhunt_prod
+      DATABASE_URL: postgresql://username:password@db_prod:5432/jobhunt_prod
+    depends_on:
+      - db_prod
+    ports:
+      - '4000:3000'
+    command: sh -c "npx prisma migrate deploy && node dist/main.js"
+    networks:
+      - prephase0_prod_net
+
+  frontend_prod:
+    build:
+      context: ./frontend
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      FRONT_PORT: 4173
+      VITE_API_URL: http://backend_prod:3000
+    depends_on:
+      - backend_prod
+    ports:
+      - '4173:4173'
+    command: npm run preview -- --host 0.0.0.0 --port 4173
+    networks:
+      - prephase0_prod_net
+
+volumes:
+  db_data_prod: {}
+
+networks:
+  prephase0_prod_net:
+    driver: bridge

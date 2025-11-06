@@ -10,7 +10,7 @@ describe('parseQuickTaskInput', () => {
       { now, timezone: 'UTC' }
     );
 
-    expect(result.title).toBe('Follow up with Dana');
+    expect(result.title).toBe('Follow up with Dana @job:Acme');
     expect(result.tags).toEqual(['followup']);
     expect(result.priority).toBe('High');
     expect(result.contexts.contactQuery).toBe('Dana');

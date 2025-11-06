@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bash -lc 'set -a && source ../.env && set +a && vite'",
+    "dev": "bash -lc 'export NODE_ENV=development; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh --env development vite; else vite; fi'",
+    "build": "bash -lc 'export NODE_ENV=production; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh --env production vite build; else vite build; fi'",
+    "preview": "bash -lc 'export NODE_ENV=production; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh --env production vite preview; else vite preview; fi'",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts,.tsx --max-warnings=0",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "bash -lc 'set -a && source ../.env && set +a && vitest'"
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test": "bash -lc 'export NODE_ENV=development; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh --env development vitest; else vitest; fi'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",

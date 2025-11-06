@@ -5,19 +5,19 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "start": "bash -lc 'set -a && source ../.env && set +a && node dist/main.js'",
-    "start:dev": "bash -lc 'set -a && source ../.env && set +a && npx nest start --env-file ../.env --watch'",
-    "start:prod": "bash -lc 'set -a && source ../.env && set +a && node dist/main.js'",
+    "start": "bash -lc 'export NODE_ENV=${NODE_ENV:-production}; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh node dist/main.js; else node dist/main.js; fi'",
+    "start:dev": "bash -lc 'export NODE_ENV=development; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh npx nest start --watch; else npx nest start --watch; fi'",
+    "start:prod": "bash -lc 'export NODE_ENV=production; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh node dist/main.js; else node dist/main.js; fi'",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --cache --cache-location .eslintcache --max-warnings=0",
     "lint:fix": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --cache --cache-location .eslintcache --fix",
     "lint:fix:mem": "NODE_OPTIONS=--max-old-space-size=4096 eslint \"src/**/*.ts\" --fix",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:migrate": "bash -lc 'set -a && source ../.env && set +a && npx prisma migrate dev'",
-    "prisma:generate": "bash -lc 'set -a && source ../.env && set +a && npx prisma generate'",
-    "prisma:seed": "bash -lc 'set -a && source ../.env && set +a && ts-node --transpile-only src/prisma/seed.ts'",
-    "prisma:reset": "bash -lc 'set -a && source ../.env && set +a && npx prisma migrate reset --force --skip-generate --skip-seed && npm run prisma:seed'"
+    "test:e2e": "bash -lc 'export NODE_ENV=development; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh jest --config ./test/jest-e2e.json; else jest --config ./test/jest-e2e.json; fi'",
+    "prisma:migrate": "bash -lc 'export NODE_ENV=${NODE_ENV:-development}; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh npx prisma migrate dev; else npx prisma migrate dev; fi'",
+    "prisma:generate": "bash -lc 'export NODE_ENV=${NODE_ENV:-development}; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh npx prisma generate; else npx prisma generate; fi'",
+    "prisma:seed": "bash -lc 'export NODE_ENV=${NODE_ENV:-development}; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh ts-node --transpile-only src/prisma/seed.ts; else ts-node --transpile-only src/prisma/seed.ts; fi'",
+    "prisma:reset": "bash -lc 'export NODE_ENV=${NODE_ENV:-development}; if [ -x ../scripts/use-env.sh ]; then ../scripts/use-env.sh npx prisma migrate reset --force --skip-generate --skip-seed && npm run prisma:seed; else npx prisma migrate reset --force --skip-generate --skip-seed && npm run prisma:seed; fi'"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
