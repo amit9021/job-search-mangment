@@ -7,9 +7,11 @@ type JobRow = {
   role: string;
   stage: string;
   heat: number;
+  updatedAt: string;
   lastTouchAt: string;
   nextFollowUpAt?: string | null;
   sourceUrl?: string | null;
+  archived: boolean;
   contactsCount: number;
   contacts: Array<{
     id: string;

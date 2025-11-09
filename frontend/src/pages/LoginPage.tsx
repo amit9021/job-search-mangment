@@ -56,10 +56,10 @@ export const LoginPage = () => {
         </div>
         <button
           type="submit"
-          disabled={loginMutation.isLoading}
+          disabled={loginMutation.isPending}
           className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600 disabled:cursor-wait disabled:opacity-75"
         >
-          {loginMutation.isLoading ? 'Authenticating…' : 'Sign in'}
+          {loginMutation.isPending ? 'Authenticating…' : 'Sign in'}
         </button>
         {loginMutation.isError && (
           <p className="text-sm text-red-500">Login failed. Check credentials and try again.</p>

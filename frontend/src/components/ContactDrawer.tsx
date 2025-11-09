@@ -802,7 +802,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                             Edit purpose
                                           </button>
                                         </div>
-                                        {editingContext?.id === entry.item.data.id && (
+                                        {editingContext && editingContext.id === entry.item.data.id && (
                                           <div className="flex flex-wrap items-center gap-2 text-xs">
                                             <select
                                               value={editingContext.value}

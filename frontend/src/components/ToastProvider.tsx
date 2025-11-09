@@ -9,8 +9,15 @@ export type ToastDescriptor = {
   variant: ToastVariant;
 };
 
+type ToastInput = {
+  title: string;
+  description?: string;
+  variant?: ToastVariant;
+};
+
 type ToastContextValue = {
-  push: (toast: Omit<ToastDescriptor, 'id'>) => string;
+  add: (toast: ToastInput) => string;
+  push: (toast: ToastInput) => string;
   success: (title: string, description?: string) => string;
   error: (title: string, description?: string) => string;
   dismiss: (id: string) => void;
@@ -33,9 +40,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const push = useCallback(
-    (toast: Omit<ToastDescriptor, 'id'>) => {
+    (toast: ToastInput) => {
       const id = generateId();
-      setToasts((current) => [...current, { ...toast, id }]);
+      setToasts((current) => [...current, { ...toast, id, variant: toast.variant ?? 'info' }]);
       window.setTimeout(() => dismiss(id), 5000);
       return id;
     },
@@ -45,7 +52,10 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const success = useCallback((title: string, description?: string) => push({ title, description, variant: 'success' }), [push]);
   const error = useCallback((title: string, description?: string) => push({ title, description, variant: 'error' }), [push]);
 
-  const value = useMemo(() => ({ push, success, error, dismiss }), [push, success, error, dismiss]);
+  const value = useMemo(
+    () => ({ add: push, push, success, error, dismiss }),
+    [push, success, error, dismiss]
+  );
 
   return (
     <ToastContext.Provider value={value}>

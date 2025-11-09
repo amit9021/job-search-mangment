@@ -35,6 +35,15 @@ const taskFormSchema = z.object({
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
 
+const normalizeGrowType = (value?: string | null): TaskFormValues['growType'] => {
+  if (!value) {
+    return undefined;
+  }
+  return growTypeOptions.includes(value as (typeof growTypeOptions)[number])
+    ? (value as TaskFormValues['growType'])
+    : undefined;
+};
+
 const toLocalInputValue = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
@@ -90,7 +99,7 @@ export const TaskDrawer = ({ task, open, onClose, onSubmit, isSaving = false }: 
       checklist: [],
       jobId: undefined,
       contactId: undefined,
-      growType: task?.context.grow?.type as TaskFormValues['growType'],
+      growType: normalizeGrowType(task?.context.grow?.type),
       growId: task?.context.grow?.id ?? undefined
     }
   });
@@ -114,7 +123,7 @@ export const TaskDrawer = ({ task, open, onClose, onSubmit, isSaving = false }: 
       checklist: task.checklist ?? [],
       jobId: task.links.jobId,
       contactId: task.links.contactId,
-      growType: (task.links.growType as TaskFormValues['growType']) ?? task.context.grow?.type ?? undefined,
+      growType: normalizeGrowType(task.links.growType ?? task.context.grow?.type),
       growId: task.links.growId ?? (task.context.grow?.id ?? undefined)
     });
     setSelectedJob(task.context.job ?? null);

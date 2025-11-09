@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { JobsPage } from '../JobsPage';
 import { ToastProvider } from '../../components/ToastProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -69,13 +69,33 @@ describe('JobsPage', () => {
         }
       ],
       isLoading: false
-    });
-    useDeleteJobMutation.mockReturnValue({ mutateAsync: deleteMutationSpy, isPending: false });
-    useCreateJobMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-    useUpdateJobMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-    useJobDetailQuery.mockReturnValue({ data: null });
-    useJobHistoryQuery.mockReturnValue({ data: { stage: 'APPLIED', statusHistory: [], applications: [], outreaches: [], followups: [] }, isLoading: false });
-    useContactDetailQuery.mockReturnValue({ data: null, isLoading: false });
+    } as unknown as ReturnType<typeof hooksModule.useJobsQuery>);
+    useDeleteJobMutation.mockReturnValue({
+      mutateAsync: deleteMutationSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useDeleteJobMutation>);
+    useCreateJobMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useCreateJobMutation>);
+    useUpdateJobMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useUpdateJobMutation>);
+    useJobDetailQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isFetching: false
+    } as unknown as ReturnType<typeof hooksModule.useJobDetailQuery>);
+    useJobHistoryQuery.mockReturnValue({
+      data: { stage: 'APPLIED', statusHistory: [], applications: [], outreaches: [], followups: [] },
+      isLoading: false,
+      isFetching: false
+    } as unknown as ReturnType<typeof hooksModule.useJobHistoryQuery>);
+    useContactDetailQuery.mockReturnValue({
+      data: null,
+      isLoading: false
+    } as unknown as ReturnType<typeof hooksModule.useContactDetailQuery>);
     useJobHeatExplainQuery.mockReturnValue({
       data: {
         jobId: 'job-1',
@@ -91,7 +111,7 @@ describe('JobsPage', () => {
       isFetching: false,
       isError: false,
       refetch: heatRefetchSpy
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobHeatExplainQuery>);
   });
 
   it('opens delete dialog and performs soft delete', async () => {
@@ -134,7 +154,7 @@ describe('JobsPage', () => {
         }
       ],
       isLoading: false
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobsQuery>);
 
     useContactDetailQuery.mockReturnValue({
       data: {
@@ -156,7 +176,7 @@ describe('JobsPage', () => {
         linkedJobs: []
       },
       isLoading: false
-    });
+    } as unknown as ReturnType<typeof hooksModule.useContactDetailQuery>);
 
     renderPage();
 
@@ -199,7 +219,7 @@ describe('JobsPage', () => {
         }
       ],
       isLoading: false
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobsQuery>);
 
     renderPage();
 
@@ -242,7 +262,7 @@ describe('JobsPage', () => {
         }
       ],
       isLoading: false
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobsQuery>);
 
     renderPage();
 

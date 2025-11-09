@@ -126,7 +126,7 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
 
     const humanize = (value?: string | null) => (value ? value.replace(/_/g, ' ') : undefined);
 
-    const contextLabel = (context?: string) => {
+    const contextLabel = (context?: string | null) => {
       switch (context) {
         case 'JOB_OPPORTUNITY':
           return 'Job outreach';

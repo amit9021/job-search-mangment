@@ -14,6 +14,10 @@ type JobSummary = {
   id: string;
   company: string;
   role: string;
+  stage?: string;
+  heat?: number;
+  lastTouchAt?: string;
+  contactsCount?: number;
 };
 
 type ContactResult = {

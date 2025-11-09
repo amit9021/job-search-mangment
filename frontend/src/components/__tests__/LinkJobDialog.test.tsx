@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LinkJobDialog } from '../LinkJobDialog';
 
 vi.mock('../../api/hooks', async () => {
@@ -19,8 +19,14 @@ const useCreateJobMutation = vi.mocked(hooks.useCreateJobMutation);
 describe('LinkJobDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    useJobSearchQuery.mockReturnValue({ data: [], isFetching: false });
-    useCreateJobMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
+    useJobSearchQuery.mockReturnValue({
+      data: [],
+      isFetching: false
+    } as unknown as ReturnType<typeof hooks.useJobSearchQuery>);
+    useCreateJobMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useCreateJobMutation>);
   });
 
   it('creates a new job inline and emits linked job payload', async () => {
@@ -33,7 +39,10 @@ describe('LinkJobDialog', () => {
       contactsCount: 0
     });
 
-    useCreateJobMutation.mockReturnValue({ mutateAsync: createJobSpy, isPending: false });
+    useCreateJobMutation.mockReturnValue({
+      mutateAsync: createJobSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useCreateJobMutation>);
     const onLinked = vi.fn();
 
     render(

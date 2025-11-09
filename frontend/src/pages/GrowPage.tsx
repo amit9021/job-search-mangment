@@ -96,10 +96,10 @@ export const GrowPage = () => {
   const handleAddSuggestion = async (suggestion: BoostSuggestion) => {
     await createBoost.mutateAsync({
       title: suggestion.title,
-      description: suggestion.description,
+      description: suggestion.description ?? undefined,
       category: suggestion.category,
       impactLevel: suggestion.impactLevel,
-      tags: suggestion.tags
+      tags: suggestion.tags ?? []
     });
     setSuggestions((prev) => prev.filter((item) => item.title !== suggestion.title));
   };

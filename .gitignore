@@ -29,5 +29,10 @@ prisma/migrations/*/migration_lock.toml
 # IDE
 .vscode
 .claude
-docs
 
+# Context build artifacts (retained via refresh script)
+docs/chunks/*.tmp
+docs/architecture/
+docs/modules/
+docs/PLANS/
+!docs/PLANS/prephase0-userisolation.md

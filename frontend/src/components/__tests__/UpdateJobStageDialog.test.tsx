@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UpdateJobStageDialog } from '../UpdateJobStageDialog';
 
 vi.mock('../../api/hooks', async () => {
@@ -17,12 +17,18 @@ const useUpdateJobStageMutation = vi.mocked(hooks.useUpdateJobStageMutation);
 describe('UpdateJobStageDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    useUpdateJobStageMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
+    useUpdateJobStageMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useUpdateJobStageMutation>);
   });
 
   it('submits selected stage with note', async () => {
     const mutateSpy = vi.fn().mockResolvedValue({ job: { id: 'job_1', stage: 'HR' } });
-    useUpdateJobStageMutation.mockReturnValue({ mutateAsync: mutateSpy, isPending: false });
+    useUpdateJobStageMutation.mockReturnValue({
+      mutateAsync: mutateSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useUpdateJobStageMutation>);
 
     const onOpenChange = vi.fn();
 

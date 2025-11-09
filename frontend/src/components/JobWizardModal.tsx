@@ -108,8 +108,8 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
     defaultValues: {
       company: '',
       role: '',
-      outreachEnabled: !isEditMode,  // Disable outreach in edit mode
-      personalizationScore: '80',
+      outreachEnabled: !isEditMode, // Disable outreach in edit mode
+      personalizationScore: 80,
       channel: 'EMAIL',
       context: 'JOB_OPPORTUNITY',
       contactLookup: '',
@@ -127,15 +127,15 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         role: jobDetail.role,
         sourceUrl: jobDetail.sourceUrl || '',
         outreachEnabled: false,
-      tailoringScore: undefined,
-      personalizationScore: '80',
-      channel: 'EMAIL',
-      context: 'JOB_OPPORTUNITY',
-      contactLookup: '',
-      contactEmail: undefined,
-      contactLinkedIn: undefined,
-      contactRole: undefined
-    });
+        tailoringScore: undefined,
+        personalizationScore: 80,
+        channel: 'EMAIL',
+        context: 'JOB_OPPORTUNITY',
+        contactLookup: '',
+        contactEmail: undefined,
+        contactLinkedIn: undefined,
+        contactRole: undefined
+      });
       setFormError(null);
     }
   }, [isEditMode, jobDetail, reset]);
@@ -254,7 +254,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         contactRole: undefined,
         channel: 'EMAIL',
         messageType: '',
-        personalizationScore: '80',
+        personalizationScore: 80,
         note: ''
       });
       setSelectedContact(null);

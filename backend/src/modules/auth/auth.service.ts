@@ -43,6 +43,7 @@ export class AuthService {
 
   async login(username: string, password: string) {
     const user = await this.validateUser(username, password);
+    await this.claimOrphanedRecords(user.id);
     const payload = { sub: user.id, username: user.username };
     const token = await this.jwtService.signAsync(payload);
     return {
@@ -53,5 +54,18 @@ export class AuthService {
         username: user.username
       }
     };
+  }
+
+  private async claimOrphanedRecords(userId: string) {
+    await Promise.all([
+      this.prisma.company.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.job.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.contact.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.task.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.growthReview.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.growthEvent.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.growthBoostTask.updateMany({ where: { userId: null }, data: { userId } }),
+      this.prisma.projectHighlight.updateMany({ where: { userId: null }, data: { userId } })
+    ]);
   }
 }

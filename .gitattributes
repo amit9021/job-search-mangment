@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# Ensure docs and generated chunks stay normalized for diffs
+docs/*.md text diff
+docs/**/*.md text diff
+docs/chunks/**/*.md text diff

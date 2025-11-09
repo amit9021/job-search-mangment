@@ -1,0 +1,751 @@
+{
+  "version": 1,
+  "generated_at": "2025-11-09T08:03:21.008Z",
+  "chunks": [
+    {
+      "id": "chunk-backend-auth",
+      "path": "docs/chunks/chunk-backend-auth.md",
+      "source_path": [
+        "backend/src/modules/auth/auth.controller.ts",
+        "backend/src/modules/auth/auth.service.ts"
+      ],
+      "module": "backend-auth",
+      "exports": [
+        "AuthController",
+        "AuthService"
+      ],
+      "imports": [
+        "../../common/decorators/public.decorator",
+        "../../common/decorators/user.decorator",
+        "../../prisma/prisma.service",
+        "./auth.service",
+        "./dto/login.dto",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/jwt"
+      ],
+      "tokens_est": 308,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-jobs",
+      "path": "docs/chunks/chunk-backend-jobs.md",
+      "source_path": [
+        "backend/src/modules/jobs/jobs.controller.ts",
+        "backend/src/modules/jobs/jobs.service.ts"
+      ],
+      "module": "backend-jobs",
+      "exports": [
+        "JobsController",
+        "JobsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/create-zod-dto",
+        "../contacts/contacts.service",
+        "../followups/followups.service",
+        "../outreach/outreach.service",
+        "./dto",
+        "./dto/create-job-outreach.dto",
+        "./heat-rules.loader",
+        "./jobs.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 737,
+      "tags": [
+        "api",
+        "service",
+        "db"
+      ]
+    },
+    {
+      "id": "chunk-backend-contacts",
+      "path": "docs/chunks/chunk-backend-contacts.md",
+      "source_path": [
+        "backend/src/modules/contacts/contacts.controller.ts",
+        "backend/src/modules/contacts/contacts.service.ts"
+      ],
+      "module": "backend-contacts",
+      "exports": [
+        "ContactsController",
+        "ContactsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../companies/companies.service",
+        "../outreach/outreach.service",
+        "../referrals/referrals.service",
+        "../reviews/reviews.service",
+        "./contacts.service",
+        "./dto",
+        "@nestjs/common",
+        "@prisma/client",
+        "date-fns"
+      ],
+      "tokens_est": 749,
+      "tags": [
+        "api",
+        "service",
+        "db"
+      ]
+    },
+    {
+      "id": "chunk-backend-companies",
+      "path": "docs/chunks/chunk-backend-companies.md",
+      "source_path": [
+        "backend/src/modules/companies/companies.controller.ts",
+        "backend/src/modules/companies/companies.service.ts"
+      ],
+      "module": "backend-companies",
+      "exports": [
+        "CompaniesController",
+        "CompaniesService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "./companies.service",
+        "./dto",
+        "@nestjs/common"
+      ],
+      "tokens_est": 433,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-outreach",
+      "path": "docs/chunks/chunk-backend-outreach.md",
+      "source_path": [
+        "backend/src/modules/outreach/outreach.controller.ts",
+        "backend/src/modules/outreach/outreach.service.ts"
+      ],
+      "module": "backend-outreach",
+      "exports": [
+        "OutreachController",
+        "OutreachService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "../jobs/jobs.service",
+        "../tasks/tasks.service",
+        "./dto/create-outreach.dto",
+        "./dto/list-outreach.query",
+        "./dto/update-outreach.dto",
+        "./outreach.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 583,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-followups",
+      "path": "docs/chunks/chunk-backend-followups.md",
+      "source_path": [
+        "backend/src/modules/followups/followups.controller.ts",
+        "backend/src/modules/followups/followups.service.ts"
+      ],
+      "module": "backend-followups",
+      "exports": [
+        "FollowupsController",
+        "FollowupsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../notifications/notifications.service",
+        "./dto/get-followups.query",
+        "./dto/send-followup.dto",
+        "./followups.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 492,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-dashboard",
+      "path": "docs/chunks/chunk-backend-dashboard.md",
+      "source_path": [
+        "backend/src/modules/dashboard/dashboard.controller.ts",
+        "backend/src/modules/dashboard/dashboard.service.ts"
+      ],
+      "module": "backend-dashboard",
+      "exports": [
+        "DashboardController",
+        "DashboardService"
+      ],
+      "imports": [
+        "../../common/decorators/user.decorator",
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "../jobs/jobs.service",
+        "../kpi/kpi.service",
+        "../outreach/outreach.service",
+        "../stats/dto/stats-weekly.dto",
+        "../stats/stats.service",
+        "../tasks/tasks.service",
+        "./dashboard.service",
+        "./dto/dashboard-summary.dto",
+        "@nestjs/common",
+        "@nestjs/config",
+        "express"
+      ],
+      "tokens_est": 585,
+      "tags": [
+        "api",
+        "service",
+        "cache"
+      ]
+    },
+    {
+      "id": "chunk-backend-kpi",
+      "path": "docs/chunks/chunk-backend-kpi.md",
+      "source_path": [
+        "backend/src/modules/kpi/kpi.controller.ts",
+        "backend/src/modules/kpi/kpi.service.ts"
+      ],
+      "module": "backend-kpi",
+      "exports": [
+        "KpiController",
+        "KpiService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../recommendation/recommendation.service",
+        "./kpi.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 553,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-stats",
+      "path": "docs/chunks/chunk-backend-stats.md",
+      "source_path": [
+        "backend/src/modules/stats/stats.controller.ts",
+        "backend/src/modules/stats/stats.service.ts"
+      ],
+      "module": "backend-stats",
+      "exports": [
+        "StatsController",
+        "StatsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./dto/stats-weekly.dto",
+        "./stats.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 497,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-tasks",
+      "path": "docs/chunks/chunk-backend-tasks.md",
+      "source_path": [
+        "backend/src/modules/tasks/tasks.controller.ts",
+        "backend/src/modules/tasks/automation.controller.ts",
+        "backend/src/modules/tasks/tasks.service.ts"
+      ],
+      "module": "backend-tasks",
+      "exports": [
+        "AutomationController",
+        "TasksController",
+        "TasksService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./dto/bulk-create-tasks.dto",
+        "./dto/create-task.dto",
+        "./dto/list-tasks.query",
+        "./dto/outreach-automation.dto",
+        "./dto/quick-parse.dto",
+        "./dto/snooze-task.dto",
+        "./dto/update-task.dto",
+        "./task-kpis",
+        "./task-parser",
+        "./task-snooze",
+        "./task.constants",
+        "./tasks.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 694,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-notifications",
+      "path": "docs/chunks/chunk-backend-notifications.md",
+      "source_path": [
+        "backend/src/modules/notifications/notifications.controller.ts",
+        "backend/src/modules/notifications/notifications.service.ts"
+      ],
+      "module": "backend-notifications",
+      "exports": [
+        "NotificationsController",
+        "NotificationsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./dto/list-notifications.query",
+        "./notifications.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 397,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-projects",
+      "path": "docs/chunks/chunk-backend-projects.md",
+      "source_path": [
+        "backend/src/modules/projects/projects.controller.ts",
+        "backend/src/modules/projects/projects.service.ts",
+        "backend/src/modules/reviews/reviews.controller.ts",
+        "backend/src/modules/reviews/reviews.service.ts"
+      ],
+      "module": "backend-projects",
+      "exports": [
+        "ProjectsController",
+        "ProjectsService",
+        "ReviewsController",
+        "ReviewsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "./dto",
+        "./dto/create-review.dto",
+        "./projects.service",
+        "./reviews.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 557,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-grow",
+      "path": "docs/chunks/chunk-backend-grow.md",
+      "source_path": [
+        "backend/src/modules/grow/grow.controller.ts",
+        "backend/src/modules/grow/grow.service.ts"
+      ],
+      "module": "backend-grow",
+      "exports": [
+        "GrowController",
+        "GrowService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/create-zod-dto",
+        "../../utils/dayjs",
+        "./boost-recommender",
+        "./dto",
+        "./grow.service",
+        "@nestjs/common"
+      ],
+      "tokens_est": 646,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-boosts",
+      "path": "docs/chunks/chunk-backend-boosts.md",
+      "source_path": [
+        "backend/src/modules/boosts/boosts.controller.ts",
+        "backend/src/modules/boosts/boosts.service.ts"
+      ],
+      "module": "backend-boosts",
+      "exports": [
+        "BoostsController",
+        "BoostsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./boosts.service",
+        "./dto/create-boost-task.dto",
+        "@nestjs/common"
+      ],
+      "tokens_est": 277,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-events",
+      "path": "docs/chunks/chunk-backend-events.md",
+      "source_path": [
+        "backend/src/modules/events/events.controller.ts",
+        "backend/src/modules/events/events.service.ts"
+      ],
+      "module": "backend-events",
+      "exports": [
+        "EventsController",
+        "EventsService"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "./dto",
+        "./events.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 451,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-referrals",
+      "path": "docs/chunks/chunk-backend-referrals.md",
+      "source_path": [
+        "backend/src/modules/referrals/referrals.controller.ts",
+        "backend/src/modules/referrals/referrals.service.ts"
+      ],
+      "module": "backend-referrals",
+      "exports": [
+        "ReferralsController",
+        "ReferralsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../jobs/jobs.service",
+        "./dto/create-referral.dto",
+        "./referrals.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 257,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-recommendation",
+      "path": "docs/chunks/chunk-backend-recommendation.md",
+      "source_path": [
+        "backend/src/modules/recommendation/recommendation.controller.ts",
+        "backend/src/modules/recommendation/recommendation.service.ts"
+      ],
+      "module": "backend-recommendation",
+      "exports": [
+        "RecommendationController",
+        "RecommendationResult",
+        "RecommendationService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./recommendation.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 336,
+      "tags": [
+        "api",
+        "service"
+      ]
+    },
+    {
+      "id": "chunk-backend-prisma",
+      "path": "docs/chunks/chunk-backend-prisma.md",
+      "source_path": [
+        "backend/src/prisma/prisma.service.ts",
+        "prisma/schema.prisma"
+      ],
+      "module": "backend-prisma",
+      "exports": [
+        "PrismaService"
+      ],
+      "imports": [
+        "../common/context/request-context.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "tokens_est": 157,
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "id": "chunk-frontend-api",
+      "path": "docs/chunks/chunk-frontend-api.md",
+      "source_path": [
+        "frontend/src/api/client.ts",
+        "frontend/src/api/hooks.ts",
+        "frontend/src/api/useDashboard.ts",
+        "frontend/src/api/useStats.ts"
+      ],
+      "module": "frontend-api",
+      "exports": [
+        "API_BASE_URL",
+        "BoostSuggestion",
+        "CreateJobMutationInput",
+        "DashboardActionSuggestion",
+        "DashboardNotificationSeverity",
+        "DashboardQueueItemType",
+        "DashboardSummaryResponse",
+        "DashboardSummaryResult",
+        "DeleteJobMutationInput",
+        "GrowthBoostTask",
+        "GrowthEvent",
+        "GrowthReview",
+        "JobOutreachPayload",
+        "ParsedApiError",
+        "ProjectHighlight",
+        "StatsSeriesPoint",
+        "TaskModel",
+        "TaskQuickParseResult",
+        "TaskQuickParseSuggestion",
+        "TaskView",
+        "WeeklySummaryResponse",
+        "createApiClient",
+        "parseApiError",
+        "useBoostSuggestionsMutation",
+        "useBoostsQuery",
+        "useCompaniesQuery",
+        "useContactDetailQuery",
+        "useContactSearchQuery",
+        "useContactsQuery",
+        "useCreateCompanyMutation",
+        "useCreateContactMutation",
+        "useCreateGrowthBoostTaskMutation",
+        "useCreateGrowthEventMutation",
+        "useCreateGrowthReviewMutation",
+        "useCreateJobMutation",
+        "useCreateJobOutreachMutation",
+        "useCreateProjectHighlightMutation",
+        "useDashboardSummary",
+        "useDeleteContactMutation",
+        "useDeleteJobMutation",
+        "useDeleteOutreachMutation",
+        "useEventsQuery",
+        "useFollowupsQuery",
+        "useJobDetailQuery",
+        "useJobHeatExplainQuery",
+        "useJobHistoryQuery",
+        "useJobSearchQuery",
+        "useJobsQuery",
+        "useKpiTodayQuery",
+        "useKpiWeekQuery",
+        "useLoginMutation",
+        "useMarkFollowupMutation",
+        "useNetworkStarsQuery",
+        "useNextActionQuery",
+        "useNotificationsQuery",
+        "useProjectsQuery",
+        "useReviewsQuery",
+        "useTaskCreateMutation",
+        "useTaskDeleteMutation",
+        "useTaskKpisQuery",
+        "useTaskQuickParseMutation",
+        "useTaskSnoozeMutation",
+        "useTaskUpdateMutation",
+        "useTasksQuery",
+        "useUpdateContactMutation",
+        "useUpdateGrowthBoostTaskMutation",
+        "useUpdateJobMutation",
+        "useUpdateJobStageMutation",
+        "useUpdateOutreachMutation",
+        "useUpdateProjectHighlightMutation",
+        "useWeeklySummary"
+      ],
+      "imports": [
+        "../components/ToastProvider",
+        "../stores/session",
+        "./ApiProvider",
+        "@tanstack/react-query",
+        "axios",
+        "zod"
+      ],
+      "tokens_est": 812,
+      "tags": [
+        "client",
+        "ui"
+      ]
+    },
+    {
+      "id": "chunk-frontend-shell",
+      "path": "docs/chunks/chunk-frontend-shell.md",
+      "source_path": [
+        "frontend/src/App.tsx",
+        "frontend/src/layouts/ShellLayout.tsx",
+        "frontend/src/stores/session.ts"
+      ],
+      "module": "frontend-shell",
+      "exports": [
+        "SessionUser",
+        "ShellLayout",
+        "useSessionStore"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/NextActionCard",
+        "../stores/session",
+        "./layouts/ShellLayout",
+        "./pages/ContactsPage",
+        "./pages/DashboardPage",
+        "./pages/GrowPage",
+        "./pages/JobsPage",
+        "./pages/LoginPage",
+        "./pages/TasksPage",
+        "./stores/session",
+        "react-router-dom",
+        "zustand",
+        "zustand/middleware"
+      ],
+      "tokens_est": 153,
+      "tags": [
+        "ui",
+        "state"
+      ]
+    },
+    {
+      "id": "chunk-frontend-dashboard",
+      "path": "docs/chunks/chunk-frontend-dashboard.md",
+      "source_path": [
+        "frontend/src/pages/DashboardPage.tsx",
+        "frontend/src/components/dashboard/KpiMiniTiles.tsx",
+        "frontend/src/components/dashboard/ChartWarmOutreach.tsx",
+        "frontend/src/components/dashboard/ChartCvsSent.tsx",
+        "frontend/src/components/dashboard/NextBestActionCompact.tsx",
+        "frontend/src/components/dashboard/ActionCenterTabs.tsx",
+        "frontend/src/components/dashboard/InsightsMini.tsx",
+        "frontend/src/components/dashboard/ChartFollowupsPie.tsx"
+      ],
+      "module": "frontend-dashboard",
+      "exports": [
+        "ActionCenterTabs",
+        "ChartCvsSent",
+        "ChartFollowupsPie",
+        "ChartWarmOutreach",
+        "DashboardPage",
+        "InsightsMini",
+        "KpiMiniTiles",
+        "NextBestActionCompact"
+      ],
+      "imports": [
+        "../../api/useDashboard",
+        "../../api/useStats",
+        "../api/hooks",
+        "../api/useDashboard",
+        "../api/useStats",
+        "../components/FollowUpList",
+        "../components/KpiCard",
+        "../components/dashboard/ActionCenterTabs",
+        "../components/dashboard/ChartCvsSent",
+        "../components/dashboard/ChartWarmOutreach",
+        "../components/dashboard/InsightsMini",
+        "../components/dashboard/KpiMiniTiles",
+        "../components/dashboard/NextBestActionCompact",
+        "../components/dashboard/TimeRangeSelector",
+        "./FollowupsStatusMini",
+        "./HeatCompact",
+        "react",
+        "react-router-dom",
+        "recharts"
+      ],
+      "tokens_est": 146,
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "id": "chunk-frontend-pages",
+      "path": "docs/chunks/chunk-frontend-pages.md",
+      "source_path": [
+        "frontend/src/pages/JobsPage.tsx",
+        "frontend/src/pages/ContactsPage.tsx",
+        "frontend/src/pages/GrowPage.tsx",
+        "frontend/src/pages/TasksPage.tsx"
+      ],
+      "module": "frontend-pages",
+      "exports": [
+        "ContactsPage",
+        "GrowPage",
+        "JobsPage",
+        "TasksPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/AddOutreachDialog",
+        "../components/ContactDrawer",
+        "../components/ContactEngagementBadge",
+        "../components/HeatBadge",
+        "../components/JobHistoryModal",
+        "../components/JobListTable",
+        "../components/JobWizardModal",
+        "../components/KpiHeader",
+        "../components/StrengthBadge",
+        "../components/UpdateJobStageDialog",
+        "../components/grow/AddGrowItemModal",
+        "../components/grow/BoostTaskCard",
+        "../components/grow/EventCard",
+        "../components/grow/ProjectCard",
+        "../components/grow/ReviewCard",
+        "../components/tasks/NBABox",
+        "../components/tasks/QuickAddBar",
+        "../components/tasks/TaskCard",
+        "../components/tasks/TaskDrawer",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-popover",
+        "date-fns",
+        "react",
+        "react-router-dom"
+      ],
+      "tokens_est": 50,
+      "tags": [
+        "ui"
+      ]
+    }
+  ]
+}

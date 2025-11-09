@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { WeeklySummaryResponse } from '../../api/useStats';
 
 type HeatData = WeeklySummaryResponse['heat'] | undefined;
+type HeatBucketKey = 'h0' | 'h1' | 'h2' | 'h3';
 
 type Props = {
   heat?: HeatData;
@@ -9,7 +10,7 @@ type Props = {
   onSelect?: (bucket: 0 | 1 | 2 | 3) => void;
 };
 
-const BUCKETS: Array<{ key: keyof NonNullable<HeatData>; label: string; color: string; bucket: 0 | 1 | 2 | 3 }> = [
+const BUCKETS: Array<{ key: HeatBucketKey; label: string; color: string; bucket: 0 | 1 | 2 | 3 }> = [
   { key: 'h0', label: 'H0', color: '#cbd5f5', bucket: 0 },
   { key: 'h1', label: 'H1', color: '#7c9df0', bucket: 1 },
   { key: 'h2', label: 'H2', color: '#2563eb', bucket: 2 },

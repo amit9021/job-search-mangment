@@ -1,0 +1,5230 @@
+{
+  "generated_at": "2025-11-09T08:03:21.008Z",
+  "files": [
+    {
+      "path": ".editorconfig",
+      "language": "text",
+      "lines": 9,
+      "bytes": 115,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": ".env.example",
+      "language": "text",
+      "lines": 51,
+      "bytes": 2107,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "config"
+      ]
+    },
+    {
+      "path": ".gitattributes",
+      "language": "text",
+      "lines": 7,
+      "bytes": 154,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": ".github/workflows/prephase0-build.yml",
+      "language": "yaml",
+      "lines": 22,
+      "bytes": 368,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": ".gitignore",
+      "language": "text",
+      "lines": 39,
+      "bytes": 538,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": ".prettierrc",
+      "language": "text",
+      "lines": 7,
+      "bytes": 90,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/.eslintcache",
+      "language": "text",
+      "lines": 1,
+      "bytes": 77901,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/.eslintignore",
+      "language": "text",
+      "lines": 7,
+      "bytes": 63,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/.eslintrc.cjs",
+      "language": "js",
+      "lines": 92,
+      "bytes": 2826,
+      "module": "root",
+      "exports": [],
+      "imports": [
+        "import/resolver"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/Dockerfile",
+      "language": "text",
+      "lines": 24,
+      "bytes": 601,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/jest.config.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 364,
+      "module": "root",
+      "exports": [],
+      "imports": [
+        "jest"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/nest-cli.json",
+      "language": "json",
+      "lines": 18,
+      "bytes": 340,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/package-lock.json",
+      "language": "json",
+      "lines": 11432,
+      "bytes": 423116,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/package.json",
+      "language": "json",
+      "lines": 75,
+      "bytes": 2867,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/src/app.module.ts",
+      "language": "ts",
+      "lines": 81,
+      "bytes": 2869,
+      "module": "backend:app.module.ts",
+      "exports": [
+        "AppModule"
+      ],
+      "imports": [
+        "./common/context/request-context.module",
+        "./common/health.controller",
+        "./common/middleware/request-context.middleware",
+        "./config/app",
+        "./modules/auth/auth.module",
+        "./modules/boosts/boosts.module",
+        "./modules/companies/companies.module",
+        "./modules/contacts/contacts.module",
+        "./modules/dashboard/dashboard.module",
+        "./modules/events/events.module",
+        "./modules/followups/followups.module",
+        "./modules/grow/grow.module",
+        "./modules/jobs/jobs.module",
+        "./modules/kpi/kpi.module",
+        "./modules/notifications/notifications.module",
+        "./modules/outreach/outreach.module",
+        "./modules/projects/projects.module",
+        "./modules/recommendation/recommendation.module",
+        "./modules/referrals/referrals.module",
+        "./modules/reviews/reviews.module",
+        "./modules/stats/stats.module",
+        "./modules/tasks/tasks.module",
+        "./prisma/prisma.module",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/schedule",
+        "path"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": []
+    },
+    {
+      "path": "backend/src/common/context/request-context.module.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 251,
+      "module": "backend:common",
+      "exports": [
+        "RequestContextModule"
+      ],
+      "imports": [
+        "./request-context.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/context/request-context.service.ts",
+      "language": "ts",
+      "lines": 38,
+      "bytes": 850,
+      "module": "backend:common",
+      "exports": [
+        "RequestContextService"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "node:async_hooks",
+        "node:crypto"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/decorators/public.decorator.ts",
+      "language": "ts",
+      "lines": 5,
+      "bytes": 150,
+      "module": "backend:common",
+      "exports": [
+        "IS_PUBLIC_KEY",
+        "Public"
+      ],
+      "imports": [
+        "@nestjs/common"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/decorators/user.decorator.ts",
+      "language": "ts",
+      "lines": 8,
+      "bytes": 283,
+      "module": "backend:common",
+      "exports": [
+        "CurrentUser"
+      ],
+      "imports": [
+        "@nestjs/common"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/dto/id-param.dto.ts",
+      "language": "ts",
+      "lines": 10,
+      "bytes": 197,
+      "module": "backend:common",
+      "exports": [
+        "IdParamDto"
+      ],
+      "imports": [
+        "../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/filters/http-exception.filter.ts",
+      "language": "ts",
+      "lines": 104,
+      "bytes": 3217,
+      "module": "backend:common",
+      "exports": [
+        "HttpExceptionFilter"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@prisma/client",
+        "crypto",
+        "express",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/guards/jwt-auth.guard.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 1172,
+      "module": "backend:common",
+      "exports": [
+        "JwtAuthGuard"
+      ],
+      "imports": [
+        "../context/request-context.service",
+        "../decorators/public.decorator",
+        "@nestjs/common",
+        "@nestjs/core",
+        "@nestjs/passport"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/health.controller.ts",
+      "language": "ts",
+      "lines": 39,
+      "bytes": 877,
+      "module": "backend:common",
+      "exports": [
+        "HealthController"
+      ],
+      "imports": [
+        "./decorators/public.decorator",
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/middleware/request-context.middleware.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 503,
+      "module": "backend:common",
+      "exports": [
+        "RequestContextMiddleware"
+      ],
+      "imports": [
+        "../context/request-context.service",
+        "@nestjs/common",
+        "express"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/config/app.ts",
+      "language": "ts",
+      "lines": 24,
+      "bytes": 897,
+      "module": "backend:config",
+      "exports": [],
+      "imports": [
+        "@nestjs/config"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "config"
+      ]
+    },
+    {
+      "path": "backend/src/main.ts",
+      "language": "ts",
+      "lines": 52,
+      "bytes": 1748,
+      "module": "backend:main.ts",
+      "exports": [],
+      "imports": [
+        "./app.module",
+        "./common/filters/http-exception.filter",
+        "./utils/zod-validation.pipe",
+        "@nestjs/config",
+        "@nestjs/core",
+        "cookie-parser",
+        "crypto"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/src/modules/auth/auth.controller.ts",
+      "language": "ts",
+      "lines": 24,
+      "bytes": 628,
+      "module": "backend:auth",
+      "exports": [
+        "AuthController"
+      ],
+      "imports": [
+        "../../common/decorators/public.decorator",
+        "../../common/decorators/user.decorator",
+        "./auth.service",
+        "./dto/login.dto",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/auth.module.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 975,
+      "module": "backend:auth",
+      "exports": [
+        "AuthModule"
+      ],
+      "imports": [
+        "../../common/guards/jwt-auth.guard",
+        "./auth.controller",
+        "./auth.service",
+        "./jwt.strategy",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/core",
+        "@nestjs/jwt",
+        "@nestjs/passport"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/auth.service.ts",
+      "language": "ts",
+      "lines": 72,
+      "bytes": 2530,
+      "module": "backend:auth",
+      "exports": [
+        "AuthService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/jwt"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/dto/login.dto.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 235,
+      "module": "backend:auth",
+      "exports": [
+        "LoginDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/jwt.strategy.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 945,
+      "module": "backend:auth",
+      "exports": [
+        "JwtStrategy"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/passport",
+        "passport-jwt"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/boosts/boosts.controller.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 931,
+      "module": "backend:boosts",
+      "exports": [
+        "BoostsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./boosts.service",
+        "./dto/create-boost-task.dto",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/boosts/boosts.module.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 283,
+      "module": "backend:boosts",
+      "exports": [
+        "BoostsModule"
+      ],
+      "imports": [
+        "./boosts.controller",
+        "./boosts.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/boosts/boosts.service.ts",
+      "language": "ts",
+      "lines": 47,
+      "bytes": 1141,
+      "module": "backend:boosts",
+      "exports": [
+        "BoostsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/boosts/dto/create-boost-task.dto.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 253,
+      "module": "backend:boosts",
+      "exports": [
+        "CreateBoostTaskDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/companies.controller.ts",
+      "language": "ts",
+      "lines": 32,
+      "bytes": 890,
+      "module": "backend:companies",
+      "exports": [
+        "CompaniesController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./companies.service",
+        "./dto",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/companies.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 394,
+      "module": "backend:companies",
+      "exports": [
+        "CompaniesModule"
+      ],
+      "imports": [
+        "../../prisma/prisma.module",
+        "./companies.controller",
+        "./companies.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/companies.service.ts",
+      "language": "ts",
+      "lines": 88,
+      "bytes": 2175,
+      "module": "backend:companies",
+      "exports": [
+        "CompaniesService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/dto/create-company.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 355,
+      "module": "backend:companies",
+      "exports": [
+        "CreateCompanyDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/dto/index.ts",
+      "language": "ts",
+      "lines": 3,
+      "bytes": 76,
+      "module": "backend:companies",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/companies/dto/update-company.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 338,
+      "module": "backend:companies",
+      "exports": [
+        "UpdateCompanyDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/contacts.controller.ts",
+      "language": "ts",
+      "lines": 86,
+      "bytes": 2603,
+      "module": "backend:contacts",
+      "exports": [
+        "ContactsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../outreach/outreach.service",
+        "../referrals/referrals.service",
+        "../reviews/reviews.service",
+        "./contacts.service",
+        "./dto",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/contacts.module.ts",
+      "language": "ts",
+      "lines": 18,
+      "bytes": 659,
+      "module": "backend:contacts",
+      "exports": [
+        "ContactsModule"
+      ],
+      "imports": [
+        "../companies/companies.module",
+        "../outreach/outreach.module",
+        "../referrals/referrals.module",
+        "../reviews/reviews.module",
+        "./contacts.controller",
+        "./contacts.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/contacts.service.ts",
+      "language": "ts",
+      "lines": 606,
+      "bytes": 16471,
+      "module": "backend:contacts",
+      "exports": [
+        "ContactsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../companies/companies.service",
+        "@nestjs/common",
+        "@prisma/client",
+        "date-fns"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/create-contact-outreach.dto.ts",
+      "language": "ts",
+      "lines": 19,
+      "bytes": 664,
+      "module": "backend:contacts",
+      "exports": [
+        "CreateContactOutreachDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/create-contact.dto.ts",
+      "language": "ts",
+      "lines": 26,
+      "bytes": 858,
+      "module": "backend:contacts",
+      "exports": [
+        "CreateContactDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/create-referral.dto.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 335,
+      "module": "backend:contacts",
+      "exports": [
+        "CreateReferralDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/create-review.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 301,
+      "module": "backend:contacts",
+      "exports": [
+        "CreateReviewDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/index.ts",
+      "language": "ts",
+      "lines": 7,
+      "bytes": 368,
+      "module": "backend:contacts",
+      "exports": [
+        "CreateContactDto",
+        "CreateContactOutreachDto",
+        "CreateReferralDto",
+        "CreateReviewDto",
+        "ListContactsQueryDto",
+        "UpdateContactDto"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/list-contacts-query.dto.ts",
+      "language": "ts",
+      "lines": 61,
+      "bytes": 1870,
+      "module": "backend:contacts",
+      "exports": [
+        "ListContactsQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/list-contacts.query.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 289,
+      "module": "backend:contacts",
+      "exports": [
+        "ListContactsQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/contacts/dto/update-contact.dto.ts",
+      "language": "ts",
+      "lines": 27,
+      "bytes": 962,
+      "module": "backend:contacts",
+      "exports": [
+        "UpdateContactDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/dashboard.controller.ts",
+      "language": "ts",
+      "lines": 46,
+      "bytes": 1548,
+      "module": "backend:dashboard",
+      "exports": [
+        "DashboardController"
+      ],
+      "imports": [
+        "../../common/decorators/user.decorator",
+        "./dashboard.service",
+        "./dto/dashboard-summary.dto",
+        "@nestjs/common",
+        "@nestjs/config",
+        "express"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/dashboard.module.ts",
+      "language": "ts",
+      "lines": 29,
+      "bytes": 826,
+      "module": "backend:dashboard",
+      "exports": [
+        "DashboardModule"
+      ],
+      "imports": [
+        "../followups/followups.module",
+        "../jobs/jobs.module",
+        "../kpi/kpi.module",
+        "../outreach/outreach.module",
+        "../stats/stats.module",
+        "../tasks/tasks.module",
+        "./dashboard.controller",
+        "./dashboard.service",
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/dashboard.service.spec.ts",
+      "language": "ts",
+      "lines": 215,
+      "bytes": 6679,
+      "module": "backend:dashboard",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "../jobs/jobs.service",
+        "../kpi/kpi.service",
+        "../outreach/outreach.service",
+        "../stats/stats.service",
+        "../tasks/tasks.service",
+        "./dashboard.service"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/dashboard.service.ts",
+      "language": "ts",
+      "lines": 599,
+      "bytes": 18995,
+      "module": "backend:dashboard",
+      "exports": [
+        "DashboardService"
+      ],
+      "imports": [
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "../jobs/jobs.service",
+        "../kpi/kpi.service",
+        "../outreach/outreach.service",
+        "../stats/dto/stats-weekly.dto",
+        "../stats/stats.service",
+        "../tasks/tasks.service",
+        "./dto/dashboard-summary.dto",
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/dto/dashboard-summary.dto.ts",
+      "language": "ts",
+      "lines": 52,
+      "bytes": 1307,
+      "module": "backend:dashboard",
+      "exports": [
+        "DashboardActionSuggestion",
+        "DashboardJobReference",
+        "DashboardNextBestAction",
+        "DashboardNotification",
+        "DashboardNotificationSeverity",
+        "DashboardQueueItem",
+        "DashboardQueueItemType",
+        "DashboardSummaryDto",
+        "DashboardSummaryWithMeta"
+      ],
+      "imports": [],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/dashboard/index.ts",
+      "language": "ts",
+      "lines": 3,
+      "bytes": 73,
+      "module": "backend:dashboard",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/dto/add-event-contact.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 297,
+      "module": "backend:events",
+      "exports": [
+        "AddEventContactDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/dto/attend-event.dto.ts",
+      "language": "ts",
+      "lines": 18,
+      "bytes": 386,
+      "module": "backend:events",
+      "exports": [
+        "AttendEventDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/dto/create-event.dto.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 448,
+      "module": "backend:events",
+      "exports": [
+        "CreateEventDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/dto/index.ts",
+      "language": "ts",
+      "lines": 5,
+      "bytes": 221,
+      "module": "backend:events",
+      "exports": [
+        "AddEventContactDto",
+        "AttendEventDto",
+        "CreateEventDto",
+        "UpdateEventDto"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/dto/update-event.dto.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 470,
+      "module": "backend:events",
+      "exports": [
+        "UpdateEventDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/events.controller.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 1105,
+      "module": "backend:events",
+      "exports": [
+        "EventsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto",
+        "./events.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/events.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 379,
+      "module": "backend:events",
+      "exports": [
+        "EventsModule"
+      ],
+      "imports": [
+        "../followups/followups.module",
+        "./events.controller",
+        "./events.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/events/events.service.ts",
+      "language": "ts",
+      "lines": 118,
+      "bytes": 3311,
+      "module": "backend:events",
+      "exports": [
+        "EventsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/followups/dto/get-followups.query.ts",
+      "language": "ts",
+      "lines": 10,
+      "bytes": 247,
+      "module": "backend:followups",
+      "exports": [
+        "FollowupQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/followups/dto/send-followup.dto.ts",
+      "language": "ts",
+      "lines": 10,
+      "bytes": 211,
+      "module": "backend:followups",
+      "exports": [
+        "SendFollowupDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/followups/followups.controller.ts",
+      "language": "ts",
+      "lines": 23,
+      "bytes": 734,
+      "module": "backend:followups",
+      "exports": [
+        "FollowupsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto/get-followups.query",
+        "./dto/send-followup.dto",
+        "./followups.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/followups/followups.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 449,
+      "module": "backend:followups",
+      "exports": [
+        "FollowupsModule"
+      ],
+      "imports": [
+        "../notifications/notifications.module",
+        "./followups.controller",
+        "./followups.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/followups/followups.service.ts",
+      "language": "ts",
+      "lines": 113,
+      "bytes": 3239,
+      "module": "backend:followups",
+      "exports": [
+        "FollowupsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../notifications/notifications.service",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/boost-recommender.ts",
+      "language": "ts",
+      "lines": 106,
+      "bytes": 3072,
+      "module": "backend:grow",
+      "exports": [
+        "BoostActivityStats",
+        "BoostSuggestion",
+        "suggestBoostTasks"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/create-growth-boost-task.dto.ts",
+      "language": "ts",
+      "lines": 20,
+      "bytes": 658,
+      "module": "backend:grow",
+      "exports": [
+        "CreateGrowthBoostTaskDto",
+        "boostTaskCategorySchema",
+        "boostTaskStatusSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/create-growth-event.dto.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 430,
+      "module": "backend:grow",
+      "exports": [
+        "CreateGrowthEventDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/create-growth-review.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 389,
+      "module": "backend:grow",
+      "exports": [
+        "CreateGrowthReviewDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/create-project-highlight.dto.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 442,
+      "module": "backend:grow",
+      "exports": [
+        "CreateProjectHighlightDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/index.ts",
+      "language": "ts",
+      "lines": 7,
+      "bytes": 279,
+      "module": "backend:grow",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/update-growth-boost-task.dto.ts",
+      "language": "ts",
+      "lines": 22,
+      "bytes": 746,
+      "module": "backend:grow",
+      "exports": [
+        "UpdateGrowthBoostTaskDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "./create-growth-boost-task.dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/dto/update-project-highlight.dto.ts",
+      "language": "ts",
+      "lines": 20,
+      "bytes": 603,
+      "module": "backend:grow",
+      "exports": [
+        "UpdateProjectHighlightDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/grow.controller.ts",
+      "language": "ts",
+      "lines": 77,
+      "bytes": 1928,
+      "module": "backend:grow",
+      "exports": [
+        "GrowController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto",
+        "./grow.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/grow.module.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 267,
+      "module": "backend:grow",
+      "exports": [
+        "GrowModule"
+      ],
+      "imports": [
+        "./grow.controller",
+        "./grow.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/grow/grow.service.ts",
+      "language": "ts",
+      "lines": 284,
+      "bytes": 8825,
+      "module": "backend:grow",
+      "exports": [
+        "GrowService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/create-zod-dto",
+        "../../utils/dayjs",
+        "./boost-recommender",
+        "./dto",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/add-application.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 301,
+      "module": "backend:jobs",
+      "exports": [
+        "AddApplicationDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/create-job-outreach.dto.ts",
+      "language": "ts",
+      "lines": 67,
+      "bytes": 2152,
+      "module": "backend:jobs",
+      "exports": [
+        "CreateJobOutreachDto",
+        "CreateJobOutreachInput",
+        "createJobOutreachSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/create-job.dto.ts",
+      "language": "ts",
+      "lines": 70,
+      "bytes": 1815,
+      "module": "backend:jobs",
+      "exports": [
+        "CreateJobDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "./create-job-outreach.dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/index.ts",
+      "language": "ts",
+      "lines": 7,
+      "bytes": 341,
+      "module": "backend:jobs",
+      "exports": [
+        "AddApplicationDto",
+        "CreateJobDto",
+        "CreateJobOutreachDto",
+        "ListJobsQueryDto",
+        "UpdateJobDto",
+        "UpdateJobStageDto"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/list-jobs-query.dto.ts",
+      "language": "ts",
+      "lines": 45,
+      "bytes": 1254,
+      "module": "backend:jobs",
+      "exports": [
+        "ListJobsQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/update-job-stage.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 289,
+      "module": "backend:jobs",
+      "exports": [
+        "UpdateJobStageDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/update-job.dto.ts",
+      "language": "ts",
+      "lines": 28,
+      "bytes": 681,
+      "module": "backend:jobs",
+      "exports": [
+        "UpdateJobDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/heat-rules.loader.ts",
+      "language": "ts",
+      "lines": 242,
+      "bytes": 5743,
+      "module": "backend:jobs",
+      "exports": [
+        "HeatRules",
+        "loadHeatRules",
+        "setHeatRules"
+      ],
+      "imports": [
+        "fs",
+        "path"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/heat-rules.yaml",
+      "language": "yaml",
+      "lines": 54,
+      "bytes": 633,
+      "module": "backend:jobs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/jobs.controller.ts",
+      "language": "ts",
+      "lines": 78,
+      "bytes": 2188,
+      "module": "backend:jobs",
+      "exports": [
+        "JobsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto",
+        "./jobs.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/jobs.module.ts",
+      "language": "ts",
+      "lines": 17,
+      "bytes": 567,
+      "module": "backend:jobs",
+      "exports": [
+        "JobsModule"
+      ],
+      "imports": [
+        "../contacts/contacts.module",
+        "../followups/followups.module",
+        "../outreach/outreach.module",
+        "./jobs.controller",
+        "./jobs.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/jobs.service.spec.ts",
+      "language": "ts",
+      "lines": 469,
+      "bytes": 13856,
+      "module": "backend:jobs",
+      "exports": [],
+      "imports": [
+        "./heat-rules.loader",
+        "./jobs.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/jobs.service.ts",
+      "language": "ts",
+      "lines": 821,
+      "bytes": 23900,
+      "module": "backend:jobs",
+      "exports": [
+        "JobsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/create-zod-dto",
+        "../contacts/contacts.service",
+        "../followups/followups.service",
+        "../outreach/outreach.service",
+        "./dto",
+        "./dto/create-job-outreach.dto",
+        "./heat-rules.loader",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/kpi/kpi.controller.ts",
+      "language": "ts",
+      "lines": 31,
+      "bytes": 695,
+      "module": "backend:kpi",
+      "exports": [
+        "KpiController"
+      ],
+      "imports": [
+        "../recommendation/recommendation.service",
+        "./kpi.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/kpi/kpi.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 375,
+      "module": "backend:kpi",
+      "exports": [
+        "KpiModule"
+      ],
+      "imports": [
+        "../recommendation/recommendation.module",
+        "./kpi.controller",
+        "./kpi.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/kpi/kpi.service.ts",
+      "language": "ts",
+      "lines": 260,
+      "bytes": 6759,
+      "module": "backend:kpi",
+      "exports": [
+        "KpiService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/dto/list-notifications.query.ts",
+      "language": "ts",
+      "lines": 10,
+      "bytes": 258,
+      "module": "backend:notifications",
+      "exports": [
+        "ListNotificationsQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.controller.ts",
+      "language": "ts",
+      "lines": 22,
+      "bytes": 682,
+      "module": "backend:notifications",
+      "exports": [
+        "NotificationsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto/list-notifications.query",
+        "./notifications.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.module.ts",
+      "language": "ts",
+      "lines": 17,
+      "bytes": 618,
+      "module": "backend:notifications",
+      "exports": [
+        "NotificationsModule"
+      ],
+      "imports": [
+        "../followups/followups.module",
+        "./notifications.controller",
+        "./notifications.scheduler",
+        "./notifications.service",
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.scheduler.ts",
+      "language": "ts",
+      "lines": 60,
+      "bytes": 1888,
+      "module": "backend:notifications",
+      "exports": [
+        "NotificationsScheduler"
+      ],
+      "imports": [
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "./notifications.service",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/schedule"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.service.ts",
+      "language": "ts",
+      "lines": 97,
+      "bytes": 2432,
+      "module": "backend:notifications",
+      "exports": [
+        "NotificationsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/dto/create-outreach.dto.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 430,
+      "module": "backend:outreach",
+      "exports": [
+        "CreateOutreachDto",
+        "CreateOutreachInput"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "../../jobs/dto/create-job-outreach.dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/dto/list-outreach.query.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 267,
+      "module": "backend:outreach",
+      "exports": [
+        "ListOutreachQueryDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/dto/update-outreach.dto.ts",
+      "language": "ts",
+      "lines": 21,
+      "bytes": 682,
+      "module": "backend:outreach",
+      "exports": [
+        "UpdateOutreachDto",
+        "UpdateOutreachInput"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/outreach.controller.ts",
+      "language": "ts",
+      "lines": 63,
+      "bytes": 1670,
+      "module": "backend:outreach",
+      "exports": [
+        "OutreachController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "../jobs/jobs.service",
+        "./dto/create-outreach.dto",
+        "./dto/list-outreach.query",
+        "./dto/update-outreach.dto",
+        "./outreach.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/outreach.module.ts",
+      "language": "ts",
+      "lines": 17,
+      "bytes": 553,
+      "module": "backend:outreach",
+      "exports": [
+        "OutreachModule"
+      ],
+      "imports": [
+        "../followups/followups.module",
+        "../jobs/jobs.module",
+        "../tasks/tasks.module",
+        "./outreach.controller",
+        "./outreach.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/outreach/outreach.service.ts",
+      "language": "ts",
+      "lines": 243,
+      "bytes": 7204,
+      "module": "backend:outreach",
+      "exports": [
+        "OutreachService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "../followups/followups.service",
+        "../tasks/tasks.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/dto/create-project.dto.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 306,
+      "module": "backend:projects",
+      "exports": [
+        "CreateProjectDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/dto/index.ts",
+      "language": "ts",
+      "lines": 3,
+      "bytes": 114,
+      "module": "backend:projects",
+      "exports": [
+        "CreateProjectDto",
+        "UpdateProjectDto"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/dto/update-project.dto.ts",
+      "language": "ts",
+      "lines": 17,
+      "bytes": 447,
+      "module": "backend:projects",
+      "exports": [
+        "UpdateProjectDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/projects.controller.ts",
+      "language": "ts",
+      "lines": 37,
+      "bytes": 990,
+      "module": "backend:projects",
+      "exports": [
+        "ProjectsController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto",
+        "./projects.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/projects.module.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 299,
+      "module": "backend:projects",
+      "exports": [
+        "ProjectsModule"
+      ],
+      "imports": [
+        "./projects.controller",
+        "./projects.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/projects/projects.service.ts",
+      "language": "ts",
+      "lines": 86,
+      "bytes": 2197,
+      "module": "backend:projects",
+      "exports": [
+        "ProjectsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/recommendation/recommendation.controller.ts",
+      "language": "ts",
+      "lines": 19,
+      "bytes": 483,
+      "module": "backend:recommendation",
+      "exports": [
+        "RecommendationController"
+      ],
+      "imports": [
+        "./recommendation.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/recommendation/recommendation.module.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 347,
+      "module": "backend:recommendation",
+      "exports": [
+        "RecommendationModule"
+      ],
+      "imports": [
+        "./recommendation.controller",
+        "./recommendation.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/recommendation/recommendation.service.ts",
+      "language": "ts",
+      "lines": 225,
+      "bytes": 6085,
+      "module": "backend:recommendation",
+      "exports": [
+        "RecommendationResult",
+        "RecommendationService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/referrals/dto/create-referral.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 371,
+      "module": "backend:referrals",
+      "exports": [
+        "CreateReferralBodyDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/referrals/referrals.controller.ts",
+      "language": "ts",
+      "lines": 21,
+      "bytes": 573,
+      "module": "backend:referrals",
+      "exports": [
+        "ReferralsController"
+      ],
+      "imports": [
+        "./dto/create-referral.dto",
+        "./referrals.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/referrals/referrals.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 413,
+      "module": "backend:referrals",
+      "exports": [
+        "ReferralsModule"
+      ],
+      "imports": [
+        "../jobs/jobs.module",
+        "./referrals.controller",
+        "./referrals.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/referrals/referrals.service.ts",
+      "language": "ts",
+      "lines": 58,
+      "bytes": 1443,
+      "module": "backend:referrals",
+      "exports": [
+        "ReferralsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../jobs/jobs.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/reviews/dto/create-review.dto.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 337,
+      "module": "backend:reviews",
+      "exports": [
+        "CreateReviewBodyDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/reviews/reviews.controller.ts",
+      "language": "ts",
+      "lines": 20,
+      "bytes": 485,
+      "module": "backend:reviews",
+      "exports": [
+        "ReviewsController"
+      ],
+      "imports": [
+        "./dto/create-review.dto",
+        "./reviews.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/reviews/reviews.module.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 291,
+      "module": "backend:reviews",
+      "exports": [
+        "ReviewsModule"
+      ],
+      "imports": [
+        "./reviews.controller",
+        "./reviews.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/reviews/reviews.service.ts",
+      "language": "ts",
+      "lines": 58,
+      "bytes": 1630,
+      "module": "backend:reviews",
+      "exports": [
+        "ReviewsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/dto/stats-weekly.dto.ts",
+      "language": "ts",
+      "lines": 25,
+      "bytes": 473,
+      "module": "backend:stats",
+      "exports": [
+        "StatsSeriesPoint",
+        "StatsWeeklySummaryDto"
+      ],
+      "imports": [],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/index.ts",
+      "language": "ts",
+      "lines": 3,
+      "bytes": 65,
+      "module": "backend:stats",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/stats.controller.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 546,
+      "module": "backend:stats",
+      "exports": [
+        "StatsController"
+      ],
+      "imports": [
+        "./dto/stats-weekly.dto",
+        "./stats.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/stats.module.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 362,
+      "module": "backend:stats",
+      "exports": [
+        "StatsModule"
+      ],
+      "imports": [
+        "../../prisma/prisma.module",
+        "./stats.controller",
+        "./stats.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/stats.service.spec.ts",
+      "language": "ts",
+      "lines": 94,
+      "bytes": 3012,
+      "module": "backend:stats",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "./stats.service"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/stats/stats.service.ts",
+      "language": "ts",
+      "lines": 329,
+      "bytes": 9084,
+      "module": "backend:stats",
+      "exports": [
+        "StatsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./dto/stats-weekly.dto",
+        "@nestjs/common"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/automation.controller.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 461,
+      "module": "backend:tasks",
+      "exports": [
+        "AutomationController"
+      ],
+      "imports": [
+        "./dto/outreach-automation.dto",
+        "./tasks.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/bulk-create-tasks.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 386,
+      "module": "backend:tasks",
+      "exports": [
+        "BulkCreateTasksDto",
+        "BulkCreateTasksInput",
+        "bulkCreateTasksSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "./create-task.dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/create-task.dto.ts",
+      "language": "ts",
+      "lines": 78,
+      "bytes": 2005,
+      "module": "backend:tasks",
+      "exports": [
+        "CreateTaskDto",
+        "CreateTaskInput",
+        "createTaskSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "../task.constants",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/list-tasks.query.ts",
+      "language": "ts",
+      "lines": 35,
+      "bytes": 951,
+      "module": "backend:tasks",
+      "exports": [
+        "ListTasksQuery",
+        "ListTasksQueryDto",
+        "listTasksSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "../task.constants",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/outreach-automation.dto.ts",
+      "language": "ts",
+      "lines": 15,
+      "bytes": 470,
+      "module": "backend:tasks",
+      "exports": [
+        "OutreachAutomationDto",
+        "OutreachAutomationInput",
+        "outreachAutomationSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/quick-parse.dto.ts",
+      "language": "ts",
+      "lines": 12,
+      "bytes": 297,
+      "module": "backend:tasks",
+      "exports": [
+        "QuickParseDto",
+        "QuickParseInput",
+        "quickParseSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/snooze-task.dto.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 356,
+      "module": "backend:tasks",
+      "exports": [
+        "SnoozeTaskDto",
+        "SnoozeTaskInput",
+        "snoozeTaskSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "../task.constants",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/dto/update-task.dto.ts",
+      "language": "ts",
+      "lines": 82,
+      "bytes": 2203,
+      "module": "backend:tasks",
+      "exports": [
+        "UpdateTaskDto",
+        "UpdateTaskInput",
+        "updateTaskSchema"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "../task.constants",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-kpis.spec.ts",
+      "language": "ts",
+      "lines": 24,
+      "bytes": 806,
+      "module": "backend:tasks",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "./task-kpis"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-kpis.ts",
+      "language": "ts",
+      "lines": 39,
+      "bytes": 879,
+      "module": "backend:tasks",
+      "exports": [
+        "calculateCompletionStreak"
+      ],
+      "imports": [
+        "../../utils/dayjs",
+        "dayjs"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-parser.spec.ts",
+      "language": "ts",
+      "lines": 46,
+      "bytes": 1721,
+      "module": "backend:tasks",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "./task-parser"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-parser.ts",
+      "language": "ts",
+      "lines": 339,
+      "bytes": 9415,
+      "module": "backend:tasks",
+      "exports": [
+        "QuickParseContexts",
+        "QuickParseIntermediate",
+        "parseQuickTaskInput"
+      ],
+      "imports": [
+        "../../utils/dayjs",
+        "./task.constants",
+        "dayjs"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-snooze.spec.ts",
+      "language": "ts",
+      "lines": 33,
+      "bytes": 1204,
+      "module": "backend:tasks",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "./task-snooze"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task-snooze.ts",
+      "language": "ts",
+      "lines": 57,
+      "bytes": 1540,
+      "module": "backend:tasks",
+      "exports": [
+        "computeSnoozedDueAt"
+      ],
+      "imports": [
+        "../../utils/dayjs",
+        "./task.constants",
+        "dayjs"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/task.constants.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 673,
+      "module": "backend:tasks",
+      "exports": [
+        "ACTIVE_TASK_STATUSES",
+        "DEFAULT_TASK_TIME",
+        "SNOOZE_PRESETS",
+        "SnoozePreset",
+        "TASK_PRIORITIES",
+        "TASK_SOURCES",
+        "TASK_STATUSES",
+        "TaskPriority",
+        "TaskSource",
+        "TaskStatus"
+      ],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/tasks.controller.ts",
+      "language": "ts",
+      "lines": 57,
+      "bytes": 1625,
+      "module": "backend:tasks",
+      "exports": [
+        "TasksController"
+      ],
+      "imports": [
+        "../../common/dto/id-param.dto",
+        "./dto/bulk-create-tasks.dto",
+        "./dto/create-task.dto",
+        "./dto/list-tasks.query",
+        "./dto/quick-parse.dto",
+        "./dto/snooze-task.dto",
+        "./dto/update-task.dto",
+        "./tasks.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/tasks.module.ts",
+      "language": "ts",
+      "lines": 16,
+      "bytes": 448,
+      "module": "backend:tasks",
+      "exports": [
+        "TasksModule"
+      ],
+      "imports": [
+        "../../prisma/prisma.module",
+        "./automation.controller",
+        "./tasks.controller",
+        "./tasks.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/tasks.service.spec.ts",
+      "language": "ts",
+      "lines": 84,
+      "bytes": 2345,
+      "module": "backend:tasks",
+      "exports": [],
+      "imports": [
+        "../../utils/dayjs",
+        "./tasks.service"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/tasks/tasks.service.ts",
+      "language": "ts",
+      "lines": 608,
+      "bytes": 17910,
+      "module": "backend:tasks",
+      "exports": [
+        "TasksService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../utils/dayjs",
+        "./dto/create-task.dto",
+        "./dto/list-tasks.query",
+        "./dto/outreach-automation.dto",
+        "./dto/quick-parse.dto",
+        "./dto/update-task.dto",
+        "./task-kpis",
+        "./task-parser",
+        "./task-snooze",
+        "./task.constants",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/prisma/mock-data.json",
+      "language": "json",
+      "lines": 118,
+      "bytes": 3410,
+      "module": "backend:prisma",
+      "exports": [],
+      "imports": [],
+      "purpose": "Prisma schema/service for DB access.",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "path": "backend/src/prisma/prisma.module.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 326,
+      "module": "backend:prisma",
+      "exports": [
+        "PrismaModule"
+      ],
+      "imports": [
+        "../common/context/request-context.module",
+        "./prisma.service",
+        "@nestjs/common"
+      ],
+      "purpose": "NestJS module wiring providers/controllers.",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "path": "backend/src/prisma/prisma.service.ts",
+      "language": "ts",
+      "lines": 160,
+      "bytes": 4629,
+      "module": "backend:prisma",
+      "exports": [
+        "PrismaService"
+      ],
+      "imports": [
+        "../common/context/request-context.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "path": "backend/src/prisma/seed.ts",
+      "language": "ts",
+      "lines": 666,
+      "bytes": 21202,
+      "module": "backend:prisma",
+      "exports": [],
+      "imports": [
+        "@prisma/client",
+        "argon2",
+        "fs",
+        "path"
+      ],
+      "purpose": "Prisma schema/service for DB access.",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "path": "backend/src/utils/create-zod-dto.ts",
+      "language": "ts",
+      "lines": 33,
+      "bytes": 727,
+      "module": "backend:utils",
+      "exports": [
+        "InferDto",
+        "createZodDto",
+        "idParamSchema"
+      ],
+      "imports": [
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/utils/dayjs.ts",
+      "language": "ts",
+      "lines": 11,
+      "bytes": 258,
+      "module": "backend:utils",
+      "exports": [],
+      "imports": [
+        "dayjs",
+        "dayjs/plugin/relativeTime",
+        "dayjs/plugin/timezone",
+        "dayjs/plugin/utc"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/utils/zod-validation.pipe.ts",
+      "language": "ts",
+      "lines": 23,
+      "bytes": 611,
+      "module": "backend:utils",
+      "exports": [
+        "ZodValidationPipe"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/test/app.e2e-spec.ts",
+      "language": "ts",
+      "lines": 515,
+      "bytes": 16933,
+      "module": "root",
+      "exports": [],
+      "imports": [
+        "../src/app.module",
+        "../src/prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/testing",
+        "argon2",
+        "supertest"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/test/jest-e2e.json",
+      "language": "json",
+      "lines": 15,
+      "bytes": 245,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/test/user-isolation.e2e-spec.ts",
+      "language": "ts",
+      "lines": 190,
+      "bytes": 5103,
+      "module": "root",
+      "exports": [],
+      "imports": [
+        "../src/app.module",
+        "../src/common/context/request-context.service",
+        "../src/prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/jwt",
+        "@nestjs/testing",
+        "supertest"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/tsconfig.build.json",
+      "language": "json",
+      "lines": 10,
+      "bytes": 195,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/tsconfig.eslint.json",
+      "language": "json",
+      "lines": 6,
+      "bytes": 125,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "backend/tsconfig.json",
+      "language": "json",
+      "lines": 27,
+      "bytes": 689,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "docker-compose.build.yml",
+      "language": "yaml",
+      "lines": 12,
+      "bytes": 235,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "docker-compose.dev.yml",
+      "language": "yaml",
+      "lines": 66,
+      "bytes": 1364,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "docker-compose.prod.yml",
+      "language": "yaml",
+      "lines": 60,
+      "bytes": 1279,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "docker-compose.yml",
+      "language": "yaml",
+      "lines": 45,
+      "bytes": 1043,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "Dockerfile.backend",
+      "language": "text",
+      "lines": 24,
+      "bytes": 509,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "Dockerfile.frontend",
+      "language": "text",
+      "lines": 21,
+      "bytes": 488,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "docs/API_SURFACE.md",
+      "language": "md",
+      "lines": 771,
+      "bytes": 29418,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/CODING_STANDARDS.md",
+      "language": "md",
+      "lines": 25,
+      "bytes": 2238,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/CONFIG_REFERENCE.md",
+      "language": "md",
+      "lines": 48,
+      "bytes": 3414,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/CONTEXT_MAP.md",
+      "language": "md",
+      "lines": 58,
+      "bytes": 4092,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/CONTRIBUTING.md",
+      "language": "md",
+      "lines": 35,
+      "bytes": 2030,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "language": "md",
+      "lines": 20,
+      "bytes": 2364,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/FILE_MANIFEST.json",
+      "language": "json",
+      "lines": 5114,
+      "bytes": 119752,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": []
+    },
+    {
+      "path": "docs/MODULE_SUMMARY.md",
+      "language": "md",
+      "lines": 997,
+      "bytes": 37284,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/modules/DASHBOARD_MODULE.md",
+      "language": "md",
+      "lines": 118,
+      "bytes": 6557,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "api",
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/modules/GROW_MODULE.md",
+      "language": "md",
+      "lines": 63,
+      "bytes": 4583,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "api",
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/modules/TASK_MODULE.md",
+      "language": "md",
+      "lines": 115,
+      "bytes": 5045,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "api",
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/PLANS/dashboard-1.0.md",
+      "language": "md",
+      "lines": 115,
+      "bytes": 6473,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/PLANS/dashboard-compact-v2.1.md",
+      "language": "md",
+      "lines": 67,
+      "bytes": 3612,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/PLANS/dashboard-compact-v2.md",
+      "language": "md",
+      "lines": 90,
+      "bytes": 4186,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/PLANS/dashboard-remediation-2024-11-xx.md",
+      "language": "md",
+      "lines": 31,
+      "bytes": 2125,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/PLANS/prephase0-userisolation.md",
+      "language": "md",
+      "lines": 39,
+      "bytes": 2937,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/QA/prephase0-userisolation-checklist.md",
+      "language": "md",
+      "lines": 22,
+      "bytes": 1538,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/RETRIEVAL_GUIDE.md",
+      "language": "md",
+      "lines": 47,
+      "bytes": 3095,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/SECRETS_AUDIT.md",
+      "language": "md",
+      "lines": 21,
+      "bytes": 1274,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "frontend/.eslintrc.cjs",
+      "language": "js",
+      "lines": 23,
+      "bytes": 464,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "language": "text",
+      "lines": 18,
+      "bytes": 346,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/index.html",
+      "language": "text",
+      "lines": 16,
+      "bytes": 585,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "language": "json",
+      "lines": 7215,
+      "bytes": 260411,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/package.json",
+      "language": "json",
+      "lines": 55,
+      "bytes": 1724,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/postcss.config.cjs",
+      "language": "js",
+      "lines": 7,
+      "bytes": 81,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/api/ApiProvider.tsx",
+      "language": "tsx",
+      "lines": 25,
+      "bytes": 739,
+      "module": "frontend:api",
+      "exports": [
+        "ApiProvider",
+        "useApi"
+      ],
+      "imports": [
+        "../stores/session",
+        "./client",
+        "axios",
+        "react"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "language": "ts",
+      "lines": 41,
+      "bytes": 942,
+      "module": "frontend:api",
+      "exports": [
+        "API_BASE_URL",
+        "createApiClient"
+      ],
+      "imports": [
+        "axios"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/api/dashboard.ts",
+      "language": "ts",
+      "lines": 96,
+      "bytes": 2743,
+      "module": "frontend:api",
+      "exports": [
+        "DashboardActionSuggestion",
+        "DashboardNotificationSeverity",
+        "DashboardQueueItemType",
+        "DashboardSummary",
+        "DashboardSummaryMeta",
+        "DashboardSummaryResult",
+        "useDashboardSummary"
+      ],
+      "imports": [
+        "./ApiProvider",
+        "@tanstack/react-query"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/api/hooks.ts",
+      "language": "ts",
+      "lines": 1440,
+      "bytes": 42084,
+      "module": "frontend:api",
+      "exports": [
+        "BoostSuggestion",
+        "CreateJobMutationInput",
+        "DeleteJobMutationInput",
+        "GrowthBoostTask",
+        "GrowthEvent",
+        "GrowthReview",
+        "JobOutreachPayload",
+        "ParsedApiError",
+        "ProjectHighlight",
+        "TaskModel",
+        "TaskQuickParseResult",
+        "TaskQuickParseSuggestion",
+        "TaskView",
+        "parseApiError",
+        "useBoostSuggestionsMutation",
+        "useBoostsQuery",
+        "useCompaniesQuery",
+        "useContactDetailQuery",
+        "useContactSearchQuery",
+        "useContactsQuery",
+        "useCreateCompanyMutation",
+        "useCreateContactMutation",
+        "useCreateGrowthBoostTaskMutation",
+        "useCreateGrowthEventMutation",
+        "useCreateGrowthReviewMutation",
+        "useCreateJobMutation",
+        "useCreateJobOutreachMutation",
+        "useCreateProjectHighlightMutation",
+        "useDeleteContactMutation",
+        "useDeleteJobMutation",
+        "useDeleteOutreachMutation",
+        "useEventsQuery",
+        "useFollowupsQuery",
+        "useJobDetailQuery",
+        "useJobHeatExplainQuery",
+        "useJobHistoryQuery",
+        "useJobSearchQuery",
+        "useJobsQuery",
+        "useKpiTodayQuery",
+        "useKpiWeekQuery",
+        "useLoginMutation",
+        "useMarkFollowupMutation",
+        "useNetworkStarsQuery",
+        "useNextActionQuery",
+        "useNotificationsQuery",
+        "useProjectsQuery",
+        "useReviewsQuery",
+        "useTaskCreateMutation",
+        "useTaskDeleteMutation",
+        "useTaskKpisQuery",
+        "useTaskQuickParseMutation",
+        "useTaskSnoozeMutation",
+        "useTaskUpdateMutation",
+        "useTasksQuery",
+        "useUpdateContactMutation",
+        "useUpdateGrowthBoostTaskMutation",
+        "useUpdateJobMutation",
+        "useUpdateJobStageMutation",
+        "useUpdateOutreachMutation",
+        "useUpdateProjectHighlightMutation"
+      ],
+      "imports": [
+        "../components/ToastProvider",
+        "../stores/session",
+        "./ApiProvider",
+        "@tanstack/react-query",
+        "axios",
+        "zod"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/api/useDashboard.ts",
+      "language": "ts",
+      "lines": 71,
+      "bytes": 2155,
+      "module": "frontend:api",
+      "exports": [
+        "DashboardActionSuggestion",
+        "DashboardNotificationSeverity",
+        "DashboardQueueItemType",
+        "DashboardSummaryResponse",
+        "DashboardSummaryResult",
+        "useDashboardSummary"
+      ],
+      "imports": [
+        "./ApiProvider",
+        "@tanstack/react-query"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/api/useStats.ts",
+      "language": "ts",
+      "lines": 40,
+      "bytes": 950,
+      "module": "frontend:api",
+      "exports": [
+        "StatsSeriesPoint",
+        "WeeklySummaryResponse",
+        "useWeeklySummary"
+      ],
+      "imports": [
+        "./ApiProvider",
+        "@tanstack/react-query"
+      ],
+      "purpose": "API client or hook implementation.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "language": "tsx",
+      "lines": 37,
+      "bytes": 1262,
+      "module": "frontend:App.tsx",
+      "exports": [],
+      "imports": [
+        "./layouts/ShellLayout",
+        "./pages/ContactsPage",
+        "./pages/DashboardPage",
+        "./pages/GrowPage",
+        "./pages/JobsPage",
+        "./pages/LoginPage",
+        "./pages/TasksPage",
+        "./stores/session",
+        "react-router-dom"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/AddOutreachDialog.test.tsx",
+      "language": "tsx",
+      "lines": 127,
+      "bytes": 4097,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../AddOutreachDialog",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/HeatBadge.test.tsx",
+      "language": "tsx",
+      "lines": 68,
+      "bytes": 2031,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../HeatBadge",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/JobHistoryModal.test.tsx",
+      "language": "tsx",
+      "lines": 100,
+      "bytes": 3624,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../JobHistoryModal",
+        "@tanstack/react-query",
+        "@testing-library/react",
+        "date-fns",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/JobWizardModal.test.tsx",
+      "language": "tsx",
+      "lines": 118,
+      "bytes": 4174,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../JobWizardModal",
+        "../ToastProvider",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/LinkJobDialog.test.tsx",
+      "language": "tsx",
+      "lines": 78,
+      "bytes": 2695,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../LinkJobDialog",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/__tests__/UpdateJobStageDialog.test.tsx",
+      "language": "tsx",
+      "lines": 48,
+      "bytes": 1585,
+      "module": "frontend:components",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../UpdateJobStageDialog",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/AddOutreachDialog.tsx",
+      "language": "tsx",
+      "lines": 636,
+      "bytes": 25767,
+      "module": "frontend:components",
+      "exports": [
+        "AddOutreachDialog"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-tabs",
+        "react",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/common/ContextChips.tsx",
+      "language": "tsx",
+      "lines": 69,
+      "bytes": 1825,
+      "module": "frontend:components",
+      "exports": [
+        "ContextChips"
+      ],
+      "imports": [
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui",
+        "util"
+      ]
+    },
+    {
+      "path": "frontend/src/components/CompanySelect.tsx",
+      "language": "tsx",
+      "lines": 131,
+      "bytes": 4736,
+      "module": "frontend:components",
+      "exports": [
+        "CompanySelect"
+      ],
+      "imports": [
+        "../api/hooks",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/ContactDrawer.tsx",
+      "language": "tsx",
+      "lines": 1010,
+      "bytes": 47929,
+      "module": "frontend:components",
+      "exports": [
+        "ContactDrawer"
+      ],
+      "imports": [
+        "../api/hooks",
+        "./AddOutreachDialog",
+        "./CompanySelect",
+        "./ContactEngagementBadge",
+        "./LinkJobDialog",
+        "./StrengthBadge",
+        "./TagsInput",
+        "./ToastProvider",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-tabs",
+        "date-fns",
+        "react",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/ContactEngagementBadge.tsx",
+      "language": "tsx",
+      "lines": 168,
+      "bytes": 4575,
+      "module": "frontend:components",
+      "exports": [
+        "ContactEngagementBadge",
+        "ContactEngagementBadgeProps"
+      ],
+      "imports": [
+        "date-fns"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/ActionBand.tsx",
+      "language": "tsx",
+      "lines": 294,
+      "bytes": 10480,
+      "module": "frontend:components",
+      "exports": [
+        "ActionBand"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "../../api/useDashboard",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/ActionCenterTabs.tsx",
+      "language": "tsx",
+      "lines": 207,
+      "bytes": 7553,
+      "module": "frontend:components",
+      "exports": [
+        "ActionCenterTabs"
+      ],
+      "imports": [
+        "../../api/useDashboard",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/ChartCvsSent.tsx",
+      "language": "tsx",
+      "lines": 73,
+      "bytes": 2640,
+      "module": "frontend:components",
+      "exports": [
+        "ChartCvsSent"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "recharts"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/ChartFollowupsPie.tsx",
+      "language": "tsx",
+      "lines": 74,
+      "bytes": 2709,
+      "module": "frontend:components",
+      "exports": [
+        "ChartFollowupsPie"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "recharts"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/ChartWarmOutreach.tsx",
+      "language": "tsx",
+      "lines": 80,
+      "bytes": 2871,
+      "module": "frontend:components",
+      "exports": [
+        "ChartWarmOutreach"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "recharts"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/FollowupsStatusMini.tsx",
+      "language": "tsx",
+      "lines": 67,
+      "bytes": 2222,
+      "module": "frontend:components",
+      "exports": [
+        "FollowupsStatusMini"
+      ],
+      "imports": [
+        "recharts"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/HeatBuckets.tsx",
+      "language": "tsx",
+      "lines": 64,
+      "bytes": 2334,
+      "module": "frontend:components",
+      "exports": [
+        "HeatBuckets"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/HeatCompact.tsx",
+      "language": "tsx",
+      "lines": 93,
+      "bytes": 3830,
+      "module": "frontend:components",
+      "exports": [
+        "HeatCompact"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/InsightsMini.tsx",
+      "language": "tsx",
+      "lines": 40,
+      "bytes": 1634,
+      "module": "frontend:components",
+      "exports": [
+        "InsightsMini"
+      ],
+      "imports": [
+        "../../api/useStats",
+        "./FollowupsStatusMini",
+        "./HeatCompact"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/KpiMiniTiles.tsx",
+      "language": "tsx",
+      "lines": 137,
+      "bytes": 4694,
+      "module": "frontend:components",
+      "exports": [
+        "KpiMiniTiles"
+      ],
+      "imports": [
+        "../../api/useDashboard",
+        "react-router-dom",
+        "recharts"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/KpiTiles.tsx",
+      "language": "tsx",
+      "lines": 131,
+      "bytes": 4478,
+      "module": "frontend:components",
+      "exports": [
+        "KpiTiles"
+      ],
+      "imports": [
+        "../../api/dashboard"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/NextBestActionCard.tsx",
+      "language": "tsx",
+      "lines": 93,
+      "bytes": 3583,
+      "module": "frontend:components",
+      "exports": [
+        "NextBestActionCard"
+      ],
+      "imports": [
+        "../../api/dashboard",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/NextBestActionCompact.tsx",
+      "language": "tsx",
+      "lines": 96,
+      "bytes": 3501,
+      "module": "frontend:components",
+      "exports": [
+        "NextBestActionCompact"
+      ],
+      "imports": [
+        "../../api/useDashboard",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/NotificationsList.tsx",
+      "language": "tsx",
+      "lines": 94,
+      "bytes": 3504,
+      "module": "frontend:components",
+      "exports": [
+        "NotificationsList"
+      ],
+      "imports": [
+        "../../api/dashboard",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/PipelineHeatMap.tsx",
+      "language": "tsx",
+      "lines": 98,
+      "bytes": 3405,
+      "module": "frontend:components",
+      "exports": [
+        "PipelineHeatMap"
+      ],
+      "imports": [
+        "../../api/dashboard",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/TimeRangeSelector.tsx",
+      "language": "tsx",
+      "lines": 35,
+      "bytes": 1239,
+      "module": "frontend:components",
+      "exports": [
+        "TimeRangeSelector"
+      ],
+      "imports": [],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/TodayQueue.tsx",
+      "language": "tsx",
+      "lines": 231,
+      "bytes": 8284,
+      "module": "frontend:components",
+      "exports": [
+        "TodayQueue"
+      ],
+      "imports": [
+        "../../api/dashboard",
+        "../../api/hooks",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/dashboard/WeeklySnapshot.tsx",
+      "language": "tsx",
+      "lines": 80,
+      "bytes": 3174,
+      "module": "frontend:components",
+      "exports": [
+        "WeeklySnapshot"
+      ],
+      "imports": [
+        "../../api/dashboard"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/FollowUpList.tsx",
+      "language": "tsx",
+      "lines": 45,
+      "bytes": 1402,
+      "module": "frontend:components",
+      "exports": [
+        "FollowUpItem",
+        "FollowUpList"
+      ],
+      "imports": [
+        "date-fns"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/grow/AddGrowItemModal.tsx",
+      "language": "tsx",
+      "lines": 564,
+      "bytes": 25448,
+      "module": "frontend:components",
+      "exports": [
+        "AddGrowItemModal",
+        "BoostPayload",
+        "EventPayload",
+        "GrowItemType",
+        "GrowModalPayloads",
+        "ProjectPayload",
+        "ReviewPayload"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "@radix-ui/react-dialog",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/grow/BoostTaskCard.tsx",
+      "language": "tsx",
+      "lines": 67,
+      "bytes": 2699,
+      "module": "frontend:components",
+      "exports": [
+        "BoostTaskCard"
+      ],
+      "imports": [
+        "../../api/hooks"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/grow/EventCard.tsx",
+      "language": "tsx",
+      "lines": 45,
+      "bytes": 1764,
+      "module": "frontend:components",
+      "exports": [
+        "EventCard"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "date-fns"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/grow/ProjectCard.tsx",
+      "language": "tsx",
+      "lines": 45,
+      "bytes": 1679,
+      "module": "frontend:components",
+      "exports": [
+        "ProjectCard"
+      ],
+      "imports": [
+        "../../api/hooks"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/grow/ReviewCard.tsx",
+      "language": "tsx",
+      "lines": 40,
+      "bytes": 1662,
+      "module": "frontend:components",
+      "exports": [
+        "ReviewCard"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "date-fns"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/HeatBadge.tsx",
+      "language": "tsx",
+      "lines": 191,
+      "bytes": 7019,
+      "module": "frontend:components",
+      "exports": [
+        "HeatBadge"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@radix-ui/react-popover",
+        "date-fns",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/JobHistoryModal.tsx",
+      "language": "tsx",
+      "lines": 521,
+      "bytes": 22871,
+      "module": "frontend:components",
+      "exports": [
+        "JobHistoryModal"
+      ],
+      "imports": [
+        "../api/hooks",
+        "./UpdateJobStageDialog",
+        "@radix-ui/react-dialog",
+        "date-fns",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/JobListTable.tsx",
+      "language": "tsx",
+      "lines": 178,
+      "bytes": 6726,
+      "module": "frontend:components",
+      "exports": [
+        "JobListTable"
+      ],
+      "imports": [
+        "./HeatBadge",
+        "date-fns"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/JobWizardModal.tsx",
+      "language": "tsx",
+      "lines": 621,
+      "bytes": 28988,
+      "module": "frontend:components",
+      "exports": [
+        "JobWizardModal"
+      ],
+      "imports": [
+        "../api/hooks",
+        "./ToastProvider",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "react",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/KpiCard.tsx",
+      "language": "tsx",
+      "lines": 38,
+      "bytes": 1269,
+      "module": "frontend:components",
+      "exports": [
+        "KpiCard"
+      ],
+      "imports": [
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/KpiHeader.tsx",
+      "language": "tsx",
+      "lines": 106,
+      "bytes": 3278,
+      "module": "frontend:components",
+      "exports": [
+        "KpiHeader"
+      ],
+      "imports": [
+        "date-fns",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/LinkJobDialog.tsx",
+      "language": "tsx",
+      "lines": 341,
+      "bytes": 12375,
+      "module": "frontend:components",
+      "exports": [
+        "LinkJobDialog"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-tabs",
+        "react",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/NextActionCard.tsx",
+      "language": "tsx",
+      "lines": 23,
+      "bytes": 805,
+      "module": "frontend:components",
+      "exports": [
+        "NextAction",
+        "NextActionCard"
+      ],
+      "imports": [
+        "@radix-ui/react-icons"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/ScoreDial.tsx",
+      "language": "tsx",
+      "lines": 37,
+      "bytes": 1109,
+      "module": "frontend:components",
+      "exports": [
+        "ScoreDial"
+      ],
+      "imports": [],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/StrengthBadge.tsx",
+      "language": "tsx",
+      "lines": 15,
+      "bytes": 454,
+      "module": "frontend:components",
+      "exports": [
+        "StrengthBadge"
+      ],
+      "imports": [],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/TagsInput.tsx",
+      "language": "tsx",
+      "lines": 89,
+      "bytes": 2690,
+      "module": "frontend:components",
+      "exports": [
+        "TagsInput"
+      ],
+      "imports": [
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/tasks/NBABox.tsx",
+      "language": "tsx",
+      "lines": 37,
+      "bytes": 1319,
+      "module": "frontend:components",
+      "exports": [
+        "NBABox"
+      ],
+      "imports": [],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/tasks/QuickAddBar.tsx",
+      "language": "tsx",
+      "lines": 211,
+      "bytes": 7071,
+      "module": "frontend:components",
+      "exports": [
+        "QuickAddBar",
+        "QuickAddBarHandle"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/tasks/TaskCard.tsx",
+      "language": "tsx",
+      "lines": 293,
+      "bytes": 9724,
+      "module": "frontend:components",
+      "exports": [
+        "TaskCard"
+      ],
+      "imports": [
+        "../../api/hooks",
+        "../common/ContextChips",
+        "date-fns",
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/tasks/TaskDrawer.tsx",
+      "language": "tsx",
+      "lines": 512,
+      "bytes": 19794,
+      "module": "frontend:components",
+      "exports": [
+        "TaskDrawer"
+      ],
+      "imports": [
+        "../../api/ApiProvider",
+        "../../api/hooks",
+        "../TagsInput",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "@tanstack/react-query",
+        "react",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/ToastProvider.tsx",
+      "language": "tsx",
+      "lines": 93,
+      "bytes": 3132,
+      "module": "frontend:components",
+      "exports": [
+        "ToastDescriptor",
+        "ToastProvider",
+        "useToast"
+      ],
+      "imports": [
+        "react"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/UpdateJobStageDialog.tsx",
+      "language": "tsx",
+      "lines": 134,
+      "bytes": 4255,
+      "module": "frontend:components",
+      "exports": [
+        "UpdateJobStageDialog"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@radix-ui/react-dialog",
+        "react",
+        "react-hook-form"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/index.css",
+      "language": "css",
+      "lines": 21,
+      "bytes": 486,
+      "module": "frontend:index.css",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/layouts/__tests__/ShellLayout.test.tsx",
+      "language": "tsx",
+      "lines": 31,
+      "bytes": 1017,
+      "module": "frontend:layouts",
+      "exports": [],
+      "imports": [
+        "../../stores/session",
+        "../ShellLayout",
+        "@testing-library/react",
+        "react-router-dom",
+        "vitest"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/layouts/ShellLayout.tsx",
+      "language": "tsx",
+      "lines": 70,
+      "bytes": 2694,
+      "module": "frontend:layouts",
+      "exports": [
+        "ShellLayout"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/NextActionCard",
+        "../stores/session",
+        "react-router-dom"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "language": "tsx",
+      "lines": 32,
+      "bytes": 858,
+      "module": "frontend:main.tsx",
+      "exports": [],
+      "imports": [
+        "./App",
+        "./api/ApiProvider",
+        "./components/ToastProvider",
+        "./index.css",
+        "@tanstack/react-query",
+        "react",
+        "react-dom/client",
+        "react-router-dom"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/__tests__/Dashboard.test.tsx",
+      "language": "tsx",
+      "lines": 126,
+      "bytes": 3691,
+      "module": "frontend:pages",
+      "exports": [],
+      "imports": [
+        "../DashboardPage",
+        "@testing-library/react",
+        "react",
+        "react-router-dom",
+        "vitest"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/__tests__/JobsPage.test.tsx",
+      "language": "tsx",
+      "lines": 252,
+      "bytes": 7737,
+      "module": "frontend:pages",
+      "exports": [],
+      "imports": [
+        "../../api/hooks",
+        "../../components/ToastProvider",
+        "../JobsPage",
+        "@tanstack/react-query",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/__tests__/TasksPage.test.tsx",
+      "language": "tsx",
+      "lines": 63,
+      "bytes": 1764,
+      "module": "frontend:pages",
+      "exports": [],
+      "imports": [
+        "../TasksPage",
+        "@testing-library/react",
+        "vitest"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/ContactsPage.tsx",
+      "language": "tsx",
+      "lines": 557,
+      "bytes": 21831,
+      "module": "frontend:pages",
+      "exports": [
+        "ContactsPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/ContactDrawer",
+        "../components/ContactEngagementBadge",
+        "../components/StrengthBadge",
+        "@radix-ui/react-popover",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/DashboardPage.tsx",
+      "language": "tsx",
+      "lines": 222,
+      "bytes": 8696,
+      "module": "frontend:pages",
+      "exports": [
+        "DashboardPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../api/useDashboard",
+        "../api/useStats",
+        "../components/FollowUpList",
+        "../components/KpiCard",
+        "../components/dashboard/ActionCenterTabs",
+        "../components/dashboard/ChartCvsSent",
+        "../components/dashboard/ChartWarmOutreach",
+        "../components/dashboard/InsightsMini",
+        "../components/dashboard/KpiMiniTiles",
+        "../components/dashboard/NextBestActionCompact",
+        "../components/dashboard/TimeRangeSelector",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/GrowPage.tsx",
+      "language": "tsx",
+      "lines": 288,
+      "bytes": 13061,
+      "module": "frontend:pages",
+      "exports": [
+        "GrowPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/grow/AddGrowItemModal",
+        "../components/grow/BoostTaskCard",
+        "../components/grow/EventCard",
+        "../components/grow/ProjectCard",
+        "../components/grow/ReviewCard",
+        "date-fns",
+        "react"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/JobsPage.tsx",
+      "language": "tsx",
+      "lines": 795,
+      "bytes": 29394,
+      "module": "frontend:pages",
+      "exports": [
+        "JobsPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/AddOutreachDialog",
+        "../components/ContactDrawer",
+        "../components/HeatBadge",
+        "../components/JobHistoryModal",
+        "../components/JobListTable",
+        "../components/JobWizardModal",
+        "../components/KpiHeader",
+        "../components/UpdateJobStageDialog",
+        "@radix-ui/react-dialog",
+        "date-fns",
+        "react",
+        "react-router-dom"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/LoginPage.tsx",
+      "language": "tsx",
+      "lines": 71,
+      "bytes": 2701,
+      "module": "frontend:pages",
+      "exports": [
+        "LoginPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@hookform/resolvers/zod",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/pages/TasksPage.tsx",
+      "language": "tsx",
+      "lines": 252,
+      "bytes": 9236,
+      "module": "frontend:pages",
+      "exports": [
+        "TasksPage"
+      ],
+      "imports": [
+        "../api/hooks",
+        "../components/tasks/NBABox",
+        "../components/tasks/QuickAddBar",
+        "../components/tasks/TaskCard",
+        "../components/tasks/TaskDrawer",
+        "react"
+      ],
+      "purpose": "Page-level React component tied to routing.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/stores/session.ts",
+      "language": "ts",
+      "lines": 29,
+      "bytes": 609,
+      "module": "frontend:stores",
+      "exports": [
+        "SessionUser",
+        "useSessionStore"
+      ],
+      "imports": [
+        "zustand",
+        "zustand/middleware"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/test-utils/recharts-stub.tsx",
+      "language": "tsx",
+      "lines": 19,
+      "bytes": 496,
+      "module": "frontend:test-utils",
+      "exports": [
+        "Bar",
+        "BarChart",
+        "CartesianGrid",
+        "Cell",
+        "Line",
+        "LineChart",
+        "Pie",
+        "PieChart",
+        "ResponsiveContainer",
+        "Tooltip",
+        "XAxis",
+        "YAxis"
+      ],
+      "imports": [
+        "react"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/test/setup.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 332,
+      "module": "frontend:test",
+      "exports": [],
+      "imports": [
+        "@testing-library/jest-dom"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "language": "ts",
+      "lines": 2,
+      "bytes": 38,
+      "module": "frontend:vite-env.d.ts",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/tailwind.config.cjs",
+      "language": "js",
+      "lines": 26,
+      "bytes": 499,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "language": "json",
+      "lines": 23,
+      "bytes": 591,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/tsconfig.node.json",
+      "language": "json",
+      "lines": 10,
+      "bytes": 187,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "language": "ts",
+      "lines": 60,
+      "bytes": 1573,
+      "module": "root",
+      "exports": [],
+      "imports": [
+        "@vitejs/plugin-react",
+        "path",
+        "vite"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "lines": 24,
+      "bytes": 1000,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/0001_init/migration.sql",
+      "language": "text",
+      "lines": 179,
+      "bytes": 6011,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251029_add_company_and_enhance_contacts/migration.sql",
+      "language": "text",
+      "lines": 58,
+      "bytes": 2049,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251029094759_initial_schema/migration.sql",
+      "language": "text",
+      "lines": 164,
+      "bytes": 6431,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251029134519_add_company_and_enhance_contacts/migration.sql",
+      "language": "text",
+      "lines": 2,
+      "bytes": 66,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251030092336_add_delte/migration.sql",
+      "language": "text",
+      "lines": 7,
+      "bytes": 202,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251101000000_outreach_context_contact_archive/migration.sql",
+      "language": "text",
+      "lines": 12,
+      "bytes": 409,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251102084013_grow/migration.sql",
+      "language": "text",
+      "lines": 62,
+      "bytes": 1871,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251102120000_tasks-v1/migration.sql",
+      "language": "text",
+      "lines": 23,
+      "bytes": 685,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251109120000_user_isolation/migration.sql",
+      "language": "text",
+      "lines": 71,
+      "bytes": 3150,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/migration_lock.toml",
+      "language": "toml",
+      "lines": 3,
+      "bytes": 126,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "language": "text",
+      "lines": 389,
+      "bytes": 9365,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "db"
+      ]
+    },
+    {
+      "path": "README.md",
+      "language": "md",
+      "lines": 102,
+      "bytes": 3913,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "scripts/context/config.mjs",
+      "language": "js",
+      "lines": 1031,
+      "bytes": 39849,
+      "module": "scripts",
+      "exports": [
+        "chunkDefinitions",
+        "moduleSections"
+      ],
+      "imports": [
+        "\n        ]\n      },\n      {\n        id: "
+      ],
+      "purpose": "Repository helper script.",
+      "tags": [
+        "script"
+      ]
+    },
+    {
+      "path": "scripts/docker-entrypoint-backend.sh",
+      "language": "sh",
+      "lines": 28,
+      "bytes": 651,
+      "module": "scripts",
+      "exports": [],
+      "imports": [],
+      "purpose": "Repository helper script.",
+      "tags": [
+        "script"
+      ]
+    },
+    {
+      "path": "scripts/refresh-context.mjs",
+      "language": "js",
+      "lines": 884,
+      "bytes": 27143,
+      "module": "scripts",
+      "exports": [],
+      "imports": [
+        "./context/config.mjs",
+        "fs",
+        "module",
+        "path",
+        "url"
+      ],
+      "purpose": "Repository helper script.",
+      "tags": [
+        "script"
+      ]
+    },
+    {
+      "path": "scripts/refresh-context.sh",
+      "language": "sh",
+      "lines": 8,
+      "bytes": 191,
+      "module": "scripts",
+      "exports": [],
+      "imports": [],
+      "purpose": "Repository helper script.",
+      "tags": [
+        "script"
+      ]
+    },
+    {
+      "path": "scripts/use-env.js",
+      "language": "js",
+      "lines": 138,
+      "bytes": 3659,
+      "module": "scripts",
+      "exports": [],
+      "imports": [],
+      "purpose": "Repository helper script.",
+      "tags": [
+        "script"
+      ]
+    }
+  ]
+}

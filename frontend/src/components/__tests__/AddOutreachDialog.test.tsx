@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AddOutreachDialog } from '../AddOutreachDialog';
 
 vi.mock('../../api/hooks', async () => {
@@ -19,8 +19,14 @@ const useCreateJobOutreachMutation = vi.mocked(hooks.useCreateJobOutreachMutatio
 describe('AddOutreachDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    useContactSearchQuery.mockReturnValue({ data: [], isFetching: false });
-    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
+    useContactSearchQuery.mockReturnValue({
+      data: [],
+      isFetching: false
+    } as unknown as ReturnType<typeof hooks.useContactSearchQuery>);
+    useCreateJobOutreachMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useCreateJobOutreachMutation>);
   });
 
   it('selects an existing contact and submits outreach payload', async () => {
@@ -40,7 +46,10 @@ describe('AddOutreachDialog', () => {
       }
     });
 
-    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: mutateSpy, isPending: false });
+    useCreateJobOutreachMutation.mockReturnValue({
+      mutateAsync: mutateSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useCreateJobOutreachMutation>);
     useContactSearchQuery.mockReturnValue({
       data: [
         {
@@ -51,7 +60,7 @@ describe('AddOutreachDialog', () => {
         }
       ],
       isFetching: false
-    });
+    } as unknown as ReturnType<typeof hooks.useContactSearchQuery>);
 
     render(
       <AddOutreachDialog
@@ -100,7 +109,10 @@ describe('AddOutreachDialog', () => {
       }
     });
 
-    useCreateJobOutreachMutation.mockReturnValue({ mutateAsync: mutateSpy, isPending: false });
+    useCreateJobOutreachMutation.mockReturnValue({
+      mutateAsync: mutateSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooks.useCreateJobOutreachMutation>);
 
     render(
       <AddOutreachDialog

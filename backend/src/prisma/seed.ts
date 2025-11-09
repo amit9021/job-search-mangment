@@ -74,11 +74,24 @@ async function resetData(preserveAdminUsername: string) {
   ]);
 }
 
-async function seedCompanies(companies: MockData['companies']) {
-  return Promise.all(companies.map((company) => prisma.company.create({ data: company })));
+async function seedCompanies(companies: MockData['companies'], ownerId: string) {
+  return Promise.all(
+    companies.map((company) =>
+      prisma.company.create({
+        data: {
+          ...company,
+          userId: ownerId
+        }
+      })
+    )
+  );
 }
 
-async function seedContacts(companies: Awaited<ReturnType<typeof seedCompanies>>, mock: MockData) {
+async function seedContacts(
+  companies: Awaited<ReturnType<typeof seedCompanies>>,
+  mock: MockData,
+  ownerId: string
+) {
   const contacts: Awaited<ReturnType<typeof prisma.contact.create>>[] = [];
   const contactsByCompanyId = new Map<
     string,
@@ -115,7 +128,8 @@ async function seedContacts(companies: Awaited<ReturnType<typeof seedCompanies>>
             ? 'Regular check-ins every other week.'
             : 'Met during recent outreach.',
         archived: isArchived,
-        archivedAt: isArchived ? randomPastDate(10) : undefined
+        archivedAt: isArchived ? randomPastDate(10) : undefined,
+        userId: ownerId
       }
     });
 
@@ -161,7 +175,11 @@ function buildStatusHistory(stage: JobStage, createdAt: Date) {
   ];
 }
 
-async function seedJobs(companies: Awaited<ReturnType<typeof seedCompanies>>, mock: MockData) {
+async function seedJobs(
+  companies: Awaited<ReturnType<typeof seedCompanies>>,
+  mock: MockData,
+  ownerId: string
+) {
   const stages = [
     JobStage.APPLIED,
     JobStage.HR,
@@ -208,7 +226,8 @@ async function seedJobs(companies: Awaited<ReturnType<typeof seedCompanies>>, mo
             tailoringScore: randomInt(55, 98)
           }
         },
-        statusHistory: { create: statusHistory }
+        statusHistory: { create: statusHistory },
+        userId: ownerId
       }
     });
 
@@ -313,7 +332,8 @@ async function seedReferrals(
 async function seedTasks(
   jobs: Awaited<ReturnType<typeof seedJobs>>,
   contacts: Awaited<ReturnType<typeof seedContacts>>,
-  mock: MockData
+  mock: MockData,
+  ownerId: string
 ) {
   const tasksData: Prisma.TaskCreateManyInput[] = [];
   const activeJobs = jobs.filter((job) => !job.archived);
@@ -363,14 +383,19 @@ async function seedTasks(
       tags: completed ? ['dashboard', 'demo'] : ['demo'],
       description: 'Seeded task to exercise dashboard flows.',
       links: Object.keys(links).length ? (links as unknown as Prisma.JsonObject) : undefined,
-      completedAt: completed ? randomPastDate(2) : undefined
+      completedAt: completed ? randomPastDate(2) : undefined,
+      userId: ownerId
     });
   }
 
   await prisma.task.createMany({ data: tasksData });
 }
 
-async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mock: MockData) {
+async function seedGrowth(
+  contacts: Awaited<ReturnType<typeof seedContacts>>,
+  mock: MockData,
+  ownerId: string
+) {
   const strongContacts = contacts.contacts.filter(
     (contact) => !contact.archived && contact.strength !== ContactStrength.WEAK
   );
@@ -384,7 +409,8 @@ async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mo
           location: randomItem(['Remote', 'NYC', 'Berlin', 'SF', 'London']),
           attended: index % 3 !== 0,
           notes: 'Seeded event to showcase Grow dashboard charts.',
-          followUps: index % 3 === 0 ? ['Connect with panelist', 'Share recap'] : []
+          followUps: index % 3 === 0 ? ['Connect with panelist', 'Share recap'] : [],
+          userId: ownerId
         }
       })
     )
@@ -400,7 +426,8 @@ async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mo
           impactLevel: randomInt(2, 5),
           tags: index % 2 === 0 ? ['linkedin', 'writing'] : ['networking'],
           status: index % 4 === 0 ? 'completed' : 'pending',
-          completedAt: index % 4 === 0 ? randomPastDate(7) : undefined
+          completedAt: index % 4 === 0 ? randomPastDate(7) : undefined,
+          userId: ownerId
         }
       })
     )
@@ -419,7 +446,8 @@ async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mo
           summary: 'Seeded growth review capturing qualitative feedback.',
           score: randomInt(3, 5),
           takeaways: 'Focus next on leverage stories and improved storytelling.',
-          reviewedAt: randomPastDate(14)
+          reviewedAt: randomPastDate(14),
+          userId: ownerId
         }
       });
     })
@@ -436,7 +464,8 @@ async function seedGrowth(contacts: Awaited<ReturnType<typeof seedContacts>>, mo
           spotlight: index % 2 === 0,
           plannedPost: 'Seeded highlight to showcase storytelling opportunities.',
           published: index % 3 === 0,
-          publishedAt: index % 3 === 0 ? randomPastDate(10) : undefined
+          publishedAt: index % 3 === 0 ? randomPastDate(10) : undefined,
+          userId: ownerId
         }
       })
     )
@@ -585,21 +614,23 @@ async function main() {
 
   await resetData(adminUsername);
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { username: adminUsername },
     update: { passwordHash },
     create: { username: adminUsername, passwordHash }
   });
 
-  const companies = await seedCompanies(mock.companies);
-  const contactSeed = await seedContacts(companies, mock);
-  const jobs = await seedJobs(companies, mock);
+  const ownerId = user.id;
+
+  const companies = await seedCompanies(mock.companies, ownerId);
+  const contactSeed = await seedContacts(companies, mock, ownerId);
+  const jobs = await seedJobs(companies, mock, ownerId);
 
   await seedNetworkingEvents(contactSeed, mock);
   await seedOutreachAndFollowUps(jobs, contactSeed);
   await seedReferrals(jobs, contactSeed);
-  await seedTasks(jobs, contactSeed, mock);
-  await seedGrowth(contactSeed, mock);
+  await seedTasks(jobs, contactSeed, mock, ownerId);
+  await seedGrowth(contactSeed, mock, ownerId);
   await seedMetricSnapshots();
   await seedNotifications(jobs, contactSeed);
   await seedRecommendations(jobs, contactSeed);

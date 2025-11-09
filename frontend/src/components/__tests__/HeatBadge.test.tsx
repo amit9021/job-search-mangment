@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HeatBadge } from '../HeatBadge';
 
 vi.mock('../../api/hooks', async () => {
@@ -39,7 +39,7 @@ describe('HeatBadge', () => {
       isFetching: false,
       isError: false,
       refetch: refetchSpy
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobHeatExplainQuery>);
 
     render(<HeatBadge heat={2} jobId="job-1" />);
 
@@ -56,7 +56,7 @@ describe('HeatBadge', () => {
       isFetching: true,
       isError: false,
       refetch: vi.fn()
-    });
+    } as unknown as ReturnType<typeof hooksModule.useJobHeatExplainQuery>);
 
     render(<HeatBadge heat={1} jobId="job-2" />);
 

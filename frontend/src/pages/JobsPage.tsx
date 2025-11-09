@@ -556,9 +556,11 @@ export const JobsPage = () => {
             role: job.role,
             stage: job.stage,
             heat: job.heat,
+            updatedAt: job.updatedAt,
             lastTouchAt: job.lastTouchAt,
             nextFollowUpAt: job.nextFollowUpAt,
             sourceUrl: job.sourceUrl ?? null,
+            archived: job.archived,
             contactsCount: job.contactsCount ?? 0,
             contacts: job.contacts ?? []
           }))}
@@ -572,6 +574,8 @@ export const JobsPage = () => {
               role: job.role,
               stage: job.stage,
               heat: job.heat,
+              updatedAt: job.updatedAt,
+              archived: job.archived,
               lastTouchAt: job.lastTouchAt,
               nextFollowUpAt: job.nextFollowUpAt,
               sourceUrl: job.sourceUrl ?? undefined,

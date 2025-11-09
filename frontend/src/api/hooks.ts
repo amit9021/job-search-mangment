@@ -82,6 +82,7 @@ export type CreateJobMutationInput = {
     personalizationScore: number;
     outcome?: string;
     content?: string;
+    context?: string;
     createFollowUp?: boolean;
     followUpNote?: string;
   };
@@ -237,6 +238,7 @@ export const useJobHeatExplainQuery = (jobId: string | undefined, options?: { en
           label: string;
           value: number;
           rawValue?: number;
+          maxValue?: number;
           note?: string;
         }>;
         decayFactor: number;
@@ -501,6 +503,7 @@ export const useJobHistoryQuery = (id: string, options?: { enabled?: boolean }) 
           personalizationScore: number;
           outcome: string;
           content?: string | null;
+          context?: string | null;
           sentAt: string;
           contact?: { id: string; name: string | null } | null;
         }>;

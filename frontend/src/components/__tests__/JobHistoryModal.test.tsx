@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { format } from 'date-fns';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { JobHistoryModal } from '../JobHistoryModal';
 
@@ -32,9 +32,18 @@ describe('JobHistoryModal', () => {
     vi.resetAllMocks();
 
     updateOutreachSpy = vi.fn().mockResolvedValue({});
-    useUpdateOutreachMutation.mockReturnValue({ mutateAsync: updateOutreachSpy, isPending: false });
-    useDeleteOutreachMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
-    useUpdateJobStageMutation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false });
+    useUpdateOutreachMutation.mockReturnValue({
+      mutateAsync: updateOutreachSpy,
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useUpdateOutreachMutation>);
+    useDeleteOutreachMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useDeleteOutreachMutation>);
+    useUpdateJobStageMutation.mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false
+    } as unknown as ReturnType<typeof hooksModule.useUpdateJobStageMutation>);
 
     useJobHistoryQuery.mockReturnValue({
       data: {
@@ -71,8 +80,9 @@ describe('JobHistoryModal', () => {
           }
         ]
       },
-      isLoading: false
-    });
+      isLoading: false,
+      isFetching: false
+    } as unknown as ReturnType<typeof hooksModule.useJobHistoryQuery>);
   });
 
   it('groups entries by day and updates outreach outcomes inline', async () => {

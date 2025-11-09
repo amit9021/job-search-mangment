@@ -14,6 +14,15 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  companies        Company[]
+  contacts         Contact[]
+  jobs             Job[]
+  tasks            Task[]
+  growthReviews    GrowthReview[]
+  growthEvents     GrowthEvent[]
+  growthBoostTasks GrowthBoostTask[]
+  projectHighlights ProjectHighlight[]
 }
 
 model Company {
@@ -27,7 +36,11 @@ model Company {
   contacts Contact[]
   jobs     Job[]
 
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([name])
+  @@index([userId])
 }
 
 model Job {
@@ -53,10 +66,14 @@ model Job {
   referrals     Referral[]
   notifications Notification[]
 
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([heat, updatedAt])
   @@index([deadline])
   @@index([companyId])
   @@index([archived])
+  @@index([userId])
 }
 
 enum JobStage {
@@ -113,9 +130,13 @@ model Contact {
   notifications Notification[]
   GrowthReview  GrowthReview[]
 
+  userId String?
+  user   User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([strength])
   @@index([companyId])
   @@index([name])
+  @@index([userId])
 }
 
 enum ContactStrength {
@@ -286,6 +307,10 @@ model GrowthReview {
   takeaways   String?
 
   contact Contact @relation(fields: [reviewerId], references: [id])
+  userId  String?
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 model GrowthEvent {
@@ -298,6 +323,11 @@ model GrowthEvent {
   followUps String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 model GrowthBoostTask {
@@ -311,6 +341,11 @@ model GrowthBoostTask {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   completedAt DateTime?
+
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 model ProjectHighlight {
@@ -323,6 +358,11 @@ model ProjectHighlight {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 model Task {
   id          String   @id @default(cuid())
@@ -339,7 +379,10 @@ model Task {
   checklist   Json?
   createdAt   DateTime @default(now())
   completedAt DateTime?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([dueAt])
   @@index([status])
+  @@index([userId])
 }

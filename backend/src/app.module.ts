@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { join, resolve } from 'path';
 
 import { HealthController } from './common/health.controller';
+import { RequestContextModule } from './common/context/request-context.module';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import appConfig from './config/app';
 import { AuthModule } from './modules/auth/auth.module';
 import { BoostsModule } from './modules/boosts/boosts.module';
@@ -47,6 +49,7 @@ const envFilePath = Array.from(
       envFilePath,
       load: [appConfig]
     }),
+    RequestContextModule,
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -70,4 +73,8 @@ const envFilePath = Array.from(
   ],
   controllers: [HealthController]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { JobWizardModal } from '../JobWizardModal';
 import { ToastProvider } from '../ToastProvider';
 import type { CreateJobMutationInput } from '../../api/hooks';
@@ -23,13 +23,26 @@ const useJobDetailQuery = vi.mocked(hooksModule.useJobDetailQuery);
 const useContactSearchQuery = vi.mocked(hooksModule.useContactSearchQuery);
 
 const setupMocks = () => {
-  const createJobSpy = vi.fn<Promise<void>, [CreateJobMutationInput]>();
+  const createJobSpy = vi.fn<[CreateJobMutationInput], Promise<void>>();
   const updateJobSpy = vi.fn();
 
-  useCreateJobMutation.mockReturnValue({ mutateAsync: createJobSpy, isPending: false });
-  useUpdateJobMutation.mockReturnValue({ mutateAsync: updateJobSpy, isPending: false });
-  useJobDetailQuery.mockReturnValue({ data: null });
-  useContactSearchQuery.mockReturnValue({ data: [], isFetching: false });
+  useCreateJobMutation.mockReturnValue({
+    mutateAsync: createJobSpy,
+    isPending: false
+  } as unknown as ReturnType<typeof hooksModule.useCreateJobMutation>);
+  useUpdateJobMutation.mockReturnValue({
+    mutateAsync: updateJobSpy,
+    isPending: false
+  } as unknown as ReturnType<typeof hooksModule.useUpdateJobMutation>);
+  useJobDetailQuery.mockReturnValue({
+    data: null,
+    isLoading: false,
+    isFetching: false
+  } as unknown as ReturnType<typeof hooksModule.useJobDetailQuery>);
+  useContactSearchQuery.mockReturnValue({
+    data: [],
+    isFetching: false
+  } as unknown as ReturnType<typeof hooksModule.useContactSearchQuery>);
 
   return { createJobSpy, updateJobSpy };
 };

@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosHeaders, AxiosInstance } from 'axios';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
@@ -18,10 +18,9 @@ export const createApiClient = ({ token, onUnauthorized }: CreateClientOptions =
 
   instance.interceptors.request.use((config) => {
     if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`
-      };
+      const headers = AxiosHeaders.from(config.headers ?? {});
+      headers.set('Authorization', `Bearer ${token}`);
+      config.headers = headers;
     }
     return config;
   });
