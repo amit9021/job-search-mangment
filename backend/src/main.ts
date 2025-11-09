@@ -1,10 +1,16 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import * as crypto from 'crypto';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ZodValidationPipe } from './utils/zod-validation.pipe';
+
+// Polyfill for @nestjs/schedule crypto issue - remove when @nestjs/schedule is fixed
+if (!(global as any).crypto) {
+  (global as any).crypto = crypto;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -39,7 +45,7 @@ async function bootstrap() {
   );
   await app.listen(port);
 
-  console.log(`🚀 Backend running on port ${port}`);
+  console.log(`🚀 Backend running on port ${port}, and DB ${configService.get<string>('DATABASE_URL')}`);
 }
 
 void bootstrap();

@@ -29,6 +29,11 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: devPort,
+      watch: {
+        usePolling: true,
+        interval: 1000,
+        ignored: ['**/node_modules/**', '**/.git/**', '**/vite.config.*']
+      },
       proxy: {
         '/api': {
           target: backendUrl,
