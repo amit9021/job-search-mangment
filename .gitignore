@@ -15,9 +15,8 @@ frontend/dist
 coverage
 
 # Environment
-.env
-.env.production
-.env.development
+.env*
+!.env.example
 backend/.env
 frontend/.env
 
