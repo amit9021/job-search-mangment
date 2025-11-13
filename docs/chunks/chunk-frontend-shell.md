@@ -2,7 +2,7 @@
 id: chunk-frontend-shell
 title: Frontend · Shell & Session
 module: frontend-shell
-generated_at: 2025-11-13T07:15:08.035Z
+generated_at: 2025-11-13T11:35:30.183Z
 tags: ["ui","state"]
 source_paths: ["frontend/src/App.tsx","frontend/src/layouts/ShellLayout.tsx","frontend/src/stores/session.ts"]
 exports: ["SessionUser","ShellLayout","useSessionStore"]

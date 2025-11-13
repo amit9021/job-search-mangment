@@ -1,6 +1,6 @@
 # API Surface
 
-Generated: 2025-11-13T07:15:08.035Z
+Generated: 2025-11-13T11:35:30.183Z
 
 ## HTTP Routes
 
@@ -60,6 +60,9 @@ Generated: 2025-11-13T07:15:08.035Z
 | POST | `/jobs/:id/applications` | `addApplication` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, body: AddApplicationDto | unknown |
 | GET | `/jobs/:id/heat-explain` | `heatExplain` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto | unknown |
 | GET | `/jobs/:id/history` | `history` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto | unknown |
+| POST | `/jobs/:id/notes` | `addNote` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, body: CreateJobNoteDto, user: { id?: string | null } | unknown |
+| DELETE | `/jobs/:id/notes/:noteId` | `deleteNote` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, noteId: string | unknown |
+| PATCH | `/jobs/:id/notes/:noteId` | `updateNote` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, noteId: string, body: UpdateJobNoteDto | unknown |
 | POST | `/jobs/:id/outreach` | `addOutreach` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, body: CreateJobOutreachDto | unknown |
 | POST | `/jobs/:id/status` | `updateStatus` (backend/src/modules/jobs/jobs.controller.ts) | params: IdParamDto, body: UpdateJobStageDto | unknown |
 | GET | `/kpis/today` | `today` (backend/src/modules/kpi/kpi.controller.ts) | — | unknown |
@@ -207,6 +210,9 @@ async delete(jobId: string, options: { hard?: boolean } = {})
 async addApplication(jobId: string, dto: InferDto<typeof AddApplicationDto>)
 async updateStatus(jobId: string, dto: InferDto<typeof UpdateJobStageDto>)
 async recordJobOutreach(jobId: string, payload: CreateJobOutreachInput)
+async addNote( jobId: string, data: InferDto<typeof CreateJobNoteDto>, userId?: string )
+async updateNote( jobId: string, noteId: string, data: InferDto<typeof UpdateJobNoteDto> )
+async deleteNote(jobId: string, noteId: string)
 async getHistory(jobId: string)
 async recalculateHeat(jobId: string)
 async getHeatExplanation(jobId: string)
@@ -360,6 +366,7 @@ Fields:
 - `growthEvents      GrowthEvent[]`
 - `growthBoostTasks  GrowthBoostTask[]`
 - `projectHighlights ProjectHighlight[]`
+- `jobNotes          JobNote[]`
 
 ### Company
 
@@ -403,6 +410,7 @@ Fields:
 - `followups     FollowUp[]`
 - `referrals     Referral[]`
 - `notifications Notification[]`
+- `notes         JobNote[]`
 - `userId String?`
 - `user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)`
 - `@@index([heat, updatedAt])`
@@ -440,6 +448,24 @@ Fields:
 
 Relations:
 - job   Job      @relation(fields: [jobId], references: [id])
+
+### JobNote
+
+Fields:
+- `id        String   @id @default(cuid())`
+- `jobId     String`
+- `job       Job      @relation(fields: [jobId], references: [id])`
+- `content   String`
+- `createdAt DateTime @default(now())`
+- `updatedAt DateTime @updatedAt`
+- `userId    String?`
+- `user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)`
+- `@@index([jobId])`
+- `@@index([userId])`
+
+Relations:
+- job       Job      @relation(fields: [jobId], references: [id])
+- user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
 ### Contact
 

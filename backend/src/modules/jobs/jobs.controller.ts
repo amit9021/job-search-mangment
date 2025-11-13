@@ -1,12 +1,15 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { IdParamDto } from '../../common/dto/id-param.dto';
+import { CurrentUser } from '../../common/decorators/user.decorator';
 
 import {
   AddApplicationDto,
   CreateJobDto,
+  CreateJobNoteDto,
   CreateJobOutreachDto,
   ListJobsQueryDto,
+  UpdateJobNoteDto,
   UpdateJobStageDto,
   UpdateJobDto
 } from './dto';
@@ -38,9 +41,27 @@ export class JobsController {
     return this.jobsService.create(body);
   }
 
+  @Post(':id/notes')
+  async addNote(
+    @Param() params: IdParamDto,
+    @Body() body: CreateJobNoteDto,
+    @CurrentUser() user?: { id?: string | null }
+  ) {
+    return this.jobsService.addNote(params.id, body, user?.id ?? undefined);
+  }
+
   @Patch(':id')
   async update(@Param() params: IdParamDto, @Body() body: UpdateJobDto) {
     return this.jobsService.update(params.id, body);
+  }
+
+  @Patch(':id/notes/:noteId')
+  async updateNote(
+    @Param() params: IdParamDto,
+    @Param('noteId') noteId: string,
+    @Body() body: UpdateJobNoteDto
+  ) {
+    return this.jobsService.updateNote(params.id, noteId, body);
   }
 
   @Delete(':id')
@@ -48,6 +69,11 @@ export class JobsController {
     const hardDelete =
       typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
     return this.jobsService.delete(params.id, { hard: hardDelete });
+  }
+
+  @Delete(':id/notes/:noteId')
+  async deleteNote(@Param() params: IdParamDto, @Param('noteId') noteId: string) {
+    return this.jobsService.deleteNote(params.id, noteId);
   }
 
   @Post(':id/applications')
