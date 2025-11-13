@@ -2,7 +2,7 @@
 id: chunk-backend-projects
 title: Backend · Projects & Reviews
 module: backend-projects
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:43:23.366Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/projects/projects.controller.ts","backend/src/modules/projects/projects.service.ts","backend/src/modules/reviews/reviews.controller.ts","backend/src/modules/reviews/reviews.service.ts"]
 exports: ["ProjectsController","ProjectsService","ReviewsController","ReviewsService"]

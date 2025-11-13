@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-09T08:03:21.008Z",
+  "generated_at": "2025-11-09T09:43:23.366Z",
   "files": [
     {
       "path": ".editorconfig",
@@ -15,8 +15,8 @@
     {
       "path": ".env.example",
       "language": "text",
-      "lines": 51,
-      "bytes": 2107,
+      "lines": 60,
+      "bytes": 2407,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -24,6 +24,17 @@
       "tags": [
         "config"
       ]
+    },
+    {
+      "path": ".git",
+      "language": "text",
+      "lines": 2,
+      "bytes": 79,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
     },
     {
       "path": ".gitattributes",
@@ -142,8 +153,8 @@
     {
       "path": "backend/package-lock.json",
       "language": "json",
-      "lines": 11432,
-      "bytes": 423116,
+      "lines": 11082,
+      "bytes": 409275,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -154,7 +165,7 @@
       "path": "backend/package.json",
       "language": "json",
       "lines": 75,
-      "bytes": 2867,
+      "bytes": 2868,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -224,7 +235,7 @@
       "path": "backend/src/common/context/request-context.service.ts",
       "language": "ts",
       "lines": 38,
-      "bytes": 850,
+      "bytes": 838,
       "module": "backend:common",
       "exports": [
         "RequestContextService"
@@ -316,8 +327,8 @@
     {
       "path": "backend/src/common/guards/jwt-auth.guard.ts",
       "language": "ts",
-      "lines": 37,
-      "bytes": 1172,
+      "lines": 42,
+      "bytes": 1189,
       "module": "backend:common",
       "exports": [
         "JwtAuthGuard"
@@ -373,6 +384,65 @@
       ]
     },
     {
+      "path": "backend/src/common/rate-limit/rate-limit.decorator.ts",
+      "language": "ts",
+      "lines": 13,
+      "bytes": 300,
+      "module": "backend:common",
+      "exports": [
+        "RATE_LIMIT_METADATA_KEY",
+        "RateLimit",
+        "RateLimitOptions"
+      ],
+      "imports": [
+        "@nestjs/common"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/rate-limit/rate-limit.guard.ts",
+      "language": "ts",
+      "lines": 50,
+      "bytes": 1682,
+      "module": "backend:common",
+      "exports": [
+        "RateLimitGuard"
+      ],
+      "imports": [
+        "./rate-limit.decorator",
+        "./rate-limit.service",
+        "@nestjs/common",
+        "@nestjs/core",
+        "express"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
+      "path": "backend/src/common/rate-limit/rate-limit.service.ts",
+      "language": "ts",
+      "lines": 74,
+      "bytes": 2085,
+      "module": "backend:common",
+      "exports": [
+        "RateLimitHit",
+        "RateLimitService"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "Business logic service consumed by controllers.",
+      "tags": [
+        "util"
+      ]
+    },
+    {
       "path": "backend/src/config/app.ts",
       "language": "ts",
       "lines": 24,
@@ -409,8 +479,8 @@
     {
       "path": "backend/src/modules/auth/auth.controller.ts",
       "language": "ts",
-      "lines": 24,
-      "bytes": 628,
+      "lines": 45,
+      "bytes": 1326,
       "module": "backend:auth",
       "exports": [
         "AuthController"
@@ -418,8 +488,11 @@
       "imports": [
         "../../common/decorators/public.decorator",
         "../../common/decorators/user.decorator",
+        "../../common/rate-limit/rate-limit.decorator",
+        "../../common/rate-limit/rate-limit.guard",
         "./auth.service",
         "./dto/login.dto",
+        "./dto/register.dto",
         "@nestjs/common"
       ],
       "purpose": "NestJS controller exposing HTTP routes.",
@@ -430,17 +503,20 @@
     {
       "path": "backend/src/modules/auth/auth.module.ts",
       "language": "ts",
-      "lines": 37,
-      "bytes": 975,
+      "lines": 46,
+      "bytes": 1371,
       "module": "backend:auth",
       "exports": [
         "AuthModule"
       ],
       "imports": [
         "../../common/guards/jwt-auth.guard",
+        "../../common/rate-limit/rate-limit.guard",
+        "../../common/rate-limit/rate-limit.service",
         "./auth.controller",
         "./auth.service",
         "./jwt.strategy",
+        "./oauth/oauth.controller",
         "@nestjs/common",
         "@nestjs/config",
         "@nestjs/core",
@@ -455,17 +531,20 @@
     {
       "path": "backend/src/modules/auth/auth.service.ts",
       "language": "ts",
-      "lines": 72,
-      "bytes": 2530,
+      "lines": 123,
+      "bytes": 4035,
       "module": "backend:auth",
       "exports": [
-        "AuthService"
+        "AuthProfile",
+        "AuthService",
+        "AuthTokens"
       ],
       "imports": [
         "../../prisma/prisma.service",
         "@nestjs/common",
         "@nestjs/config",
-        "@nestjs/jwt"
+        "@nestjs/jwt",
+        "bcryptjs"
       ],
       "purpose": "Business logic service consumed by controllers.",
       "tags": [
@@ -475,8 +554,8 @@
     {
       "path": "backend/src/modules/auth/dto/login.dto.ts",
       "language": "ts",
-      "lines": 11,
-      "bytes": 235,
+      "lines": 14,
+      "bytes": 318,
       "module": "backend:auth",
       "exports": [
         "LoginDto"
@@ -491,21 +570,75 @@
       ]
     },
     {
+      "path": "backend/src/modules/auth/dto/register.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 321,
+      "module": "backend:auth",
+      "exports": [
+        "RegisterDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
       "path": "backend/src/modules/auth/jwt.strategy.ts",
       "language": "ts",
-      "lines": 37,
-      "bytes": 945,
+      "lines": 39,
+      "bytes": 1049,
       "module": "backend:auth",
       "exports": [
         "JwtStrategy"
       ],
       "imports": [
         "../../prisma/prisma.service",
+        "./auth.service",
         "@nestjs/common",
         "@nestjs/config",
         "@nestjs/passport",
         "passport-jwt"
       ],
+      "purpose": "Source file.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/oauth/oauth.controller.ts",
+      "language": "ts",
+      "lines": 35,
+      "bytes": 1048,
+      "module": "backend:auth",
+      "exports": [
+        "OAuthController"
+      ],
+      "imports": [
+        "../../../common/decorators/public.decorator",
+        "@nestjs/common",
+        "@nestjs/config"
+      ],
+      "purpose": "NestJS controller exposing HTTP routes.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/oauth/oauth.provider.ts",
+      "language": "ts",
+      "lines": 28,
+      "bytes": 582,
+      "module": "backend:auth",
+      "exports": [
+        "AuthProvider",
+        "OAuthProfile"
+      ],
+      "imports": [],
       "purpose": "Source file.",
       "tags": [
         "api"
@@ -2879,8 +3012,8 @@
     {
       "path": "backend/src/prisma/prisma.service.ts",
       "language": "ts",
-      "lines": 160,
-      "bytes": 4629,
+      "lines": 200,
+      "bytes": 5641,
       "module": "backend:prisma",
       "exports": [
         "PrismaService"
@@ -2899,12 +3032,12 @@
       "path": "backend/src/prisma/seed.ts",
       "language": "ts",
       "lines": 666,
-      "bytes": 21202,
+      "bytes": 21208,
       "module": "backend:prisma",
       "exports": [],
       "imports": [
         "@prisma/client",
-        "argon2",
+        "bcryptjs",
         "fs",
         "path"
       ],
@@ -2971,8 +3104,8 @@
     {
       "path": "backend/test/app.e2e-spec.ts",
       "language": "ts",
-      "lines": 515,
-      "bytes": 16933,
+      "lines": 520,
+      "bytes": 17012,
       "module": "root",
       "exports": [],
       "imports": [
@@ -2980,7 +3113,7 @@
         "../src/prisma/prisma.service",
         "@nestjs/common",
         "@nestjs/testing",
-        "argon2",
+        "bcryptjs",
         "supertest"
       ],
       "purpose": "Source file.",
@@ -3001,7 +3134,7 @@
       "path": "backend/test/user-isolation.e2e-spec.ts",
       "language": "ts",
       "lines": 190,
-      "bytes": 5103,
+      "bytes": 5092,
       "module": "root",
       "exports": [],
       "imports": [
@@ -3086,7 +3219,7 @@
       "path": "docker-compose.yml",
       "language": "yaml",
       "lines": 45,
-      "bytes": 1043,
+      "bytes": 1051,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -3118,8 +3251,21 @@
     {
       "path": "docs/API_SURFACE.md",
       "language": "md",
-      "lines": 771,
-      "bytes": 29418,
+      "lines": 785,
+      "bytes": 30204,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/AUTH.md",
+      "language": "md",
+      "lines": 67,
+      "bytes": 2857,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3144,8 +3290,8 @@
     {
       "path": "docs/CONFIG_REFERENCE.md",
       "language": "md",
-      "lines": 48,
-      "bytes": 3414,
+      "lines": 52,
+      "bytes": 3889,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3183,8 +3329,21 @@
     {
       "path": "docs/DECISIONS.md",
       "language": "md",
-      "lines": 20,
-      "bytes": 2364,
+      "lines": 26,
+      "bytes": 3423,
+      "module": "docs",
+      "exports": [],
+      "imports": [],
+      "purpose": "Documentation artifact.",
+      "tags": [
+        "doc"
+      ]
+    },
+    {
+      "path": "docs/ENV.md",
+      "language": "md",
+      "lines": 15,
+      "bytes": 1611,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3196,8 +3355,8 @@
     {
       "path": "docs/FILE_MANIFEST.json",
       "language": "json",
-      "lines": 5114,
-      "bytes": 119752,
+      "lines": 5231,
+      "bytes": 122659,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3207,55 +3366,13 @@
     {
       "path": "docs/MODULE_SUMMARY.md",
       "language": "md",
-      "lines": 997,
-      "bytes": 37284,
+      "lines": 1004,
+      "bytes": 37608,
       "module": "docs",
       "exports": [],
       "imports": [],
       "purpose": "Documentation artifact.",
       "tags": [
-        "doc"
-      ]
-    },
-    {
-      "path": "docs/modules/DASHBOARD_MODULE.md",
-      "language": "md",
-      "lines": 118,
-      "bytes": 6557,
-      "module": "docs",
-      "exports": [],
-      "imports": [],
-      "purpose": "Documentation artifact.",
-      "tags": [
-        "api",
-        "doc"
-      ]
-    },
-    {
-      "path": "docs/modules/GROW_MODULE.md",
-      "language": "md",
-      "lines": 63,
-      "bytes": 4583,
-      "module": "docs",
-      "exports": [],
-      "imports": [],
-      "purpose": "Documentation artifact.",
-      "tags": [
-        "api",
-        "doc"
-      ]
-    },
-    {
-      "path": "docs/modules/TASK_MODULE.md",
-      "language": "md",
-      "lines": 115,
-      "bytes": 5045,
-      "module": "docs",
-      "exports": [],
-      "imports": [],
-      "purpose": "Documentation artifact.",
-      "tags": [
-        "api",
         "doc"
       ]
     },
@@ -3299,10 +3416,10 @@
       ]
     },
     {
-      "path": "docs/PLANS/dashboard-remediation-2024-11-xx.md",
+      "path": "docs/PLANS/prephase0-auth.md",
       "language": "md",
-      "lines": 31,
-      "bytes": 2125,
+      "lines": 34,
+      "bytes": 2111,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3312,10 +3429,10 @@
       ]
     },
     {
-      "path": "docs/PLANS/prephase0-userisolation.md",
+      "path": "docs/QA/prephase0-auth-checklist.md",
       "language": "md",
-      "lines": 39,
-      "bytes": 2937,
+      "lines": 24,
+      "bytes": 1388,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3453,8 +3570,8 @@
     {
       "path": "frontend/src/api/client.ts",
       "language": "ts",
-      "lines": 41,
-      "bytes": 942,
+      "lines": 40,
+      "bytes": 1004,
       "module": "frontend:api",
       "exports": [
         "API_BASE_URL",
@@ -3491,8 +3608,8 @@
     {
       "path": "frontend/src/api/hooks.ts",
       "language": "ts",
-      "lines": 1440,
-      "bytes": 42084,
+      "lines": 1419,
+      "bytes": 41493,
       "module": "frontend:api",
       "exports": [
         "BoostSuggestion",
@@ -3535,7 +3652,6 @@
         "useJobsQuery",
         "useKpiTodayQuery",
         "useKpiWeekQuery",
-        "useLoginMutation",
         "useMarkFollowupMutation",
         "useNetworkStarsQuery",
         "useNextActionQuery",
@@ -3558,11 +3674,9 @@
       ],
       "imports": [
         "../components/ToastProvider",
-        "../stores/session",
         "./ApiProvider",
         "@tanstack/react-query",
-        "axios",
-        "zod"
+        "axios"
       ],
       "purpose": "API client or hook implementation.",
       "tags": []
@@ -3609,8 +3723,8 @@
     {
       "path": "frontend/src/App.tsx",
       "language": "tsx",
-      "lines": 37,
-      "bytes": 1262,
+      "lines": 28,
+      "bytes": 1070,
       "module": "frontend:App.tsx",
       "exports": [],
       "imports": [
@@ -3621,7 +3735,7 @@
         "./pages/JobsPage",
         "./pages/LoginPage",
         "./pages/TasksPage",
-        "./stores/session",
+        "./routes/ProtectedRoute",
         "react-router-dom"
       ],
       "purpose": "Source file.",
@@ -3632,8 +3746,8 @@
     {
       "path": "frontend/src/components/__tests__/AddOutreachDialog.test.tsx",
       "language": "tsx",
-      "lines": 127,
-      "bytes": 4097,
+      "lines": 139,
+      "bytes": 4521,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3651,7 +3765,7 @@
       "path": "frontend/src/components/__tests__/HeatBadge.test.tsx",
       "language": "tsx",
       "lines": 68,
-      "bytes": 2031,
+      "bytes": 2201,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3668,8 +3782,8 @@
     {
       "path": "frontend/src/components/__tests__/JobHistoryModal.test.tsx",
       "language": "tsx",
-      "lines": 100,
-      "bytes": 3624,
+      "lines": 110,
+      "bytes": 4008,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3688,8 +3802,8 @@
     {
       "path": "frontend/src/components/__tests__/JobWizardModal.test.tsx",
       "language": "tsx",
-      "lines": 118,
-      "bytes": 4174,
+      "lines": 131,
+      "bytes": 4551,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3707,8 +3821,8 @@
     {
       "path": "frontend/src/components/__tests__/LinkJobDialog.test.tsx",
       "language": "tsx",
-      "lines": 78,
-      "bytes": 2695,
+      "lines": 87,
+      "bytes": 2954,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3725,8 +3839,8 @@
     {
       "path": "frontend/src/components/__tests__/UpdateJobStageDialog.test.tsx",
       "language": "tsx",
-      "lines": 48,
-      "bytes": 1585,
+      "lines": 54,
+      "bytes": 1781,
       "module": "frontend:components",
       "exports": [],
       "imports": [
@@ -3743,8 +3857,8 @@
     {
       "path": "frontend/src/components/AddOutreachDialog.tsx",
       "language": "tsx",
-      "lines": 636,
-      "bytes": 25767,
+      "lines": 640,
+      "bytes": 25852,
       "module": "frontend:components",
       "exports": [
         "AddOutreachDialog"
@@ -3803,7 +3917,7 @@
       "path": "frontend/src/components/ContactDrawer.tsx",
       "language": "tsx",
       "lines": 1010,
-      "bytes": 47929,
+      "bytes": 47946,
       "module": "frontend:components",
       "exports": [
         "ContactDrawer"
@@ -3979,8 +4093,8 @@
     {
       "path": "frontend/src/components/dashboard/HeatCompact.tsx",
       "language": "tsx",
-      "lines": 93,
-      "bytes": 3830,
+      "lines": 94,
+      "bytes": 3864,
       "module": "frontend:components",
       "exports": [
         "HeatCompact"
@@ -4311,7 +4425,7 @@
       "path": "frontend/src/components/JobHistoryModal.tsx",
       "language": "tsx",
       "lines": 521,
-      "bytes": 22871,
+      "bytes": 22878,
       "module": "frontend:components",
       "exports": [
         "JobHistoryModal"
@@ -4331,8 +4445,8 @@
     {
       "path": "frontend/src/components/JobListTable.tsx",
       "language": "tsx",
-      "lines": 178,
-      "bytes": 6726,
+      "lines": 180,
+      "bytes": 6768,
       "module": "frontend:components",
       "exports": [
         "JobListTable"
@@ -4350,7 +4464,7 @@
       "path": "frontend/src/components/JobWizardModal.tsx",
       "language": "tsx",
       "lines": 621,
-      "bytes": 28988,
+      "bytes": 28999,
       "module": "frontend:components",
       "exports": [
         "JobWizardModal"
@@ -4549,8 +4663,8 @@
     {
       "path": "frontend/src/components/tasks/TaskDrawer.tsx",
       "language": "tsx",
-      "lines": 512,
-      "bytes": 19794,
+      "lines": 521,
+      "bytes": 20024,
       "module": "frontend:components",
       "exports": [
         "TaskDrawer"
@@ -4574,8 +4688,8 @@
     {
       "path": "frontend/src/components/ToastProvider.tsx",
       "language": "tsx",
-      "lines": 93,
-      "bytes": 3132,
+      "lines": 103,
+      "bytes": 3284,
       "module": "frontend:components",
       "exports": [
         "ToastDescriptor",
@@ -4611,6 +4725,84 @@
       ]
     },
     {
+      "path": "frontend/src/components/UserStatus.tsx",
+      "language": "tsx",
+      "lines": 35,
+      "bytes": 1007,
+      "module": "frontend:components",
+      "exports": [
+        "UserStatus"
+      ],
+      "imports": [
+        "../features/auth/useAuth"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/features/auth/LoginForm.tsx",
+      "language": "tsx",
+      "lines": 69,
+      "bytes": 2227,
+      "module": "frontend:features",
+      "exports": [
+        "LoginForm"
+      ],
+      "imports": [
+        "./useAuth",
+        "@hookform/resolvers/zod",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/features/auth/RegisterForm.tsx",
+      "language": "tsx",
+      "lines": 92,
+      "bytes": 3232,
+      "module": "frontend:features",
+      "exports": [
+        "RegisterForm"
+      ],
+      "imports": [
+        "./useAuth",
+        "@hookform/resolvers/zod",
+        "react-hook-form",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/features/auth/useAuth.ts",
+      "language": "ts",
+      "lines": 163,
+      "bytes": 4986,
+      "module": "frontend:features",
+      "exports": [
+        "useAuth"
+      ],
+      "imports": [
+        "../../api/ApiProvider",
+        "../../api/hooks",
+        "../../components/ToastProvider",
+        "../../stores/session",
+        "@tanstack/react-query",
+        "react",
+        "zod"
+      ],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
       "path": "frontend/src/index.css",
       "language": "css",
       "lines": 21,
@@ -4624,12 +4816,11 @@
     {
       "path": "frontend/src/layouts/__tests__/ShellLayout.test.tsx",
       "language": "tsx",
-      "lines": 31,
-      "bytes": 1017,
+      "lines": 37,
+      "bytes": 1143,
       "module": "frontend:layouts",
       "exports": [],
       "imports": [
-        "../../stores/session",
         "../ShellLayout",
         "@testing-library/react",
         "react-router-dom",
@@ -4643,8 +4834,8 @@
     {
       "path": "frontend/src/layouts/ShellLayout.tsx",
       "language": "tsx",
-      "lines": 70,
-      "bytes": 2694,
+      "lines": 65,
+      "bytes": 2440,
       "module": "frontend:layouts",
       "exports": [
         "ShellLayout"
@@ -4652,7 +4843,7 @@
       "imports": [
         "../api/hooks",
         "../components/NextActionCard",
-        "../stores/session",
+        "../components/UserStatus",
         "react-router-dom"
       ],
       "purpose": "Source file.",
@@ -4686,7 +4877,7 @@
       "path": "frontend/src/pages/__tests__/Dashboard.test.tsx",
       "language": "tsx",
       "lines": 126,
-      "bytes": 3691,
+      "bytes": 3725,
       "module": "frontend:pages",
       "exports": [],
       "imports": [
@@ -4704,8 +4895,8 @@
     {
       "path": "frontend/src/pages/__tests__/JobsPage.test.tsx",
       "language": "tsx",
-      "lines": 252,
-      "bytes": 7737,
+      "lines": 272,
+      "bytes": 8694,
       "module": "frontend:pages",
       "exports": [],
       "imports": [
@@ -4725,7 +4916,7 @@
       "path": "frontend/src/pages/__tests__/TasksPage.test.tsx",
       "language": "tsx",
       "lines": 63,
-      "bytes": 1764,
+      "bytes": 1786,
       "module": "frontend:pages",
       "exports": [],
       "imports": [
@@ -4795,7 +4986,7 @@
       "path": "frontend/src/pages/GrowPage.tsx",
       "language": "tsx",
       "lines": 288,
-      "bytes": 13061,
+      "bytes": 13080,
       "module": "frontend:pages",
       "exports": [
         "GrowPage"
@@ -4818,8 +5009,8 @@
     {
       "path": "frontend/src/pages/JobsPage.tsx",
       "language": "tsx",
-      "lines": 795,
-      "bytes": 29394,
+      "lines": 799,
+      "bytes": 29546,
       "module": "frontend:pages",
       "exports": [
         "JobsPage"
@@ -4847,17 +5038,18 @@
     {
       "path": "frontend/src/pages/LoginPage.tsx",
       "language": "tsx",
-      "lines": 71,
-      "bytes": 2701,
+      "lines": 45,
+      "bytes": 1830,
       "module": "frontend:pages",
       "exports": [
         "LoginPage"
       ],
       "imports": [
-        "../api/hooks",
-        "@hookform/resolvers/zod",
-        "react-hook-form",
-        "zod"
+        "../features/auth/LoginForm",
+        "../features/auth/RegisterForm",
+        "../features/auth/useAuth",
+        "react",
+        "react-router-dom"
       ],
       "purpose": "Page-level React component tied to routing.",
       "tags": [
@@ -4887,10 +5079,28 @@
       ]
     },
     {
+      "path": "frontend/src/routes/ProtectedRoute.tsx",
+      "language": "tsx",
+      "lines": 27,
+      "bytes": 664,
+      "module": "frontend:routes",
+      "exports": [
+        "ProtectedRoute"
+      ],
+      "imports": [
+        "../features/auth/useAuth",
+        "react-router-dom"
+      ],
+      "purpose": "Source file.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
       "path": "frontend/src/stores/session.ts",
       "language": "ts",
-      "lines": 29,
-      "bytes": 609,
+      "lines": 34,
+      "bytes": 789,
       "module": "frontend:stores",
       "exports": [
         "SessionUser",
@@ -4970,7 +5180,7 @@
       "path": "frontend/tsconfig.json",
       "language": "json",
       "lines": 23,
-      "bytes": 591,
+      "bytes": 601,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5004,10 +5214,21 @@
       "tags": []
     },
     {
+      "path": "package-lock.json",
+      "language": "json",
+      "lines": 118,
+      "bytes": 4112,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
       "path": "package.json",
       "language": "json",
-      "lines": 24,
-      "bytes": 1000,
+      "lines": 30,
+      "bytes": 1109,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5019,6 +5240,17 @@
       "language": "text",
       "lines": 179,
       "bytes": 6011,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20250214090000_email_auth/migration.sql",
+      "language": "text",
+      "lines": 3,
+      "bytes": 70,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5128,7 +5360,7 @@
       "path": "prisma/schema.prisma",
       "language": "text",
       "lines": 389,
-      "bytes": 9365,
+      "bytes": 9372,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5154,7 +5386,7 @@
       "path": "scripts/context/config.mjs",
       "language": "js",
       "lines": 1031,
-      "bytes": 39849,
+      "bytes": 39870,
       "module": "scripts",
       "exports": [
         "chunkDefinitions",
@@ -5172,7 +5404,7 @@
       "path": "scripts/docker-entrypoint-backend.sh",
       "language": "sh",
       "lines": 28,
-      "bytes": 651,
+      "bytes": 645,
       "module": "scripts",
       "exports": [],
       "imports": [],

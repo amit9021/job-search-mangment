@@ -2,7 +2,7 @@
 id: chunk-backend-notifications
 title: Backend · Notifications API
 module: backend-notifications
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:43:23.366Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/notifications/notifications.controller.ts","backend/src/modules/notifications/notifications.service.ts"]
 exports: ["NotificationsController","NotificationsService"]

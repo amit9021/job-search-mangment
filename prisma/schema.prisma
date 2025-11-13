@@ -10,18 +10,18 @@ datasource db {
 
 model User {
   id           String   @id @default(cuid())
-  username     String   @unique
+  email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  companies        Company[]
-  contacts         Contact[]
-  jobs             Job[]
-  tasks            Task[]
-  growthReviews    GrowthReview[]
-  growthEvents     GrowthEvent[]
-  growthBoostTasks GrowthBoostTask[]
+  companies         Company[]
+  contacts          Contact[]
+  jobs              Job[]
+  tasks             Task[]
+  growthReviews     GrowthReview[]
+  growthEvents      GrowthEvent[]
+  growthBoostTasks  GrowthBoostTask[]
   projectHighlights ProjectHighlight[]
 }
 

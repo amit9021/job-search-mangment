@@ -2,7 +2,7 @@
 id: chunk-backend-jobs
 title: Backend · Jobs Controller & Service
 module: backend-jobs
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:43:23.366Z
 tags: ["api","service","db"]
 source_paths: ["backend/src/modules/jobs/jobs.controller.ts","backend/src/modules/jobs/jobs.service.ts"]
 exports: ["JobsController","JobsService"]

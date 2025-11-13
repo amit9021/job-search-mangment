@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-09T08:03:21.008Z",
+  "generated_at": "2025-02-14T08:15:00.000Z",
   "chunks": [
     {
       "id": "chunk-backend-auth",
@@ -12,19 +12,25 @@
       "module": "backend-auth",
       "exports": [
         "AuthController",
-        "AuthService"
+        "AuthProfile",
+        "AuthService",
+        "AuthTokens"
       ],
       "imports": [
         "../../common/decorators/public.decorator",
         "../../common/decorators/user.decorator",
+        "../../common/rate-limit/rate-limit.decorator",
+        "../../common/rate-limit/rate-limit.guard",
         "../../prisma/prisma.service",
         "./auth.service",
         "./dto/login.dto",
+        "./dto/register.dto",
         "@nestjs/common",
         "@nestjs/config",
-        "@nestjs/jwt"
+        "@nestjs/jwt",
+        "bcryptjs"
       ],
-      "tokens_est": 308,
+      "tokens_est": 372,
       "tags": [
         "api",
         "service"
@@ -577,7 +583,6 @@
         "useJobsQuery",
         "useKpiTodayQuery",
         "useKpiWeekQuery",
-        "useLoginMutation",
         "useMarkFollowupMutation",
         "useNetworkStarsQuery",
         "useNextActionQuery",
@@ -601,13 +606,11 @@
       ],
       "imports": [
         "../components/ToastProvider",
-        "../stores/session",
         "./ApiProvider",
         "@tanstack/react-query",
-        "axios",
-        "zod"
+        "axios"
       ],
-      "tokens_est": 812,
+      "tokens_est": 814,
       "tags": [
         "client",
         "ui"
@@ -619,17 +622,22 @@
       "source_path": [
         "frontend/src/App.tsx",
         "frontend/src/layouts/ShellLayout.tsx",
-        "frontend/src/stores/session.ts"
+        "frontend/src/stores/session.ts",
+        "frontend/src/routes/ProtectedRoute.tsx",
+        "frontend/src/components/UserStatus.tsx"
       ],
       "module": "frontend-shell",
       "exports": [
         "SessionUser",
         "ShellLayout",
-        "useSessionStore"
+        "useSessionStore",
+        "ProtectedRoute",
+        "UserStatus"
       ],
       "imports": [
         "../api/hooks",
         "../components/NextActionCard",
+        "../components/UserStatus",
         "../stores/session",
         "./layouts/ShellLayout",
         "./pages/ContactsPage",
@@ -638,12 +646,13 @@
         "./pages/JobsPage",
         "./pages/LoginPage",
         "./pages/TasksPage",
+        "./routes/ProtectedRoute",
         "./stores/session",
         "react-router-dom",
         "zustand",
         "zustand/middleware"
       ],
-      "tokens_est": 153,
+      "tokens_est": 280,
       "tags": [
         "ui",
         "state"
@@ -745,6 +754,115 @@
       "tokens_est": 50,
       "tags": [
         "ui"
+      ]
+    },
+    {
+      "id": "chunk-backend-auth-controller",
+      "path": "docs/chunks/chunk-backend-auth-controller.md",
+      "source_path": [
+        "backend/src/modules/auth/auth.controller.ts"
+      ],
+      "module": "backend-auth",
+      "exports": [
+        "AuthController"
+      ],
+      "imports": [
+        "../../common/decorators/public.decorator",
+        "../../common/decorators/user.decorator",
+        "../../common/rate-limit/rate-limit.decorator",
+        "../../common/rate-limit/rate-limit.guard",
+        "./auth.service",
+        "./dto/login.dto",
+        "./dto/register.dto",
+        "@nestjs/common"
+      ],
+      "tokens_est": 420,
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "id": "chunk-backend-auth-service",
+      "path": "docs/chunks/chunk-backend-auth-service.md",
+      "source_path": [
+        "backend/src/modules/auth/auth.service.ts"
+      ],
+      "module": "backend-auth",
+      "exports": [
+        "AuthService",
+        "AuthProfile",
+        "AuthTokens"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/jwt",
+        "bcryptjs"
+      ],
+      "tokens_est": 520,
+      "tags": [
+        "service",
+        "security"
+      ]
+    },
+    {
+      "id": "chunk-backend-jwt-strategy",
+      "path": "docs/chunks/chunk-backend-jwt-strategy.md",
+      "source_path": [
+        "backend/src/modules/auth/jwt.strategy.ts",
+        "backend/src/common/guards/jwt-auth.guard.ts",
+        "backend/src/common/rate-limit/rate-limit.guard.ts"
+      ],
+      "module": "backend-auth",
+      "exports": [
+        "JwtStrategy",
+        "JwtAuthGuard",
+        "RateLimitGuard"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../../common/context/request-context.service",
+        "@nestjs/passport",
+        "@nestjs/common",
+        "@nestjs/core"
+      ],
+      "tokens_est": 610,
+      "tags": [
+        "security",
+        "guard"
+      ]
+    },
+    {
+      "id": "chunk-frontend-useAuth-and-forms",
+      "path": "docs/chunks/chunk-frontend-useAuth-and-forms.md",
+      "source_path": [
+        "frontend/src/features/auth/useAuth.ts",
+        "frontend/src/features/auth/LoginForm.tsx",
+        "frontend/src/features/auth/RegisterForm.tsx",
+        "frontend/src/routes/ProtectedRoute.tsx",
+        "frontend/src/components/UserStatus.tsx"
+      ],
+      "module": "frontend-auth",
+      "exports": [
+        "useAuth",
+        "LoginForm",
+        "RegisterForm",
+        "ProtectedRoute",
+        "UserStatus"
+      ],
+      "imports": [
+        "../../api/ApiProvider",
+        "../../api/hooks",
+        "../../components/ToastProvider",
+        "../../stores/session",
+        "react-hook-form",
+        "zod"
+      ],
+      "tokens_est": 780,
+      "tags": [
+        "ui",
+        "state"
       ]
     }
   ]

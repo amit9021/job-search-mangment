@@ -1,18 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { z } from 'zod';
 import { useApi } from './ApiProvider';
-import { useSessionStore } from '../stores/session';
 import { useToast } from '../components/ToastProvider';
-
-const loginSchema = z.object({
-  token: z.string(),
-  expiresIn: z.string(),
-  user: z.object({
-    id: z.string(),
-    username: z.string()
-  })
-});
 
 export type ParsedApiError = {
   message: string;
@@ -91,19 +80,6 @@ export type CreateJobMutationInput = {
 export type DeleteJobMutationInput = {
   id: string;
   hard?: boolean;
-};
-
-export const useLoginMutation = () => {
-  const api = useApi();
-  const setSession = useSessionStore((state) => state.setSession);
-  return useMutation({
-    mutationFn: async (payload: { username: string; password: string }) => {
-      const response = await api.post('/auth/login', payload);
-      const parsed = loginSchema.parse(response.data);
-      setSession({ token: parsed.token, user: parsed.user });
-      return parsed;
-    }
-  });
 };
 
 export const useKpiTodayQuery = () => {

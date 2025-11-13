@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 type RequestStore = {
   requestId: string;
   userId?: string;
-  username?: string;
+  email?: string;
 };
 
 @Injectable()
@@ -19,11 +19,11 @@ export class RequestContextService {
     return this.storage.run(context, callback);
   }
 
-  setUser(user: { id: string; username?: string }) {
+  setUser(user: { id: string; email?: string }) {
     const store = this.storage.getStore();
     if (store) {
       store.userId = user.id;
-      store.username = user.username;
+      store.email = user.email;
     }
   }
 

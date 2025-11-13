@@ -8,20 +8,20 @@ export const moduleSections = [
         path: 'backend/src/modules/auth',
         tags: ['api', 'service'],
         what: [
-          'Single-admin authentication using env-managed credentials and JWT issuance.',
-          'Exposes /auth/login for token minting and /auth/me for session introspection.'
+          'Email + password authentication backed by Prisma users, bcrypt hashing, and JWT issuance.',
+          'Exposes register/login/logout/me endpoints plus rate-limited guards and OAuth-ready stubs.'
         ],
         invariants: [
-          'Only the admin credentials defined via env/ConfigService are accepted; no multi-user state.',
-          'Prisma upsert guarantees the backing User row exists for audit/logging.'
+          'Passwords are hashed with bcrypt using the configured rounds; JWTs expire after ~7 days.',
+          'Rate limit guard throttles register/login per IP to mitigate brute-force.'
         ],
         failureModes: [
-          'Invalid credentials raise UnauthorizedException, surfacing as HTTP 401.',
-          'Missing JWT secret or expires-in configuration will produce unsigned/short-lived tokens.'
+          'Invalid credentials raise UnauthorizedException (401).',
+          'Missing JWT secret/expiry or misconfigured bcrypt rounds will break token issuance.'
         ],
         extend: [
-          'Add new login flows by expanding AuthService and wiring additional DTO validation.',
-          'Keep JwtStrategy/guards aligned with any changes to the session payload.'
+          'Implement OAuth providers by honoring AuthProvider interface and flipping AUTH_OAUTH_ENABLED.',
+          'Add refresh tokens/blacklists by extending AuthService + controller responses.'
         ]
       },
       {

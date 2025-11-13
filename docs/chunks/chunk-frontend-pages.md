@@ -2,7 +2,7 @@
 id: chunk-frontend-pages
 title: Frontend · Entity Pages
 module: frontend-pages
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:43:23.366Z
 tags: ["ui"]
 source_paths: ["frontend/src/pages/JobsPage.tsx","frontend/src/pages/ContactsPage.tsx","frontend/src/pages/GrowPage.tsx","frontend/src/pages/TasksPage.tsx"]
 exports: ["ContactsPage","GrowPage","JobsPage","TasksPage"]

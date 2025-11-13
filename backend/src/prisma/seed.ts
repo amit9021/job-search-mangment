@@ -11,7 +11,7 @@ import {
   ReferralKind,
   EventStatus
 } from '@prisma/client';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 
 type MockData = {
   companies: { name: string; domain: string }[];
@@ -47,7 +47,7 @@ const loadMockData = (): MockData => {
   return JSON.parse(fs.readFileSync(mockPath, 'utf-8')) as MockData;
 };
 
-async function resetData(preserveAdminUsername: string) {
+async function resetData(preserveAdminEmail: string) {
   await prisma.$transaction([
     prisma.projectHighlight.deleteMany({}),
     prisma.growthBoostTask.deleteMany({}),
@@ -70,7 +70,7 @@ async function resetData(preserveAdminUsername: string) {
     prisma.jobStatusHistory.deleteMany({}),
     prisma.job.deleteMany({}),
     prisma.company.deleteMany({}),
-    prisma.user.deleteMany({ where: { username: { not: preserveAdminUsername } } })
+    prisma.user.deleteMany({ where: { email: { not: preserveAdminEmail } } })
   ]);
 }
 
@@ -608,16 +608,16 @@ async function seedRecommendations(
 
 async function main() {
   const mock = loadMockData();
-  const adminUsername = process.env.ADMIN_USERNAME ?? 'admin';
+  const adminEmail = (process.env.ADMIN_EMAIL ?? 'founder@example.com').toLowerCase();
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'change_me';
-  const passwordHash = await argon2.hash(adminPassword);
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
 
-  await resetData(adminUsername);
+  await resetData(adminEmail);
 
   const user = await prisma.user.upsert({
-    where: { username: adminUsername },
+    where: { email: adminEmail },
     update: { passwordHash },
-    create: { username: adminUsername, passwordHash }
+    create: { email: adminEmail, passwordHash }
   });
 
   const ownerId = user.id;

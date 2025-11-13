@@ -2,12 +2,12 @@
 id: chunk-frontend-api
 title: Frontend · API Layer
 module: frontend-api
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:43:23.366Z
 tags: ["client","ui"]
 source_paths: ["frontend/src/api/client.ts","frontend/src/api/hooks.ts","frontend/src/api/useDashboard.ts","frontend/src/api/useStats.ts"]
-exports: ["API_BASE_URL","BoostSuggestion","CreateJobMutationInput","DashboardActionSuggestion","DashboardNotificationSeverity","DashboardQueueItemType","DashboardSummaryResponse","DashboardSummaryResult","DeleteJobMutationInput","GrowthBoostTask","GrowthEvent","GrowthReview","JobOutreachPayload","ParsedApiError","ProjectHighlight","StatsSeriesPoint","TaskModel","TaskQuickParseResult","TaskQuickParseSuggestion","TaskView","WeeklySummaryResponse","createApiClient","parseApiError","useBoostSuggestionsMutation","useBoostsQuery","useCompaniesQuery","useContactDetailQuery","useContactSearchQuery","useContactsQuery","useCreateCompanyMutation","useCreateContactMutation","useCreateGrowthBoostTaskMutation","useCreateGrowthEventMutation","useCreateGrowthReviewMutation","useCreateJobMutation","useCreateJobOutreachMutation","useCreateProjectHighlightMutation","useDashboardSummary","useDeleteContactMutation","useDeleteJobMutation","useDeleteOutreachMutation","useEventsQuery","useFollowupsQuery","useJobDetailQuery","useJobHeatExplainQuery","useJobHistoryQuery","useJobSearchQuery","useJobsQuery","useKpiTodayQuery","useKpiWeekQuery","useLoginMutation","useMarkFollowupMutation","useNetworkStarsQuery","useNextActionQuery","useNotificationsQuery","useProjectsQuery","useReviewsQuery","useTaskCreateMutation","useTaskDeleteMutation","useTaskKpisQuery","useTaskQuickParseMutation","useTaskSnoozeMutation","useTaskUpdateMutation","useTasksQuery","useUpdateContactMutation","useUpdateGrowthBoostTaskMutation","useUpdateJobMutation","useUpdateJobStageMutation","useUpdateOutreachMutation","useUpdateProjectHighlightMutation","useWeeklySummary"]
-imports: ["../components/ToastProvider","../stores/session","./ApiProvider","@tanstack/react-query","axios","zod"]
-tokens_est: 812
+exports: ["API_BASE_URL","BoostSuggestion","CreateJobMutationInput","DashboardActionSuggestion","DashboardNotificationSeverity","DashboardQueueItemType","DashboardSummaryResponse","DashboardSummaryResult","DeleteJobMutationInput","GrowthBoostTask","GrowthEvent","GrowthReview","JobOutreachPayload","ParsedApiError","ProjectHighlight","StatsSeriesPoint","TaskModel","TaskQuickParseResult","TaskQuickParseSuggestion","TaskView","WeeklySummaryResponse","createApiClient","parseApiError","useBoostSuggestionsMutation","useBoostsQuery","useCompaniesQuery","useContactDetailQuery","useContactSearchQuery","useContactsQuery","useCreateCompanyMutation","useCreateContactMutation","useCreateGrowthBoostTaskMutation","useCreateGrowthEventMutation","useCreateGrowthReviewMutation","useCreateJobMutation","useCreateJobOutreachMutation","useCreateProjectHighlightMutation","useDashboardSummary","useDeleteContactMutation","useDeleteJobMutation","useDeleteOutreachMutation","useEventsQuery","useFollowupsQuery","useJobDetailQuery","useJobHeatExplainQuery","useJobHistoryQuery","useJobSearchQuery","useJobsQuery","useKpiTodayQuery","useKpiWeekQuery","useMarkFollowupMutation","useNetworkStarsQuery","useNextActionQuery","useNotificationsQuery","useProjectsQuery","useReviewsQuery","useTaskCreateMutation","useTaskDeleteMutation","useTaskKpisQuery","useTaskQuickParseMutation","useTaskSnoozeMutation","useTaskUpdateMutation","useTasksQuery","useUpdateContactMutation","useUpdateGrowthBoostTaskMutation","useUpdateJobMutation","useUpdateJobStageMutation","useUpdateOutreachMutation","useUpdateProjectHighlightMutation","useWeeklySummary"]
+imports: ["../components/ToastProvider","./ApiProvider","@tanstack/react-query","axios"]
+tokens_est: 814
 ---
 
 ### Summary
@@ -68,6 +68,7 @@ export type CreateJobMutationInput = {
     personalizationScore: number;
     outcome?: string;
     content?: string;
+    context?: string;
     createFollowUp?: boolean;
     followUpNote?: string;
   };

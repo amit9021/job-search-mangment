@@ -1,6 +1,6 @@
 # Module Summary
 
-Generated: 2025-11-09T08:03:21.008Z
+Generated: 2025-11-09T09:43:23.366Z
 
 Each section summarizes responsibilities, key artifacts, and guardrails for extending the module.
 
@@ -11,33 +11,39 @@ Each section summarizes responsibilities, key artifacts, and guardrails for exte
 **Path**: `backend/src/modules/auth`
 
 **What it does**
-- Single-admin authentication using env-managed credentials and JWT issuance.
-- Exposes /auth/login for token minting and /auth/me for session introspection.
+- Email + password authentication backed by Prisma users, bcrypt hashing, and JWT issuance.
+- Exposes register/login/logout/me endpoints plus rate-limited guards and OAuth-ready stubs.
 
 **Key files**
 - `backend/src/modules/auth/auth.controller.ts` — NestJS controller exposing HTTP routes.
 - `backend/src/modules/auth/auth.module.ts` — NestJS module wiring providers/controllers.
 - `backend/src/modules/auth/auth.service.ts` — Business logic service consumed by controllers.
 - `backend/src/modules/auth/dto/login.dto.ts` — DTO or schema definition for request/response validation.
+- `backend/src/modules/auth/dto/register.dto.ts` — DTO or schema definition for request/response validation.
 
 **Important types/functions**
 - `AuthController`
 - `AuthModule`
+- `AuthProfile`
 - `AuthService`
+- `AuthTokens`
 - `LoginDto`
+- `RegisterDto`
 - `JwtStrategy`
+- `OAuthController`
+- `AuthProvider`
 
 **Invariants & contracts**
-- Only the admin credentials defined via env/ConfigService are accepted; no multi-user state.
-- Prisma upsert guarantees the backing User row exists for audit/logging.
+- Passwords are hashed with bcrypt using the configured rounds; JWTs expire after ~7 days.
+- Rate limit guard throttles register/login per IP to mitigate brute-force.
 
 **Failure modes**
-- Invalid credentials raise UnauthorizedException, surfacing as HTTP 401.
-- Missing JWT secret or expires-in configuration will produce unsigned/short-lived tokens.
+- Invalid credentials raise UnauthorizedException (401).
+- Missing JWT secret/expiry or misconfigured bcrypt rounds will break token issuance.
 
 **How to extend / pitfalls**
-- Add new login flows by expanding AuthService and wiring additional DTO validation.
-- Keep JwtStrategy/guards aligned with any changes to the session payload.
+- Implement OAuth providers by honoring AuthProvider interface and flipping AUTH_OAUTH_ENABLED.
+- Add refresh tokens/blacklists by extending AuthService + controller responses.
 
 ### Companies
 
@@ -945,6 +951,7 @@ Each section summarizes responsibilities, key artifacts, and guardrails for exte
 - `backend/src/common/context/request-context.service.ts` — Business logic service consumed by controllers.
 - `backend/src/common/dto/id-param.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/common/health.controller.ts` — NestJS controller exposing HTTP routes.
+- `backend/src/common/rate-limit/rate-limit.service.ts` — Business logic service consumed by controllers.
 
 **Important types/functions**
 - `RequestContextModule`
