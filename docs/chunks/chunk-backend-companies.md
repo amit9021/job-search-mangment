@@ -2,7 +2,7 @@
 id: chunk-backend-companies
 title: Backend · Companies API
 module: backend-companies
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:09:06.471Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/companies/companies.controller.ts","backend/src/modules/companies/companies.service.ts"]
 exports: ["CompaniesController","CompaniesService"]

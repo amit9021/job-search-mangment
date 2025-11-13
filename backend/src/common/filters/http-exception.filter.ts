@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 import {
   ArgumentsHost,
@@ -8,13 +8,26 @@ import {
   HttpStatus,
   Logger
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { ZodError } from 'zod';
+
+import { RequestContextService } from '../context/request-context.service';
+
+const REQUEST_ID_HEADER = 'x-request-id';
+const REDACTED_VALUE = '[REDACTED]';
+const CIRCULAR_VALUE = '[Circular]';
+const SENSITIVE_FIELDS = new Set(['authorization', 'password']);
+
+type PrismaKnownError = Error & {
+  code: string;
+  meta?: Record<string, unknown>;
+};
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
+
+  constructor(private readonly requestContext: RequestContextService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -47,7 +60,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           details = rest;
         }
       }
-    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+    } else if (isPrismaKnownError(exception)) {
       switch (exception.code) {
         case 'P2003':
           status = HttpStatus.CONFLICT;
@@ -74,7 +87,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = exception.message || message;
     }
 
-    const requestId = request.headers['x-request-id']?.toString() ?? randomUUID();
+    const contextRequestId = this.requestContext.getRequestId();
+    const requestIdHeader = extractRequestId(request.headers[REQUEST_ID_HEADER]);
+    const requestId = contextRequestId ?? requestIdHeader ?? randomUUID();
 
     const responseBody: Record<string, unknown> = {
       statusCode: status,
@@ -93,11 +108,109 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const stack = exception instanceof Error ? exception.stack : undefined;
-    this.logger.error(
-      `${request.method} ${request.url} -> ${status} requestId=${requestId} message=${message}`,
-      stack
-    );
+    response.setHeader(REQUEST_ID_HEADER, requestId);
+    const sanitizedDetails = details ? sanitize(details) : undefined;
+    const logPayload: Record<string, unknown> = {
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      context: HttpExceptionFilter.name,
+      requestId,
+      method: request.method,
+      path: request.url,
+      status,
+      message,
+      errorCode,
+      errorName: exception instanceof Error ? exception.name : typeof exception,
+      userId: this.requestContext.getUserId() ?? undefined,
+      details: sanitizedDetails
+    };
+
+    if (!sanitizedDetails) {
+      delete logPayload.details;
+    }
+    if (!errorCode) {
+      delete logPayload.errorCode;
+    }
+    this.logger.error(safeStringify(logPayload), stack);
 
     response.status(status).json(responseBody);
   }
+}
+
+function isPrismaKnownError(error: unknown): error is PrismaKnownError {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const maybeWithCode = error as { code?: unknown };
+  if (typeof maybeWithCode.code !== 'string') {
+    return false;
+  }
+  const constructorName = error.constructor?.name ?? '';
+  if (constructorName !== 'PrismaClientKnownRequestError') {
+    return false;
+  }
+  const metaValue = (error as { meta?: unknown }).meta;
+  if (metaValue && typeof metaValue !== 'object') {
+    return false;
+  }
+  return true;
+}
+
+function extractRequestId(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    const candidate = value.find((entry) => typeof entry === 'string' && entry.trim().length > 0);
+    return candidate?.trim();
+  }
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  return undefined;
+}
+
+function sanitize(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
+  if (isUnknownArray(value)) {
+    if (seen.has(value)) {
+      return CIRCULAR_VALUE;
+    }
+    seen.add(value);
+    return value.map((entry) => sanitize(entry, seen));
+  }
+  if (isPlainObject(value)) {
+    if (seen.has(value)) {
+      return CIRCULAR_VALUE;
+    }
+    seen.add(value);
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (SENSITIVE_FIELDS.has(key.toLowerCase())) {
+        result[key] = REDACTED_VALUE;
+        continue;
+      }
+      result[key] = sanitize(val, seen);
+    }
+    return result;
+  }
+  return value;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value) as object | null;
+  return prototype === Object.prototype || prototype === null;
+}
+
+function safeStringify(payload: Record<string, unknown>) {
+  const replacer = (_key: string, val: unknown) => {
+    if (typeof val === 'bigint') {
+      return val.toString();
+    }
+    return val;
+  };
+  return JSON.stringify(payload, replacer);
 }

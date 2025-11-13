@@ -2,7 +2,7 @@
 id: chunk-backend-auth
 title: Backend · Auth HTTP + Service
 module: backend-auth
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:09:06.471Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/auth/auth.controller.ts","backend/src/modules/auth/auth.service.ts"]
 exports: ["AuthController","AuthService"]
