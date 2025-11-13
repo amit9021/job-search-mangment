@@ -17,7 +17,7 @@
     "prisma:migrate": "node ../scripts/use-env.js --env development prisma migrate dev",
     "prisma:generate": "node ../scripts/use-env.js --env development prisma generate",
     "prisma:seed": "node ../scripts/use-env.js --env development ts-node --transpile-only src/prisma/seed.ts",
-    "prisma:reset": "node ../scripts/use-env.js --env development prisma migrate reset --force --skip-generate --skip-seed && npm run prisma:seed"
+    "prisma:reset": "node ../scripts/use-env.js --env development prisma migrate reset --force --skip-generate --skip-seed "
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

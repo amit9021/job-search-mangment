@@ -137,13 +137,19 @@ export class JobsService {
   async create(data: InferDto<typeof CreateJobDto>) {
     const createdJob = await this.prisma.$transaction(async (tx) => {
       const stage = data.stage ?? JobStage.APPLIED;
+      const initialApplicationSentAt = data.initialApplication
+        ? data.initialApplication.dateSent
+          ? new Date(data.initialApplication.dateSent)
+          : new Date()
+        : null;
       const job = await tx.job.create({
         data: {
           company: data.company,
           role: data.role,
           sourceUrl: data.sourceUrl ?? null,
           heat: data.heat ?? 0,
-          stage
+          stage,
+          ...(initialApplicationSentAt ? { lastTouchAt: initialApplicationSentAt } : {})
         }
       });
 
@@ -155,22 +161,14 @@ export class JobsService {
         }
       });
 
-      if (data.initialApplication) {
-        const sentAt = data.initialApplication.dateSent
-          ? new Date(data.initialApplication.dateSent)
-          : new Date();
+      if (data.initialApplication && initialApplicationSentAt) {
         await tx.jobApplication.create({
           data: {
             jobId: job.id,
-            dateSent: sentAt,
+            dateSent: initialApplicationSentAt,
             tailoringScore: data.initialApplication.tailoringScore,
             cvVersionId: data.initialApplication.cvVersionId ?? null
           }
-        });
-
-        await tx.job.update({
-          where: { id: job.id },
-          data: { lastTouchAt: sentAt }
         });
       }
 

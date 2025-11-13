@@ -31,15 +31,28 @@ const trimToUndefined = (value?: string | null) => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
+const parseScore = (value: unknown) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+  return value;
+};
+
+const scoreSchema = (message: string) =>
+  z.preprocess(
+    parseScore,
+    z.union([z.number().min(0, message).max(100, message), z.undefined()])
+  );
+
 const schema = z.object({
   company: z.string().min(1, 'Company required'),
   role: z.string().min(1, 'Role required'),
   sourceUrl: z.string().url().optional().or(z.literal('')),
-  tailoringScore: z
-    .string()
-    .optional()
-    .transform((val) => (val ? Number(val) : undefined))
-    .refine((val) => (val === undefined ? true : (val ?? 0) >= 0 && (val ?? 0) <= 100), 'Score must be 0-100'),
+  tailoringScore: scoreSchema('Score must be 0-100'),
   outreachEnabled: z.boolean().default(false),
   contactLookup: z
     .string()
@@ -61,11 +74,7 @@ const schema = z.object({
     .optional()
     .transform(trimToUndefined),
   messageType: z.string().optional(),
-  personalizationScore: z
-    .string()
-    .transform((val) => (val ? Number(val) : undefined))
-    .optional()
-    .refine((val) => (val === undefined ? true : (val ?? 0) >= 0 && (val ?? 0) <= 100), '0-100 score'),
+  personalizationScore: scoreSchema('0-100 score'),
   channel: z.string().optional(),
   context: z.enum(outreachContextValues).default('JOB_OPPORTUNITY'),
   note: z.string().optional()
@@ -108,7 +117,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
     defaultValues: {
       company: '',
       role: '',
-      outreachEnabled: !isEditMode, // Disable outreach in edit mode
+      outreachEnabled: false,
       personalizationScore: 80,
       channel: 'EMAIL',
       context: 'JOB_OPPORTUNITY',
@@ -217,24 +226,24 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         if (payload.initialOutreach) {
           const outreach = payload.initialOutreach;
           const trimmedContact = trimmedContactLookup;
-          if (!trimmedContact) {
-            setError('contactLookup', { type: 'manual', message: 'Provide a contact to log outreach' });
-            setFormError('Provide a contact to log outreach before logging outreach.');
-            return;
-          }
           if (selectedContact) {
             outreach.contactId = selectedContact.id;
-          } else if (cuidChecker.safeParse(trimmedContact).success) {
-            outreach.contactId = trimmedContact;
+          } else if (trimmedContact) {
+            if (cuidChecker.safeParse(trimmedContact).success) {
+              outreach.contactId = trimmedContact;
+            } else {
+              outreach.contactCreate = {
+                name: trimmedContact,
+                role: values.contactRole,
+                email: values.contactEmail,
+                linkedinUrl: values.contactLinkedIn,
+                companyName: values.company
+              };
+              outreach.contactId = undefined;
+            }
           } else {
-            outreach.contactCreate = {
-              name: trimmedContact,
-              role: values.contactRole,
-              email: values.contactEmail,
-              linkedinUrl: values.contactLinkedIn,
-              companyName: values.company
-            };
             outreach.contactId = undefined;
+            outreach.contactCreate = undefined;
           }
         }
 
@@ -246,7 +255,7 @@ export const JobWizardModal = ({ jobId, open: controlledOpen, onOpenChange }: Jo
         role: '',
         sourceUrl: '',
         tailoringScore: undefined,
-        outreachEnabled: !isEditMode,
+        outreachEnabled: false,
         context: 'JOB_OPPORTUNITY',
         contactLookup: '',
         contactEmail: undefined,
