@@ -2,7 +2,7 @@
 id: chunk-frontend-dashboard
 title: Frontend · Dashboard Page
 module: frontend-dashboard
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["ui"]
 source_paths: ["frontend/src/pages/DashboardPage.tsx","frontend/src/components/dashboard/KpiMiniTiles.tsx","frontend/src/components/dashboard/ChartWarmOutreach.tsx","frontend/src/components/dashboard/ChartCvsSent.tsx","frontend/src/components/dashboard/NextBestActionCompact.tsx","frontend/src/components/dashboard/ActionCenterTabs.tsx","frontend/src/components/dashboard/InsightsMini.tsx","frontend/src/components/dashboard/ChartFollowupsPie.tsx"]
 exports: ["ActionCenterTabs","ChartCvsSent","ChartFollowupsPie","ChartWarmOutreach","DashboardPage","InsightsMini","KpiMiniTiles","NextBestActionCompact"]

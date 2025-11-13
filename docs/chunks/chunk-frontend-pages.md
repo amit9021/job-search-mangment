@@ -2,11 +2,11 @@
 id: chunk-frontend-pages
 title: Frontend · Entity Pages
 module: frontend-pages
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["ui"]
 source_paths: ["frontend/src/pages/JobsPage.tsx","frontend/src/pages/ContactsPage.tsx","frontend/src/pages/GrowPage.tsx","frontend/src/pages/TasksPage.tsx"]
 exports: ["ContactsPage","GrowPage","JobsPage","TasksPage"]
-imports: ["../api/hooks","../components/AddOutreachDialog","../components/ContactDrawer","../components/ContactEngagementBadge","../components/HeatBadge","../components/JobHistoryModal","../components/JobListTable","../components/JobWizardModal","../components/KpiHeader","../components/StrengthBadge","../components/UpdateJobStageDialog","../components/grow/AddGrowItemModal","../components/grow/BoostTaskCard","../components/grow/EventCard","../components/grow/ProjectCard","../components/grow/ReviewCard","../components/tasks/NBABox","../components/tasks/QuickAddBar","../components/tasks/TaskCard","../components/tasks/TaskDrawer","@radix-ui/react-dialog","@radix-ui/react-popover","date-fns","react","react-router-dom"]
+imports: ["../api/hooks","../components/AddOutreachDialog","../components/ContactDrawer","../components/ContactEngagementBadge","../components/HeatBadge","../components/JobHistoryModal","../components/JobListTable","../components/JobWizardModal","../components/KpiHeader","../components/ScheduleAppointmentDialog","../components/StrengthBadge","../components/UpdateJobStageDialog","../components/grow/AddGrowItemModal","../components/grow/BoostTaskCard","../components/grow/EventCard","../components/grow/ProjectCard","../components/grow/ReviewCard","../components/tasks/NBABox","../components/tasks/QuickAddBar","../components/tasks/TaskCard","../components/tasks/TaskDrawer","@radix-ui/react-dialog","@radix-ui/react-popover","date-fns","react","react-router-dom"]
 tokens_est: 50
 ---
 

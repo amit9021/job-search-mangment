@@ -1,4 +1,5 @@
 import { differenceInCalendarDays, formatDistanceToNow } from 'date-fns';
+import type { JobAppointment } from '../api/hooks';
 import { HeatBadge } from './HeatBadge';
 
 type JobRow = {
@@ -18,6 +19,7 @@ type JobRow = {
     name: string | null;
     role?: string | null;
   }>;
+  nextAppointment?: JobAppointment | null;
 };
 
 interface JobListTableProps {
@@ -28,6 +30,7 @@ interface JobListTableProps {
   onAddOutreach: (job: JobRow) => void;
   onChangeStage: (job: JobRow) => void;
   onOpenContact: (contactId?: string | null) => void;
+  onSchedule: (job: JobRow) => void;
 }
 
 const formatRelative = (dateString?: string | null) => {
@@ -52,6 +55,14 @@ const formatFollowUpCountdown = (dateString?: string | null) => {
   return `${diff} day${diff === 1 ? '' : 's'}`;
 };
 
+const appointmentModeLabels: Record<string, string> = {
+  MEETING: 'Meeting',
+  ZOOM: 'Video call',
+  PHONE: 'Phone call',
+  ON_SITE: 'On-site',
+  OTHER: 'Appointment'
+};
+
 export const JobListTable = ({
   jobs,
   onEdit,
@@ -59,7 +70,8 @@ export const JobListTable = ({
   onHistory,
   onAddOutreach,
   onChangeStage,
-  onOpenContact
+  onOpenContact,
+  onSchedule
 }: JobListTableProps) => {
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -114,8 +126,20 @@ export const JobListTable = ({
                 <div className="mt-1 text-[11px] text-slate-400">Total: {job.contactsCount}</div>
               </td>
               <td className="px-4 py-3 text-slate-500 text-xs">{formatRelative(job.lastTouchAt)}</td>
-              <td className="px-4 py-3 text-slate-500 text-xs">
-                {formatFollowUpCountdown(job.nextFollowUpAt ?? undefined)}
+              <td className="px-4 py-3 text-xs">
+                {job.nextAppointment ? (
+                  <div className="rounded-md border border-indigo-100 bg-indigo-50 px-2 py-1 text-indigo-700">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-500">
+                      {appointmentModeLabels[job.nextAppointment.appointmentMode ?? ''] ?? 'Appointment'}
+                    </p>
+                    <p className="font-semibold">{formatAppointmentDate(job.nextAppointment.dueAt)}</p>
+                    {job.nextAppointment.note && (
+                      <p className="text-[11px] text-indigo-600">{job.nextAppointment.note}</p>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-slate-500">{formatFollowUpCountdown(job.nextFollowUpAt ?? undefined)}</span>
+                )}
               </td>
               <td className="px-4 py-3 text-slate-500 text-xs">
                 {job.sourceUrl ? (
@@ -139,6 +163,13 @@ export const JobListTable = ({
                     className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:border-blue-400 hover:text-blue-600"
                   >
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSchedule(job)}
+                    className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-600 hover:border-indigo-300 hover:bg-indigo-100"
+                  >
+                    {job.nextAppointment ? 'Edit appt' : 'Schedule'}
                   </button>
                   <button
                     type="button"
@@ -176,4 +207,17 @@ export const JobListTable = ({
       </table>
     </div>
   );
+};
+const formatAppointmentDate = (dateString?: string | null) => {
+  if (!dateString) return '—';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date);
 };

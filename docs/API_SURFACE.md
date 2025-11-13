@@ -1,6 +1,6 @@
 # API Surface
 
-Generated: 2025-11-13T11:35:30.183Z
+Generated: 2025-11-13T13:59:07.988Z
 
 ## HTTP Routes
 
@@ -39,6 +39,9 @@ Generated: 2025-11-13T11:35:30.183Z
 | POST | `/events/:id/attend` | `attend` (backend/src/modules/events/events.controller.ts) | params: IdParamDto, body: AttendEventDto | unknown |
 | POST | `/events/:id/contacts` | `addContact` (backend/src/modules/events/events.controller.ts) | params: IdParamDto, body: AddEventContactDto | unknown |
 | GET | `/followups` | `list` (backend/src/modules/followups/followups.controller.ts) | query: FollowupQueryDto | unknown |
+| POST | `/followups` | `schedule` (backend/src/modules/followups/followups.controller.ts) | body: CreateFollowupDto | unknown |
+| DELETE | `/followups/:id` | `delete` (backend/src/modules/followups/followups.controller.ts) | params: IdParamDto | unknown |
+| PATCH | `/followups/:id` | `update` (backend/src/modules/followups/followups.controller.ts) | params: IdParamDto, body: UpdateFollowupDto | unknown |
 | PATCH | `/followups/:id/send` | `markSent` (backend/src/modules/followups/followups.controller.ts) | params: IdParamDto, body: SendFollowupDto | unknown |
 | GET | `/grow/boost` | `listBoostTasks` (backend/src/modules/grow/grow.controller.ts) | — | unknown |
 | POST | `/grow/boost` | `createBoostTask` (backend/src/modules/grow/grow.controller.ts) | body: CreateGrowthBoostTaskDto | unknown |
@@ -172,7 +175,10 @@ Source: `backend/src/modules/followups/followups.service.ts`
 ```ts
 async getDue(filter: 'today' | 'overdue' | 'upcoming' = 'today')
 async scheduleInitialFollowup(context: FollowupContext)
-async createFollowup(params: FollowupContext & { attemptNo: 1 | 2; dueAt: Date })
+async createFollowup( params: FollowupContext & { attemptNo: 1 | 2; dueAt: Date; type?: FollowUpType; appointmentMode?: FollowUpAppointmentMode | null; } )
+async scheduleCustomFollowup(data: InferDto<typeof CreateFollowupDto>)
+async updateFollowup(id: string, data: InferDto<typeof UpdateFollowupDto>)
+async deleteFollowup(id: string)
 async cancelOpenForContext(params: { jobId?: string; contactId?: string })
 async markSent(id: string, note?: string)
 async markDormantForJob(jobId: string)
@@ -537,6 +543,9 @@ Fields:
 - `sentAt    DateTime?`
 - `attemptNo Int`
 - `note      String?`
+- `type      FollowUpType     @default(STANDARD)`
+- `appointmentMode FollowUpAppointmentMode?`
+- `tasks     Task[]`
 - `@@index([dueAt])`
 
 Relations:
@@ -752,12 +761,15 @@ Fields:
 - `completedAt DateTime?`
 - `userId      String?`
 - `user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)`
+- `followUpId  String?  @unique`
+- `followUp    FollowUp? @relation(fields: [followUpId], references: [id], onDelete: Cascade)`
 - `@@index([dueAt])`
 - `@@index([status])`
 - `@@index([userId])`
 
 Relations:
 - user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+- followUp    FollowUp? @relation(fields: [followUpId], references: [id], onDelete: Cascade)
 
 ## Prisma Enums
 
@@ -803,6 +815,19 @@ Relations:
 - `INTRO`
 - `REFERRAL`
 - `SENT_CV`
+
+### FollowUpType
+
+- `STANDARD`
+- `APPOINTMENT`
+
+### FollowUpAppointmentMode
+
+- `MEETING`
+- `ZOOM`
+- `PHONE`
+- `ON_SITE`
+- `OTHER`
 
 ### EventStatus
 

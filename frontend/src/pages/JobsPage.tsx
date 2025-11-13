@@ -11,6 +11,7 @@ import { JobListTable } from '../components/JobListTable';
 import { UpdateJobStageDialog } from '../components/UpdateJobStageDialog';
 import { ContactDrawer } from '../components/ContactDrawer';
 import { KpiHeader } from '../components/KpiHeader';
+import { ScheduleAppointmentDialog } from '../components/ScheduleAppointmentDialog';
 
 type JobListItem = {
   id: string;
@@ -25,6 +26,13 @@ type JobListItem = {
   archived: boolean;
   contactsCount: number;
   contacts?: Array<{ id: string; name: string | null; role?: string | null }>;
+  nextAppointment?: {
+    id: string;
+    dueAt: string;
+    note?: string | null;
+    contactId?: string | null;
+    appointmentMode?: string | null;
+  } | null;
 };
 
 const columns: Array<{ stage: string; title: string }> = [
@@ -100,6 +108,31 @@ const formatFollowUpCountdown = (dateString?: string | null) => {
   return `${diff} day${diff === 1 ? '' : 's'}`;
 };
 
+const formatAppointmentDate = (dateString?: string | null) => {
+  if (!dateString) {
+    return '—';
+  }
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date);
+};
+
+const appointmentModeLabels: Record<string, string> = {
+  MEETING: 'In-person meeting',
+  ZOOM: 'Video / Zoom',
+  PHONE: 'Phone call',
+  ON_SITE: 'On-site',
+  OTHER: 'Appointment'
+};
+
 export const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showArchived, setShowArchived] = useState(false);
@@ -154,6 +187,10 @@ export const JobsPage = () => {
   const [actionsJob, setActionsJob] = useState<JobListItem | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
+  const [appointmentContext, setAppointmentContext] = useState<{
+    job: JobListItem;
+    appointment?: JobListItem['nextAppointment'] | null;
+  } | null>(null);
 
   const handleOpenContact = (contactId?: string | null) => {
     if (!contactId) {
@@ -361,7 +398,47 @@ export const JobsPage = () => {
             </div>
           </div>
 
-          <div className="space-y-1 text-xs text-slate-500">
+          {job.nextAppointment && (
+            <div className="mt-2 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+              <span aria-hidden="true" className="text-base">
+                📅
+              </span>
+              <div className="flex flex-1 flex-col text-left">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-500">
+                  {appointmentModeLabels[job.nextAppointment.appointmentMode ?? ''] ?? 'Appointment'}
+                </p>
+                <p className="font-semibold">{formatAppointmentDate(job.nextAppointment.dueAt)}</p>
+                {job.nextAppointment.note && (
+                  <p className="text-xs text-indigo-600">{job.nextAppointment.note}</p>
+                )}
+                {job.nextAppointment.contactId && job.contacts?.length ? (
+                  job.contacts
+                    .filter((contact) => contact.id === job.nextAppointment?.contactId)
+                    .map((contact) => (
+                      <p key={contact.id} className="text-[11px] text-indigo-500">
+                        With {contact.name ?? 'contact'}
+                      </p>
+                    ))
+                ) : null}
+              </div>
+            <button
+              type="button"
+              className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-semibold text-indigo-600 transition hover:border-indigo-300 hover:text-indigo-700"
+              onClick={(event) => {
+                event.stopPropagation();
+                setAppointmentContext({
+                  job,
+                  appointment: job.nextAppointment ?? null
+                });
+              }}
+              title="Edit appointment"
+            >
+              Edit
+            </button>
+            </div>
+          )}
+
+          <div className="mt-2 space-y-1 text-xs text-slate-500">
             <p className="font-semibold uppercase tracking-wide text-slate-400">Pipeline</p>
             <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-400">
               <span>{job.stage.toLowerCase()}</span>
@@ -413,6 +490,19 @@ export const JobsPage = () => {
               title="View history"
             >
               👁 History
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                setAppointmentContext({
+                  job,
+                  appointment: job.nextAppointment ?? null
+                });
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 transition hover:border-indigo-300 hover:text-indigo-600"
+              title={job.nextAppointment ? 'Edit appointment' : 'Schedule appointment'}
+            >
+              📅 {job.nextAppointment ? 'Edit appt' : 'Schedule'}
             </button>
             <button
               onClick={(event) => {
@@ -664,7 +754,8 @@ export const JobsPage = () => {
             sourceUrl: job.sourceUrl ?? null,
             archived: job.archived,
             contactsCount: job.contactsCount ?? 0,
-            contacts: job.contacts ?? []
+            contacts: job.contacts ?? [],
+            nextAppointment: job.nextAppointment ?? null
           }))}
           onEdit={handleEdit}
           onHistory={setHistoryJobId}
@@ -694,6 +785,16 @@ export const JobsPage = () => {
             });
           }}
           onOpenContact={handleOpenContact}
+          onSchedule={(job) => {
+            setAppointmentContext({
+              job: {
+                ...job,
+                contactsCount: job.contactsCount,
+                contacts: job.contacts
+              },
+              appointment: job.nextAppointment ?? null
+            });
+          }}
         />
       )}
 
@@ -735,6 +836,19 @@ export const JobsPage = () => {
         />
       )}
 
+      {appointmentContext && (
+        <ScheduleAppointmentDialog
+          job={appointmentContext.job}
+          appointment={appointmentContext.appointment ?? null}
+          open={appointmentContext !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setAppointmentContext(null);
+            }
+          }}
+        />
+      )}
+
       <Dialog.Root
         open={actionsJob !== null}
         onOpenChange={(open) => {
@@ -765,6 +879,22 @@ export const JobsPage = () => {
                     }}
                   >
                     👁 View history
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:border-indigo-300 hover:bg-indigo-100"
+                    onClick={() => {
+                      if (!actionsJob) {
+                        return;
+                      }
+                      setAppointmentContext({
+                        job: actionsJob,
+                        appointment: actionsJob.nextAppointment ?? null
+                      });
+                      setActionsJob(null);
+                    }}
+                  >
+                    📅 {actionsJob?.nextAppointment ? 'Edit appointment' : 'Schedule appointment'}
                   </button>
                   <button
                     type="button"

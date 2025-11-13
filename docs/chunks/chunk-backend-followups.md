@@ -2,12 +2,12 @@
 id: chunk-backend-followups
 title: Backend · Follow-ups API
 module: backend-followups
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/followups/followups.controller.ts","backend/src/modules/followups/followups.service.ts"]
 exports: ["FollowupsController","FollowupsService"]
-imports: ["../../common/dto/id-param.dto","../../prisma/prisma.service","../../utils/dayjs","../notifications/notifications.service","./dto/get-followups.query","./dto/send-followup.dto","./followups.service","@nestjs/common"]
-tokens_est: 492
+imports: ["../../common/dto/id-param.dto","../../prisma/prisma.service","../../utils/create-zod-dto","../../utils/dayjs","../notifications/notifications.service","./dto/create-followup.dto","./dto/get-followups.query","./dto/send-followup.dto","./dto/update-followup.dto","./followups.service","@nestjs/common","@prisma/client"]
+tokens_est: 623
 ---
 
 ### Summary
@@ -39,9 +39,24 @@ export class FollowupsController {
       return this.followupsService.getDue(query.due);
     }
 
+  @Post()
+    async schedule(@Body() body: CreateFollowupDto) {
+      return this.followupsService.scheduleCustomFollowup(body);
+    }
+
   @Patch(':id/send')
     async markSent(@Param() params: IdParamDto, @Body() body: SendFollowupDto) {
       return this.followupsService.markSent(params.id, body.note);
+    }
+
+  @Patch(':id')
+    async update(@Param() params: IdParamDto, @Body() body: UpdateFollowupDto) {
+      return this.followupsService.updateFollowup(params.id, body);
+    }
+
+  @Delete(':id')
+    async delete(@Param() params: IdParamDto) {
+      return this.followupsService.deleteFollowup(params.id);
     }
 }
 ```
@@ -80,69 +95,96 @@ export class FollowupsService {
       });
     }
 
-  async createFollowup(params: FollowupContext & { attemptNo: 1 | 2; dueAt: Date }) {
+  async createFollowup(
+      params: FollowupContext & {
+        attemptNo: 1 | 2;
+        dueAt: Date;
+        type?: FollowUpType;
+        appointmentMode?: FollowUpAppointmentMode | null;
+      }
+    ) {
       return this.prisma.followUp.create({
         data: {
           jobId: params.jobId ?? null,
           contactId: params.contactId ?? null,
           note: params.note ?? null,
           attemptNo: params.attemptNo,
-          dueAt: params.dueAt
+          dueAt: params.dueAt,
+          type: params.type ?? FollowUpType.STANDARD,
+          appointmentMode: params.appointmentMode ?? null
         }
       });
     }
 
-  async cancelOpenForContext(params: { jobId?: string; contactId?: string }) {
-      if (!params.jobId && !params.contactId) {
-        return { count: 0 };
+  async scheduleCustomFollowup(data: InferDto<typeof CreateFollowupDto>) {
+      const dueAt = new Date(data.dueAt);
+      if (Number.isNaN(dueAt.getTime())) {
+        throw new BadRequestException('Invalid due date');
       }
-  
-      return this.prisma.followUp.deleteMany({
-        where: {
-          sentAt: null,
-          ...(params.jobId ? { jobId: params.jobId } : {}),
-          ...(params.contactId ? { contactId: params.contactId } : {})
-        }
+      const followup = await this.createFollowup({
+        jobId: data.jobId,
+        contactId: data.contactId,
+        note: data.note ?? null,
+        attemptNo: 1,
+        dueAt,
+        type: FollowUpType.APPOINTMENT,
+        appointmentMode: data.appointmentMode ?? FollowUpAppointmentMode.MEETING
       });
+      await this.syncAppointmentTask(followup.id);
+      return followup;
     }
 
-  async markSent(id: string, note?: string) {
+  async updateFollowup(id: string, data: InferDto<typeof UpdateFollowupDto>) {
       const followup = await this.prisma.followUp.findUnique({ where: { id } });
       if (!followup) {
         throw new NotFoundException('Follow-up not found');
       }
-  
-      const updated = await this.prisma.followUp.update({
-        where: { id },
-        data: { sentAt: new Date(), note: note ?? followup.note }
-      });
-  
-      if (followup.attemptNo === 1) {
-        await this.createFollowup({
-          jobId: followup.jobId ?? undefined,
-          contactId: followup.contactId ?? undefined,
-          attemptNo: 2,
-          dueAt: dayjs().add(3, 'day').toDate()
-        });
-      } else if (followup.attemptNo === 2) {
-        // Schedule dormancy check notification in 7 days
-        await this.notificationsService.queueDormantCandidateCheck({
-          jobId: followup.jobId ?? undefined,
-          contactId: followup.contactId ?? undefined,
-          dueAt: dayjs().add(7, 'day').toDate()
-        });
+      if (followup.sentAt) {
+        throw new BadRequestException('Completed follow-ups cannot be changed');
       }
-  
-      return updated;
+      const update: {
+        dueAt?: Date;
+        note?: string | null;
+        contactId?: string | null;
+        appointmentMode?: FollowUpAppointmentMode | null;
+      } = {};
+      if (data.dueAt) {
+        const dueAt = new Date(data.dueAt);
+        if (Number.isNaN(dueAt.getTime())) {
+          throw new BadRequestException('Invalid due date');
+        }
+        update.dueAt = dueAt;
+      }
+      if (typeof data.note !== 'undefined') {
+        update.note = data.note ?? null;
+      }
+      if (typeof data.contactId !== 'undefined') {
+        update.contactId = data.contactId ?? null;
+      }
+      if (typeof data.appointmentMode !== 'undefined') {
+        update.appointmentMode = data.appointmentMode ?? null;
+      }
+      const updated = await this.prisma.followUp.update({
+        wher
+    /* ... truncated ... */
+
+  async deleteFollowup(id: string) {
+      const followup = await this.prisma.followUp.findUnique({ where: { id } });
+      if (!followup) {
+        throw new NotFoundException('Follow-up not found');
+      }
+      if (followup.sentAt) {
+        throw new BadRequestException('Completed follow-ups cannot be deleted');
+      }
+      await this.prisma.followUp.delete({ where: { id } });
+      if (followup.type === FollowUpType.APPOINTMENT) {
+        await this.deleteAppointmentTask(followup.id);
+      }
+      return { deletedId: id };
     }
 
-  async markDormantForJob(jobId: string) {
-      await this.prisma.followUp.updateMany({
-        where: { jobId, sentAt: null },
-        data: { note: 'Marked dormant' }
-      });
-    }
-}
+  async cancelOpenForContext(params: { jobId?: string; contactId?: string }) {
+      if
 ```
 
 ### Related

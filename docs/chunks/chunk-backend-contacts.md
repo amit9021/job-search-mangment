@@ -2,7 +2,7 @@
 id: chunk-backend-contacts
 title: Backend · Contacts API
 module: backend-contacts
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["api","service","db"]
 source_paths: ["backend/src/modules/contacts/contacts.controller.ts","backend/src/modules/contacts/contacts.service.ts"]
 exports: ["ContactsController","ContactsService"]

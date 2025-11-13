@@ -2,7 +2,7 @@
 id: chunk-backend-outreach
 title: Backend · Outreach API
 module: backend-outreach
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/outreach/outreach.controller.ts","backend/src/modules/outreach/outreach.service.ts"]
 exports: ["OutreachController","OutreachService"]

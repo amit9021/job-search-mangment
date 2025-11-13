@@ -209,6 +209,9 @@ model FollowUp {
   sentAt    DateTime?
   attemptNo Int
   note      String?
+  type      FollowUpType     @default(STANDARD)
+  appointmentMode FollowUpAppointmentMode?
+  tasks     Task[]
 
   @@index([dueAt])
 }
@@ -228,6 +231,19 @@ enum ReferralKind {
   INTRO
   REFERRAL
   SENT_CV
+}
+
+enum FollowUpType {
+  STANDARD
+  APPOINTMENT
+}
+
+enum FollowUpAppointmentMode {
+  MEETING
+  ZOOM
+  PHONE
+  ON_SITE
+  OTHER
 }
 
 model Project {
@@ -398,6 +414,8 @@ model Task {
   completedAt DateTime?
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  followUpId  String?  @unique
+  followUp    FollowUp? @relation(fields: [followUpId], references: [id], onDelete: Cascade)
 
   @@index([dueAt])
   @@index([status])

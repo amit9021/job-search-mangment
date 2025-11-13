@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { JobStage, Prisma, ReferralKind } from '@prisma/client';
+import { FollowUpType, JobStage, Prisma, ReferralKind } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { InferDto } from '../../utils/create-zod-dto';
@@ -111,11 +111,21 @@ export class JobsService {
 
     return jobs.map((job) => {
       const metric = metrics.get(job.id);
+      const nextAppointment = metric?.nextAppointment
+        ? {
+            id: metric.nextAppointment.id,
+            dueAt: metric.nextAppointment.dueAt.toISOString(),
+            note: metric.nextAppointment.note ?? null,
+            contactId: metric.nextAppointment.contactId ?? null,
+            appointmentMode: metric.nextAppointment.appointmentMode ?? null
+          }
+        : null;
       return {
         ...job,
         contactsCount: metric?.contactsCount ?? 0,
         contacts: metric?.contacts ?? [],
-        nextFollowUpAt: metric?.nextFollowUpAt ?? null
+        nextFollowUpAt: nextAppointment ? null : metric?.nextStandard ?? null,
+        nextAppointment
       };
     });
   }
@@ -132,11 +142,21 @@ export class JobsService {
     }
     const metrics = await this.computeJobMetrics([job.id]);
     const metric = metrics.get(job.id);
+    const nextAppointment = metric?.nextAppointment
+      ? {
+          id: metric.nextAppointment.id,
+          dueAt: metric.nextAppointment.dueAt.toISOString(),
+          note: metric.nextAppointment.note ?? null,
+          contactId: metric.nextAppointment.contactId ?? null,
+          appointmentMode: metric.nextAppointment.appointmentMode ?? null
+        }
+      : null;
     return {
       ...job,
       contactsCount: metric?.contactsCount ?? 0,
       contacts: metric?.contacts ?? [],
-      nextFollowUpAt: metric?.nextFollowUpAt ?? null
+      nextFollowUpAt: nextAppointment ? null : metric?.nextStandard ?? null,
+      nextAppointment
     };
   }
 
@@ -321,12 +341,22 @@ export class JobsService {
     await this.recalculateHeat(jobId);
     const metrics = await this.computeJobMetrics([jobId]);
     const metric = metrics.get(jobId);
+    const nextAppointment = metric?.nextAppointment
+      ? {
+          id: metric.nextAppointment.id,
+          dueAt: metric.nextAppointment.dueAt.toISOString(),
+          note: metric.nextAppointment.note ?? null,
+          contactId: metric.nextAppointment.contactId ?? null,
+          appointmentMode: metric.nextAppointment.appointmentMode ?? null
+        }
+      : null;
     return {
       job: {
         ...job,
         contactsCount: metric?.contactsCount ?? 0,
         contacts: metric?.contacts ?? [],
-        nextFollowUpAt: metric?.nextFollowUpAt ?? null
+        nextFollowUpAt: nextAppointment ? null : metric?.nextStandard ?? null,
+        nextAppointment
       },
       history
     };
@@ -381,13 +411,24 @@ export class JobsService {
       `job.outreach recorded jobId=${jobId} outreachId=${outreach.id} contactId=${outreach.contactId ?? 'none'}`
     );
 
+    const nextAppointment = metric?.nextAppointment
+      ? {
+          id: metric.nextAppointment.id,
+          dueAt: metric.nextAppointment.dueAt.toISOString(),
+          note: metric.nextAppointment.note ?? null,
+          contactId: metric.nextAppointment.contactId ?? null,
+          appointmentMode: metric.nextAppointment.appointmentMode ?? null
+        }
+      : null;
+
     return {
       outreach,
       job: {
         ...nextJobSnapshot,
         contactsCount: metric?.contactsCount ?? 0,
         contacts: metric?.contacts ?? [],
-        nextFollowUpAt: metric?.nextFollowUpAt ?? null
+        nextFollowUpAt: nextAppointment ? null : metric?.nextStandard ?? null,
+        nextAppointment
       }
     };
   }
@@ -513,7 +554,8 @@ export class JobsService {
       {
         contactsCount: number;
         contacts: Array<{ id: string; name: string | null; role: string | null }>;
-        nextFollowUpAt: Date | null;
+        nextStandard: Date | null;
+        nextAppointment: { id: string; dueAt: Date; note?: string | null; contactId?: string | null; appointmentMode?: string | null } | null;
       }
     >();
     if (jobIds.length === 0) {
@@ -534,7 +576,15 @@ export class JobsService {
           sentAt: null
         },
         orderBy: { dueAt: 'asc' },
-        select: { jobId: true, dueAt: true }
+        select: {
+          id: true,
+          jobId: true,
+          dueAt: true,
+          note: true,
+          contactId: true,
+          type: true,
+          appointmentMode: true
+        }
       })
     ]);
 
@@ -566,14 +616,25 @@ export class JobsService {
 
     const contactMap = new Map(contacts.map((contact) => [contact.id, contact]));
 
-    const followupMap = new Map<string, Date>();
-    followups.forEach(({ jobId, dueAt }) => {
+    const appointmentMap = new Map<
+      string,
+      { id: string; dueAt: Date; note?: string | null; contactId?: string | null; appointmentMode?: string | null }
+    >();
+    const standardMap = new Map<string, Date>();
+    followups.forEach(({ id, jobId, dueAt, note, contactId, type, appointmentMode }) => {
       if (!jobId) {
         return;
       }
-      const current = followupMap.get(jobId);
-      if (!current || dueAt < current) {
-        followupMap.set(jobId, dueAt);
+      if (type === FollowUpType.APPOINTMENT) {
+        const currentAppointment = appointmentMap.get(jobId);
+        if (!currentAppointment || dueAt < currentAppointment.dueAt) {
+          appointmentMap.set(jobId, { id, dueAt, note, contactId, appointmentMode });
+        }
+      } else {
+        const currentStandard = standardMap.get(jobId);
+        if (!currentStandard || dueAt < currentStandard) {
+          standardMap.set(jobId, dueAt);
+        }
       }
     });
 
@@ -585,10 +646,13 @@ export class JobsService {
             .filter((value): value is NonNullable<typeof value> => Boolean(value))
         : [];
 
+      const nextAppointment = appointmentMap.get(id) ?? null;
+      const nextStandard = standardMap.get(id) ?? null;
       metrics.set(id, {
         contactsCount: contactList.length,
         contacts: contactList,
-        nextFollowUpAt: followupMap.get(id) ?? null
+        nextStandard: nextStandard ?? null,
+        nextAppointment
       });
     });
 

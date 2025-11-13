@@ -89,6 +89,14 @@ export type JobNote = {
   } | null;
 };
 
+export type JobAppointment = {
+  id: string;
+  dueAt: string;
+  note?: string | null;
+  contactId?: string | null;
+  appointmentMode?: string | null;
+};
+
 export type DeleteJobMutationInput = {
   id: string;
   hard?: boolean;
@@ -172,6 +180,7 @@ export const useJobsQuery = (filters?: {
           role?: string | null;
         }>;
         nextFollowUpAt?: string | null;
+        nextAppointment?: JobAppointment | null;
       }>;
     }
   });
@@ -203,6 +212,7 @@ export const useJobDetailQuery = (id: string) => {
           role?: string | null;
         }>;
         nextFollowUpAt?: string | null;
+        nextAppointment?: JobAppointment | null;
       };
     },
     enabled: !!id
@@ -260,6 +270,7 @@ export const useCreateJobMutation = () => {
           role?: string | null;
         }>;
         nextFollowUpAt?: string | null;
+        nextAppointment?: JobAppointment | null;
       };
     },
     onSuccess: (job) => {
@@ -436,6 +447,7 @@ export const useUpdateJobStageMutation = () => {
             role?: string | null;
           }>;
           nextFollowUpAt?: string | null;
+          nextAppointment?: JobAppointment | null;
         };
         history: {
           id: string;
@@ -450,6 +462,129 @@ export const useUpdateJobStageMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
       queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
       toast.success('Stage updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+const appointmentModes = ['MEETING', 'ZOOM', 'PHONE', 'ON_SITE', 'OTHER'] as const;
+
+export const useScheduleFollowupMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({
+      jobId,
+      contactId,
+      dueAt,
+      note,
+      appointmentMode
+    }: {
+      jobId: string;
+      contactId?: string;
+      dueAt: string;
+      note?: string;
+      appointmentMode?: (typeof appointmentModes)[number];
+    }) => {
+      const payload = {
+        jobId,
+        contactId,
+        dueAt,
+        note,
+        appointmentMode
+      };
+      const { data } = await api.post('/followups', payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      if (variables.contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', variables.contactId] });
+      }
+      toast.success('Appointment scheduled');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useUpdateFollowupMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      jobId,
+      dueAt,
+      note,
+      contactId,
+      appointmentMode
+    }: {
+      id: string;
+      jobId: string;
+      dueAt?: string;
+      note?: string;
+      contactId?: string;
+      appointmentMode?: (typeof appointmentModes)[number];
+    }) => {
+      const payload: Record<string, unknown> = {};
+      if (dueAt) {
+        payload.dueAt = dueAt;
+      }
+      if (typeof note !== 'undefined') {
+        payload.note = note;
+      }
+      if (typeof contactId !== 'undefined') {
+        payload.contactId = contactId;
+      }
+      if (typeof appointmentMode !== 'undefined') {
+        payload.appointmentMode = appointmentMode;
+      }
+      const { data } = await api.patch(`/followups/${id}`, payload);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      if (variables.contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', variables.contactId] });
+      }
+      toast.success('Appointment updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useDeleteFollowupMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ id, jobId }: { id: string; jobId: string }) => {
+      const { data } = await api.delete(`/followups/${id}`);
+      return { ...data, jobId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'history'] });
+      toast.success('Appointment deleted');
     },
     onError: (error) => {
       const parsed = parseApiError(error);

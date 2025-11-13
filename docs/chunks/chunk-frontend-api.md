@@ -2,12 +2,12 @@
 id: chunk-frontend-api
 title: Frontend · API Layer
 module: frontend-api
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["client","ui"]
 source_paths: ["frontend/src/api/client.ts","frontend/src/api/hooks.ts","frontend/src/api/useDashboard.ts","frontend/src/api/useStats.ts"]
-exports: ["API_BASE_URL","BoostSuggestion","CreateJobMutationInput","DashboardActionSuggestion","DashboardNotificationSeverity","DashboardQueueItemType","DashboardSummaryResponse","DashboardSummaryResult","DeleteJobMutationInput","GrowthBoostTask","GrowthEvent","GrowthReview","JobNote","JobOutreachPayload","ParsedApiError","ProjectHighlight","StatsSeriesPoint","TaskModel","TaskQuickParseResult","TaskQuickParseSuggestion","TaskView","WeeklySummaryResponse","createApiClient","parseApiError","useBoostSuggestionsMutation","useBoostsQuery","useCompaniesQuery","useContactDetailQuery","useContactSearchQuery","useContactsQuery","useCreateCompanyMutation","useCreateContactMutation","useCreateGrowthBoostTaskMutation","useCreateGrowthEventMutation","useCreateGrowthReviewMutation","useCreateJobMutation","useCreateJobNoteMutation","useCreateJobOutreachMutation","useCreateProjectHighlightMutation","useDashboardSummary","useDeleteContactMutation","useDeleteJobMutation","useDeleteJobNoteMutation","useDeleteOutreachMutation","useEventsQuery","useFollowupsQuery","useJobDetailQuery","useJobHeatExplainQuery","useJobHistoryQuery","useJobSearchQuery","useJobsQuery","useKpiTodayQuery","useKpiWeekQuery","useMarkFollowupMutation","useNetworkStarsQuery","useNextActionQuery","useNotificationsQuery","useProjectsQuery","useReviewsQuery","useTaskCreateMutation","useTaskDeleteMutation","useTaskKpisQuery","useTaskQuickParseMutation","useTaskSnoozeMutation","useTaskUpdateMutation","useTasksQuery","useUpdateContactMutation","useUpdateGrowthBoostTaskMutation","useUpdateJobMutation","useUpdateJobNoteMutation","useUpdateJobStageMutation","useUpdateOutreachMutation","useUpdateProjectHighlightMutation","useWeeklySummary"]
+exports: ["API_BASE_URL","BoostSuggestion","CreateJobMutationInput","DashboardActionSuggestion","DashboardNotificationSeverity","DashboardQueueItemType","DashboardSummaryResponse","DashboardSummaryResult","DeleteJobMutationInput","GrowthBoostTask","GrowthEvent","GrowthReview","JobAppointment","JobNote","JobOutreachPayload","ParsedApiError","ProjectHighlight","StatsSeriesPoint","TaskModel","TaskQuickParseResult","TaskQuickParseSuggestion","TaskView","WeeklySummaryResponse","createApiClient","parseApiError","useBoostSuggestionsMutation","useBoostsQuery","useCompaniesQuery","useContactDetailQuery","useContactSearchQuery","useContactsQuery","useCreateCompanyMutation","useCreateContactMutation","useCreateGrowthBoostTaskMutation","useCreateGrowthEventMutation","useCreateGrowthReviewMutation","useCreateJobMutation","useCreateJobNoteMutation","useCreateJobOutreachMutation","useCreateProjectHighlightMutation","useDashboardSummary","useDeleteContactMutation","useDeleteFollowupMutation","useDeleteJobMutation","useDeleteJobNoteMutation","useDeleteOutreachMutation","useEventsQuery","useFollowupsQuery","useJobDetailQuery","useJobHeatExplainQuery","useJobHistoryQuery","useJobSearchQuery","useJobsQuery","useKpiTodayQuery","useKpiWeekQuery","useMarkFollowupMutation","useNetworkStarsQuery","useNextActionQuery","useNotificationsQuery","useProjectsQuery","useReviewsQuery","useScheduleFollowupMutation","useTaskCreateMutation","useTaskDeleteMutation","useTaskKpisQuery","useTaskQuickParseMutation","useTaskSnoozeMutation","useTaskUpdateMutation","useTasksQuery","useUpdateContactMutation","useUpdateFollowupMutation","useUpdateGrowthBoostTaskMutation","useUpdateJobMutation","useUpdateJobNoteMutation","useUpdateJobStageMutation","useUpdateOutreachMutation","useUpdateProjectHighlightMutation","useWeeklySummary"]
 imports: ["../components/ToastProvider","./ApiProvider","@tanstack/react-query","axios"]
-tokens_est: 843
+tokens_est: 850
 ---
 
 ### Summary
@@ -84,6 +84,14 @@ export type JobNote = {
     id: string;
     email?: string | null;
   } | null;
+};
+
+export type JobAppointment = {
+  id: string;
+  dueAt: string;
+  note?: string | null;
+  contactId?: string | null;
+  appointmentMode?: string | null;
 };
 
 export type DeleteJobMutationInput = {
@@ -214,14 +222,7 @@ export type TaskQuickParseResult = {
   priority?: 'Low' | 'Med' | 'High';
   dueAt?: string | null;
   recurrence?: string | null;
-  links: Record<string, string | undefined>;
-  contexts: {
-    jobQuery?: string;
-    contactQuery?: string;
-    growType?: string;
-    growRef?: string;
-  };
-  suggestions: TaskQuic
+  links: Record<string, stri
 ```
 
 #### frontend/src/api/useDashboard.ts

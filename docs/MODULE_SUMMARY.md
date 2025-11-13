@@ -1,6 +1,6 @@
 # Module Summary
 
-Generated: 2025-11-13T11:35:30.183Z
+Generated: 2025-11-13T13:59:07.988Z
 
 Each section summarizes responsibilities, key artifacts, and guardrails for extending the module.
 
@@ -202,14 +202,17 @@ Each section summarizes responsibilities, key artifacts, and guardrails for exte
 - Feeds the dashboard action queue with due/overdue tasks.
 
 **Key files**
+- `backend/src/modules/followups/dto/create-followup.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/modules/followups/dto/send-followup.dto.ts` — DTO or schema definition for request/response validation.
+- `backend/src/modules/followups/dto/update-followup.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/modules/followups/followups.controller.ts` — NestJS controller exposing HTTP routes.
 - `backend/src/modules/followups/followups.module.ts` — NestJS module wiring providers/controllers.
-- `backend/src/modules/followups/followups.service.ts` — Business logic service consumed by controllers.
 
 **Important types/functions**
+- `CreateFollowupDto`
 - `FollowupQueryDto`
 - `SendFollowupDto`
+- `UpdateFollowupDto`
 - `FollowupsController`
 - `FollowupsModule`
 - `FollowupsService`

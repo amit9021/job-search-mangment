@@ -2,7 +2,7 @@
 id: chunk-backend-prisma
 title: Backend · Prisma Service & Schema
 module: backend-prisma
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["db"]
 source_paths: ["backend/src/prisma/prisma.service.ts","prisma/schema.prisma"]
 exports: ["PrismaService"]

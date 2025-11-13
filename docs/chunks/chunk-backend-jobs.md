@@ -2,12 +2,12 @@
 id: chunk-backend-jobs
 title: Backend · Jobs Controller & Service
 module: backend-jobs
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["api","service","db"]
 source_paths: ["backend/src/modules/jobs/jobs.controller.ts","backend/src/modules/jobs/jobs.service.ts"]
 exports: ["JobsController","JobsService"]
 imports: ["../../common/decorators/user.decorator","../../common/dto/id-param.dto","../../prisma/prisma.service","../../utils/create-zod-dto","../contacts/contacts.service","../followups/followups.service","../outreach/outreach.service","./dto","./dto/create-job-outreach.dto","./heat-rules.loader","./jobs.service","@nestjs/common","@prisma/client"]
-tokens_est: 795
+tokens_est: 789
 ---
 
 ### Summary
@@ -166,13 +166,13 @@ export class JobsService {
       }
       const metrics = await this.computeJobMetrics([job.id]);
       const metric = metrics.get(job.id);
-      return {
-        ...job,
-        contactsCount: metric?.contactsCount ?? 0,
-        contacts: metric?.contacts ?? [],
-        nextFollowUpAt: metric?.nextFollowUpAt ?? null
-      };
-    }
+      const nextAppointment = metric?.nextAppointment
+        ? {
+            id: metric.nextAppointment.id,
+            dueAt: metric.nextAppointment.dueAt.toISOString(),
+            note: metric.nextAppointment.note ?? null,
+            contactId: metric.nextAppointment.conta
+    /* ... truncated ... */
 
   async create(data: InferDto<typeof CreateJobDto>) {
       const createdJob = await this.prisma.$transaction(async (tx) => {
@@ -251,12 +251,7 @@ export class JobsService {
           jobId,
           dateSent: new Date(dto.dateSent),
           tailoringScore: dto.tailoringScore,
-          cvVersionId: dto.cvVersionId ?? null
-        }
-      });
-  
-      await this.touchJob(jobId);
-      await t
+    
 ```
 
 ### Related

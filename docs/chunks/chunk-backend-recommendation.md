@@ -2,7 +2,7 @@
 id: chunk-backend-recommendation
 title: Backend · Recommendations API
 module: backend-recommendation
-generated_at: 2025-11-13T11:35:30.183Z
+generated_at: 2025-11-13T13:59:07.988Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/recommendation/recommendation.controller.ts","backend/src/modules/recommendation/recommendation.service.ts"]
 exports: ["RecommendationController","RecommendationResult","RecommendationService"]

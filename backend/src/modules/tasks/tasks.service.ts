@@ -33,6 +33,7 @@ type TaskLinks = {
   growType?: string;
   growId?: string;
   outreachId?: string;
+  followUpId?: string;
   [key: string]: unknown;
 };
 
@@ -73,6 +74,9 @@ const extractLinks = (value: Prisma.JsonValue | null | undefined): TaskLinks => 
   }
   if (typeof record.outreachId === 'string') {
     links.outreachId = record.outreachId;
+  }
+  if (typeof record.followUpId === 'string') {
+    links.followUpId = record.followUpId;
   }
   return links;
 };

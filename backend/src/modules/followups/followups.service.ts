@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { FollowUpAppointmentMode, FollowUpType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import dayjs from '../../utils/dayjs';
 import { NotificationsService } from '../notifications/notifications.service';
+import { InferDto } from '../../utils/create-zod-dto';
+import { CreateFollowupDto } from './dto/create-followup.dto';
+import { UpdateFollowupDto } from './dto/update-followup.dto';
 
 type FollowupContext = {
   jobId?: string;
@@ -47,15 +52,161 @@ export class FollowupsService {
     });
   }
 
-  async createFollowup(params: FollowupContext & { attemptNo: 1 | 2; dueAt: Date }) {
+  async createFollowup(
+    params: FollowupContext & {
+      attemptNo: 1 | 2;
+      dueAt: Date;
+      type?: FollowUpType;
+      appointmentMode?: FollowUpAppointmentMode | null;
+    }
+  ) {
     return this.prisma.followUp.create({
       data: {
         jobId: params.jobId ?? null,
         contactId: params.contactId ?? null,
         note: params.note ?? null,
         attemptNo: params.attemptNo,
-        dueAt: params.dueAt
+        dueAt: params.dueAt,
+        type: params.type ?? FollowUpType.STANDARD,
+        appointmentMode: params.appointmentMode ?? null
       }
+    });
+  }
+
+  async scheduleCustomFollowup(data: InferDto<typeof CreateFollowupDto>) {
+    const dueAt = new Date(data.dueAt);
+    if (Number.isNaN(dueAt.getTime())) {
+      throw new BadRequestException('Invalid due date');
+    }
+    const followup = await this.createFollowup({
+      jobId: data.jobId,
+      contactId: data.contactId,
+      note: data.note ?? null,
+      attemptNo: 1,
+      dueAt,
+      type: FollowUpType.APPOINTMENT,
+      appointmentMode: data.appointmentMode ?? FollowUpAppointmentMode.MEETING
+    });
+    await this.syncAppointmentTask(followup.id);
+    return followup;
+  }
+
+  async updateFollowup(id: string, data: InferDto<typeof UpdateFollowupDto>) {
+    const followup = await this.prisma.followUp.findUnique({ where: { id } });
+    if (!followup) {
+      throw new NotFoundException('Follow-up not found');
+    }
+    if (followup.sentAt) {
+      throw new BadRequestException('Completed follow-ups cannot be changed');
+    }
+    const update: {
+      dueAt?: Date;
+      note?: string | null;
+      contactId?: string | null;
+      appointmentMode?: FollowUpAppointmentMode | null;
+    } = {};
+    if (data.dueAt) {
+      const dueAt = new Date(data.dueAt);
+      if (Number.isNaN(dueAt.getTime())) {
+        throw new BadRequestException('Invalid due date');
+      }
+      update.dueAt = dueAt;
+    }
+    if (typeof data.note !== 'undefined') {
+      update.note = data.note ?? null;
+    }
+    if (typeof data.contactId !== 'undefined') {
+      update.contactId = data.contactId ?? null;
+    }
+    if (typeof data.appointmentMode !== 'undefined') {
+      update.appointmentMode = data.appointmentMode ?? null;
+    }
+    const updated = await this.prisma.followUp.update({
+      where: { id },
+      data: update
+    });
+    if (updated.type === FollowUpType.APPOINTMENT) {
+      await this.syncAppointmentTask(updated.id);
+    } else {
+      await this.deleteAppointmentTask(updated.id);
+    }
+    return updated;
+  }
+
+  async deleteFollowup(id: string) {
+    const followup = await this.prisma.followUp.findUnique({ where: { id } });
+    if (!followup) {
+      throw new NotFoundException('Follow-up not found');
+    }
+    if (followup.sentAt) {
+      throw new BadRequestException('Completed follow-ups cannot be deleted');
+    }
+    await this.prisma.followUp.delete({ where: { id } });
+    if (followup.type === FollowUpType.APPOINTMENT) {
+      await this.deleteAppointmentTask(followup.id);
+    }
+    return { deletedId: id };
+  }
+
+  private async syncAppointmentTask(followUpId: string) {
+    const followup = await this.prisma.followUp.findUnique({
+      where: { id: followUpId },
+      include: {
+        job: { select: { id: true, company: true, role: true, userId: true } },
+        contact: { select: { id: true, name: true } }
+      }
+    });
+    if (!followup || followup.type !== FollowUpType.APPOINTMENT) {
+      return;
+    }
+    const titleBase =
+      followup.appointmentMode && followup.appointmentMode !== 'OTHER'
+        ? followup.appointmentMode.replace(/_/g, ' ').toLowerCase()
+        : 'appointment';
+    const titleCompany = followup.job?.company ? ` · ${followup.job.company}` : '';
+    const title = `${titleBase.charAt(0).toUpperCase()}${titleBase.slice(1)}${titleCompany}`;
+    const descriptionParts: string[] = [];
+    if (followup.note) {
+      descriptionParts.push(followup.note);
+    }
+    if (followup.contact?.name) {
+      descriptionParts.push(`Contact: ${followup.contact.name}`);
+    }
+    const links: Record<string, string> = { followUpId };
+    if (followup.jobId) {
+      links.jobId = followup.jobId;
+    }
+    if (followup.contactId) {
+      links.contactId = followup.contactId;
+    }
+    await this.prisma.task.upsert({
+      where: { followUpId },
+      create: {
+        title,
+        description: descriptionParts.length > 0 ? descriptionParts.join('\n') : null,
+        dueAt: followup.dueAt,
+        startAt: followup.dueAt,
+        priority: 'High',
+        status: 'Todo',
+        source: 'Appointment',
+        links: links as Prisma.JsonObject,
+        userId: followup.job?.userId ?? null,
+        followUpId
+      },
+      update: {
+        title,
+        description: descriptionParts.length > 0 ? descriptionParts.join('\n') : null,
+        dueAt: followup.dueAt,
+        startAt: followup.dueAt,
+        links: links as Prisma.JsonObject,
+        userId: followup.job?.userId ?? null
+      }
+    });
+  }
+
+  private async deleteAppointmentTask(followUpId: string) {
+    await this.prisma.task.deleteMany({
+      where: { followUpId }
     });
   }
 

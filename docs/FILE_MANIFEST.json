@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-13T11:35:30.183Z",
+  "generated_at": "2025-11-13T13:59:07.988Z",
   "files": [
     {
       "path": ".editorconfig",
@@ -1338,6 +1338,24 @@
       ]
     },
     {
+      "path": "backend/src/modules/followups/dto/create-followup.dto.ts",
+      "language": "ts",
+      "lines": 22,
+      "bytes": 588,
+      "module": "backend:followups",
+      "exports": [
+        "CreateFollowupDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
       "path": "backend/src/modules/followups/dto/get-followups.query.ts",
       "language": "ts",
       "lines": 10,
@@ -1374,18 +1392,38 @@
       ]
     },
     {
+      "path": "backend/src/modules/followups/dto/update-followup.dto.ts",
+      "language": "ts",
+      "lines": 22,
+      "bytes": 576,
+      "module": "backend:followups",
+      "exports": [
+        "UpdateFollowupDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
       "path": "backend/src/modules/followups/followups.controller.ts",
       "language": "ts",
-      "lines": 23,
-      "bytes": 734,
+      "lines": 40,
+      "bytes": 1298,
       "module": "backend:followups",
       "exports": [
         "FollowupsController"
       ],
       "imports": [
         "../../common/dto/id-param.dto",
+        "./dto/create-followup.dto",
         "./dto/get-followups.query",
         "./dto/send-followup.dto",
+        "./dto/update-followup.dto",
         "./followups.service",
         "@nestjs/common"
       ],
@@ -1417,17 +1455,21 @@
     {
       "path": "backend/src/modules/followups/followups.service.ts",
       "language": "ts",
-      "lines": 113,
-      "bytes": 3239,
+      "lines": 264,
+      "bytes": 8276,
       "module": "backend:followups",
       "exports": [
         "FollowupsService"
       ],
       "imports": [
         "../../prisma/prisma.service",
+        "../../utils/create-zod-dto",
         "../../utils/dayjs",
         "../notifications/notifications.service",
-        "@nestjs/common"
+        "./dto/create-followup.dto",
+        "./dto/update-followup.dto",
+        "@nestjs/common",
+        "@prisma/client"
       ],
       "purpose": "Business logic service consumed by controllers.",
       "tags": [
@@ -1906,8 +1948,8 @@
     {
       "path": "backend/src/modules/jobs/jobs.service.ts",
       "language": "ts",
-      "lines": 894,
-      "bytes": 25572,
+      "lines": 959,
+      "bytes": 28343,
       "module": "backend:jobs",
       "exports": [
         "JobsService"
@@ -2995,8 +3037,8 @@
     {
       "path": "backend/src/modules/tasks/tasks.service.ts",
       "language": "ts",
-      "lines": 608,
-      "bytes": 17910,
+      "lines": 612,
+      "bytes": 18026,
       "module": "backend:tasks",
       "exports": [
         "TasksService"
@@ -3056,8 +3098,8 @@
     {
       "path": "backend/src/prisma/prisma.service.ts",
       "language": "ts",
-      "lines": 200,
-      "bytes": 5641,
+      "lines": 201,
+      "bytes": 5656,
       "module": "backend:prisma",
       "exports": [
         "PrismaService"
@@ -3295,8 +3337,8 @@
     {
       "path": "docs/API_SURFACE.md",
       "language": "md",
-      "lines": 811,
-      "bytes": 31596,
+      "lines": 836,
+      "bytes": 32726,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3399,8 +3441,8 @@
     {
       "path": "docs/FILE_MANIFEST.json",
       "language": "json",
-      "lines": 5547,
-      "bytes": 129914,
+      "lines": 5692,
+      "bytes": 133632,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3423,8 +3465,8 @@
     {
       "path": "docs/MODULE_SUMMARY.md",
       "language": "md",
-      "lines": 1004,
-      "bytes": 37617,
+      "lines": 1007,
+      "bytes": 37800,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3720,8 +3762,8 @@
     {
       "path": "frontend/src/api/hooks.ts",
       "language": "ts",
-      "lines": 1504,
-      "bytes": 44092,
+      "lines": 1639,
+      "bytes": 48226,
       "module": "frontend:api",
       "exports": [
         "BoostSuggestion",
@@ -3730,6 +3772,7 @@
         "GrowthBoostTask",
         "GrowthEvent",
         "GrowthReview",
+        "JobAppointment",
         "JobNote",
         "JobOutreachPayload",
         "ParsedApiError",
@@ -3755,6 +3798,7 @@
         "useCreateJobOutreachMutation",
         "useCreateProjectHighlightMutation",
         "useDeleteContactMutation",
+        "useDeleteFollowupMutation",
         "useDeleteJobMutation",
         "useDeleteJobNoteMutation",
         "useDeleteOutreachMutation",
@@ -3773,6 +3817,7 @@
         "useNotificationsQuery",
         "useProjectsQuery",
         "useReviewsQuery",
+        "useScheduleFollowupMutation",
         "useTaskCreateMutation",
         "useTaskDeleteMutation",
         "useTaskKpisQuery",
@@ -3781,6 +3826,7 @@
         "useTaskUpdateMutation",
         "useTasksQuery",
         "useUpdateContactMutation",
+        "useUpdateFollowupMutation",
         "useUpdateGrowthBoostTaskMutation",
         "useUpdateJobMutation",
         "useUpdateJobNoteMutation",
@@ -3974,7 +4020,7 @@
       "path": "frontend/src/components/AddOutreachDialog.tsx",
       "language": "tsx",
       "lines": 640,
-      "bytes": 25852,
+      "bytes": 25862,
       "module": "frontend:components",
       "exports": [
         "AddOutreachDialog"
@@ -4540,15 +4586,14 @@
     {
       "path": "frontend/src/components/JobHistoryModal.tsx",
       "language": "tsx",
-      "lines": 707,
-      "bytes": 29557,
+      "lines": 690,
+      "bytes": 28881,
       "module": "frontend:components",
       "exports": [
         "JobHistoryModal"
       ],
       "imports": [
         "../api/hooks",
-        "./UpdateJobStageDialog",
         "@radix-ui/react-dialog",
         "date-fns",
         "react"
@@ -4561,13 +4606,14 @@
     {
       "path": "frontend/src/components/JobListTable.tsx",
       "language": "tsx",
-      "lines": 180,
-      "bytes": 6768,
+      "lines": 224,
+      "bytes": 8571,
       "module": "frontend:components",
       "exports": [
         "JobListTable"
       ],
       "imports": [
+        "../api/hooks",
         "./HeatBadge",
         "date-fns"
       ],
@@ -4669,6 +4715,28 @@
       ],
       "imports": [
         "@radix-ui/react-icons"
+      ],
+      "purpose": "React component used in the UI.",
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "path": "frontend/src/components/ScheduleAppointmentDialog.tsx",
+      "language": "tsx",
+      "lines": 285,
+      "bytes": 10089,
+      "module": "frontend:components",
+      "exports": [
+        "ScheduleAppointmentDialog"
+      ],
+      "imports": [
+        "../api/hooks",
+        "@hookform/resolvers/zod",
+        "@radix-ui/react-dialog",
+        "react",
+        "react-hook-form",
+        "zod"
       ],
       "purpose": "React component used in the UI.",
       "tags": [
@@ -5125,8 +5193,8 @@
     {
       "path": "frontend/src/pages/JobsPage.tsx",
       "language": "tsx",
-      "lines": 799,
-      "bytes": 29546,
+      "lines": 1031,
+      "bytes": 37831,
       "module": "frontend:pages",
       "exports": [
         "JobsPage"
@@ -5140,6 +5208,7 @@
         "../components/JobListTable",
         "../components/JobWizardModal",
         "../components/KpiHeader",
+        "../components/ScheduleAppointmentDialog",
         "../components/UpdateJobStageDialog",
         "@radix-ui/react-dialog",
         "date-fns",
@@ -5484,10 +5553,43 @@
       "tags": []
     },
     {
+      "path": "prisma/migrations/20251113113911_job_notes/migration.sql",
+      "language": "text",
+      "lines": 11,
+      "bytes": 419,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251114091500_followup_appointment_types/migration.sql",
+      "language": "text",
+      "lines": 11,
+      "bytes": 349,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
+      "path": "prisma/migrations/20251114093000_task_followup_link/migration.sql",
+      "language": "text",
+      "lines": 6,
+      "bytes": 237,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
       "path": "prisma/migrations/migration_lock.toml",
       "language": "toml",
-      "lines": 3,
-      "bytes": 126,
+      "lines": 4,
+      "bytes": 128,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5497,8 +5599,8 @@
     {
       "path": "prisma/schema.prisma",
       "language": "text",
-      "lines": 406,
-      "bytes": 9867,
+      "lines": 424,
+      "bytes": 10226,
       "module": "root",
       "exports": [],
       "imports": [],
