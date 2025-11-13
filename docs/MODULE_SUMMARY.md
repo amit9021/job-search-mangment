@@ -1,6 +1,6 @@
 # Module Summary
 
-Generated: 2025-11-09T08:03:21.008Z
+Generated: 2025-11-09T09:09:06.471Z
 
 Each section summarizes responsibilities, key artifacts, and guardrails for extending the module.
 

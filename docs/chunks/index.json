@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-09T08:03:21.008Z",
+  "generated_at": "2025-11-09T09:09:06.471Z",
   "chunks": [
     {
       "id": "chunk-backend-auth",
@@ -607,7 +607,7 @@
         "axios",
         "zod"
       ],
-      "tokens_est": 812,
+      "tokens_est": 814,
       "tags": [
         "client",
         "ui"

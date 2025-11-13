@@ -2,7 +2,7 @@
 id: chunk-backend-events
 title: Backend · Events API
 module: backend-events
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-09T09:09:06.471Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/events/events.controller.ts","backend/src/modules/events/events.service.ts"]
 exports: ["EventsController","EventsService"]

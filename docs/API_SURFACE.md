@@ -1,6 +1,6 @@
 # API Surface
 
-Generated: 2025-11-09T08:03:21.008Z
+Generated: 2025-11-09T09:09:06.471Z
 
 ## HTTP Routes
 
@@ -287,7 +287,7 @@ async createForContact(contactId: string, params: CreateReferralParams)
 Source: `backend/src/common/context/request-context.service.ts`
 
 ```ts
-run(callback: () => void)
+run(callback: () => void, seed?: Partial<RequestStore>)
 setUser(user: { id: string; username?: string })
 getUserId()
 getRequestId()
