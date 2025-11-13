@@ -1,70 +1,44 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { useLoginMutation } from '../api/hooks';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const schema = z.object({
-  username: z.string().min(1, 'Username required'),
-  password: z.string().min(1, 'Password required')
-});
-
-type FormValues = z.infer<typeof schema>;
+import { LoginForm } from '../features/auth/LoginForm';
+import { RegisterForm } from '../features/auth/RegisterForm';
+import { useAuth } from '../features/auth/useAuth';
 
 export const LoginPage = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema)
-  });
-  const loginMutation = useLoginMutation();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  const onSubmit = handleSubmit(async (values) => {
-    await loginMutation.mutateAsync(values);
-  });
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-lg"
-      >
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Welcome back</h1>
-          <p className="text-sm text-slate-500">Enter the admin password defined in your .env file.</p>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase text-slate-500">Username</label>
-            <input
-              type="text"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-              {...register('username')}
-            />
-            {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>}
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
+      <div className="grid w-full max-w-5xl gap-8 md:grid-cols-2">
+        <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+          <div className="mb-6 space-y-2">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand">Welcome back</p>
+            <h1 className="text-2xl font-semibold text-slate-900">Sign in to your workspace</h1>
+            <p className="text-sm text-slate-500">
+              Use the email and password you registered with. Tokens expire after 7 days of inactivity.
+            </p>
           </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase text-slate-500">Password</label>
-            <input
-              type="password"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-              {...register('password')}
-            />
-            {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+          <LoginForm />
+        </section>
+        <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8">
+          <div className="mb-6 space-y-2">
+            <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">New here?</p>
+            <h2 className="text-xl font-semibold text-slate-900">Create an account</h2>
+            <p className="text-sm text-slate-500">
+              Passwords are hashed with bcrypt and never stored in plaintext. We&apos;ll add OAuth options soon.
+            </p>
           </div>
-        </div>
-        <button
-          type="submit"
-          disabled={loginMutation.isPending}
-          className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-600 disabled:cursor-wait disabled:opacity-75"
-        >
-          {loginMutation.isPending ? 'Authenticating…' : 'Sign in'}
-        </button>
-        {loginMutation.isError && (
-          <p className="text-sm text-red-500">Login failed. Check credentials and try again.</p>
-        )}
-      </form>
+          <RegisterForm />
+        </section>
+      </div>
     </div>
   );
 };

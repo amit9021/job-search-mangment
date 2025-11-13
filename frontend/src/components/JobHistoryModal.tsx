@@ -1,7 +1,14 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
-import { useMemo, useState } from 'react';
-import { useJobHistoryQuery, useUpdateOutreachMutation, useDeleteOutreachMutation } from '../api/hooks';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  useJobHistoryQuery,
+  useUpdateOutreachMutation,
+  useDeleteOutreachMutation,
+  useCreateJobNoteMutation,
+  useUpdateJobNoteMutation,
+  useDeleteJobNoteMutation
+} from '../api/hooks';
 import { UpdateJobStageDialog } from './UpdateJobStageDialog';
 
 interface JobHistoryModalProps {
@@ -51,6 +58,18 @@ type TimelineItem =
         note?: string | null;
       };
       contact?: { id: string; name: string | null };
+    }
+  | {
+      id: string;
+      date: string;
+      kind: 'note';
+      note: {
+        id: string;
+        content: string;
+        createdAt: string;
+        updatedAt: string;
+        authorEmail?: string | null;
+      };
     };
 
 export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: JobHistoryModalProps) => {
@@ -58,6 +77,11 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const updateOutreach = useUpdateOutreachMutation();
   const deleteOutreach = useDeleteOutreachMutation();
+  const createNote = useCreateJobNoteMutation();
+  const updateNote = useUpdateJobNoteMutation();
+  const removeNote = useDeleteJobNoteMutation();
+  const [noteDraft, setNoteDraft] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   const handleOutcomeChange = async (outreachId: string, outcome: string) => {
     try {
@@ -76,6 +100,72 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
     }
     try {
       await deleteOutreach.mutateAsync({ id: outreachId });
+    } catch {
+      // toast handled in mutation
+    }
+  };
+
+  const resetNoteForm = () => {
+    setNoteDraft('');
+    setEditingNoteId(null);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      resetNoteForm();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      resetNoteForm();
+    }
+  }, [jobId]);
+
+  const isNotePending = createNote.isPending || updateNote.isPending;
+
+  const handleSaveNote = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!jobId) {
+      return;
+    }
+    if (isNotePending) {
+      return;
+    }
+    const content = noteDraft.trim();
+    if (!content) {
+      return;
+    }
+    try {
+      if (editingNoteId) {
+        await updateNote.mutateAsync({ jobId, noteId: editingNoteId, content });
+      } else {
+        await createNote.mutateAsync({ jobId, content });
+      }
+      resetNoteForm();
+    } catch {
+      // toast handled in mutations
+    }
+  };
+
+  const handleEditNote = (noteId: string, content: string) => {
+    setEditingNoteId(noteId);
+    setNoteDraft(content);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!jobId) {
+      return;
+    }
+    const confirmed = window.confirm('Delete this note?');
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await removeNote.mutateAsync({ jobId, noteId });
+      if (editingNoteId === noteId) {
+        resetNoteForm();
+      }
     } catch {
       // toast handled in mutation
     }
@@ -186,6 +276,25 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
       });
     });
 
+    (data.notes ?? []).forEach((note) => {
+      const parsed = parseDate(note.createdAt);
+      if (!parsed) {
+        return;
+      }
+      items.push({
+        id: `note-${note.id}`,
+        date: parsed.toISOString(),
+        kind: 'note',
+        note: {
+          id: note.id,
+          content: note.content,
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt,
+          authorEmail: note.user?.email ?? null
+        }
+      });
+    });
+
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [data]);
 
@@ -228,9 +337,16 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <Dialog.Title className="text-lg font-semibold text-slate-900">Timeline</Dialog.Title>
-          <Dialog.Description className="text-sm text-slate-500">{jobTitle}</Dialog.Description>
+        <Dialog.Content className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <Dialog.Close
+              className="absolute right-4 top-4 rounded-full border border-slate-200 p-2 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+              aria-label="Close timeline"
+            >
+              ✕
+            </Dialog.Close>
+            <Dialog.Title className="text-lg font-semibold text-slate-900 pr-8">Timeline</Dialog.Title>
+            <Dialog.Description className="text-sm text-slate-500">{jobTitle}</Dialog.Description>
 
           {data && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -266,16 +382,51 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             </div>
           )}
 
-          {isLoading && <p className="mt-4 text-sm text-slate-500">Loading timeline…</p>}
-
-          {!isLoading && timeline.length === 0 && (
-            <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-              No history recorded yet. Once you add applications, outreach, or status changes they will appear here.
-            </p>
+          {jobId && (
+            <form onSubmit={handleSaveNote} className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {editingNoteId ? 'Edit note' : 'Add note'}
+                </p>
+                {editingNoteId && (
+                  <button
+                    type="button"
+                    onClick={resetNoteForm}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+              <textarea
+                className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                rows={3}
+                placeholder="Add a note about this opportunity…"
+                value={noteDraft}
+                onChange={(event) => setNoteDraft(event.target.value)}
+              />
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isNotePending || noteDraft.trim().length === 0}
+                  className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  {isNotePending ? 'Saving…' : editingNoteId ? 'Update note' : 'Add note'}
+                </button>
+              </div>
+            </form>
           )}
 
-          {!isLoading && timeline.length > 0 && (
-            <div className="mt-5 space-y-6">
+            {isLoading && <p className="mt-4 text-sm text-slate-500">Loading timeline…</p>}
+
+            {!isLoading && timeline.length === 0 && (
+              <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                No history recorded yet. Once you add applications, outreach, or status changes they will appear here.
+              </p>
+            )}
+
+            {!isLoading && timeline.length > 0 && (
+              <div className="mt-5 space-y-6">
               {groupedTimeline.map((group) => {
                 const dayDate = new Date(group.day);
                 const dayLabel = Number.isNaN(dayDate.getTime())
@@ -322,13 +473,21 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                                     chip: 'border border-indigo-200 bg-indigo-50 text-indigo-700',
                                     iconTone: 'border border-indigo-200 bg-indigo-50 text-indigo-700'
                                   }
-                                : {
-                                    icon: '📄',
-                                    label: 'Application',
-                                    title: 'Application submitted',
-                                    chip: 'border border-blue-200 bg-blue-50 text-blue-700',
-                                    iconTone: 'border border-blue-200 bg-blue-50 text-blue-700'
-                                  };
+                                : item.kind === 'note'
+                                  ? {
+                                      icon: '📝',
+                                      label: 'Note',
+                                      title: 'Note added',
+                                      chip: 'border border-slate-200 bg-slate-50 text-slate-700',
+                                      iconTone: 'border border-slate-200 bg-slate-50 text-slate-700'
+                                    }
+                                  : {
+                                      icon: '📄',
+                                      label: 'Application',
+                                      title: 'Application submitted',
+                                      chip: 'border border-blue-200 bg-blue-50 text-blue-700',
+                                      iconTone: 'border border-blue-200 bg-blue-50 text-blue-700'
+                                    };
 
                         return (
                           <li
@@ -475,6 +634,40 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                                 </div>
                               )}
 
+                              {item.kind === 'note' && (
+                                <div className="space-y-2 text-xs text-slate-600">
+                                  <p className="whitespace-pre-wrap rounded-md border border-slate-100 bg-white/60 p-3 text-sm text-slate-800">
+                                    {item.note.content}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                                    {item.note.authorEmail && (
+                                      <span>By {item.note.authorEmail}</span>
+                                    )}
+                                    <span>
+                                      Updated{' '}
+                                      {formatDistanceToNow(new Date(item.note.updatedAt), {
+                                        addSuffix: true
+                                      })}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditNote(item.note.id, item.note.content)}
+                                      className="font-semibold text-blue-600 hover:text-blue-700"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteNote(item.note.id)}
+                                      className="font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-60"
+                                      disabled={removeNote.isPending}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
                               {item.kind === 'application' && (
                                 <div className="flex flex-wrap gap-3 text-xs text-slate-600">
                                   <span>
@@ -499,20 +692,15 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             </div>
           )}
 
-          <div className="mt-6 flex justify-end">
-            <Dialog.Close asChild>
-              <button className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">Close</button>
-            </Dialog.Close>
+            {jobId && data && (
+              <UpdateJobStageDialog
+                jobId={jobId}
+                currentStage={data.stage}
+                open={stageDialogOpen}
+                onOpenChange={(open) => setStageDialogOpen(open)}
+              />
+            )}
           </div>
-
-          {jobId && data && (
-            <UpdateJobStageDialog
-              jobId={jobId}
-              currentStage={data.stage}
-              open={stageDialogOpen}
-              onOpenChange={(open) => setStageDialogOpen(open)}
-            />
-          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

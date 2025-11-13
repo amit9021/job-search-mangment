@@ -1,15 +1,23 @@
+import * as crypto from 'node:crypto';
+
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
-import * as crypto from 'crypto';
 
 import { AppModule } from './app.module';
+import { RequestContextService } from './common/context/request-context.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ZodValidationPipe } from './utils/zod-validation.pipe';
 
+type CryptoWithNode = typeof globalThis extends { crypto: infer C }
+  ? (C extends object ? C & typeof crypto : typeof crypto)
+  : typeof crypto;
+type GlobalWithCrypto = typeof globalThis & { crypto?: CryptoWithNode };
+
 // Polyfill for @nestjs/schedule crypto issue - remove when @nestjs/schedule is fixed
-if (!(global as any).crypto) {
-  (global as any).crypto = crypto;
+const globalRef = globalThis as GlobalWithCrypto;
+if (!globalRef.crypto) {
+  globalRef.crypto = crypto as CryptoWithNode;
 }
 
 async function bootstrap() {
@@ -17,7 +25,9 @@ async function bootstrap() {
   app.use(cookieParser());
   const configService = app.get(ConfigService);
   const rawOrigins =
-    configService.get<string>('BACKEND_ALLOWED_ORIGINS') ?? process.env.BACKEND_ALLOWED_ORIGINS ?? '';
+    configService.get<string>('BACKEND_ALLOWED_ORIGINS') ??
+    process.env.BACKEND_ALLOWED_ORIGINS ??
+    '';
   const parsedOrigins = rawOrigins
     .split(',')
     .map((origin) => origin.trim())
@@ -36,7 +46,8 @@ async function bootstrap() {
     credentials: true
   });
   app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalFilters(new HttpExceptionFilter());
+  const requestContext = app.get(RequestContextService);
+  app.useGlobalFilters(new HttpExceptionFilter(requestContext));
   const port = Number(
     configService.get<string>('PORT') ??
       process.env.PORT ??
@@ -45,7 +56,9 @@ async function bootstrap() {
   );
   await app.listen(port);
 
-  console.log(`🚀 Backend running on port ${port}, and DB ${configService.get<string>('DATABASE_URL')}`);
+  console.log(
+    `🚀 Backend running on port ${port}, and DB ${configService.get<string>('DATABASE_URL')}`
+  );
 }
 
 void bootstrap();

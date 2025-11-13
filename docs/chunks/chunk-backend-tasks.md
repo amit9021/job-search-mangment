@@ -2,7 +2,7 @@
 id: chunk-backend-tasks
 title: Backend · Tasks & Automation
 module: backend-tasks
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-13T11:35:30.183Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/tasks/tasks.controller.ts","backend/src/modules/tasks/automation.controller.ts","backend/src/modules/tasks/tasks.service.ts"]
 exports: ["AutomationController","TasksController","TasksService"]

@@ -1,18 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { z } from 'zod';
 import { useApi } from './ApiProvider';
-import { useSessionStore } from '../stores/session';
 import { useToast } from '../components/ToastProvider';
-
-const loginSchema = z.object({
-  token: z.string(),
-  expiresIn: z.string(),
-  user: z.object({
-    id: z.string(),
-    username: z.string()
-  })
-});
 
 export type ParsedApiError = {
   message: string;
@@ -88,22 +77,21 @@ export type CreateJobMutationInput = {
   };
 };
 
+export type JobNote = {
+  id: string;
+  jobId?: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email?: string | null;
+  } | null;
+};
+
 export type DeleteJobMutationInput = {
   id: string;
   hard?: boolean;
-};
-
-export const useLoginMutation = () => {
-  const api = useApi();
-  const setSession = useSessionStore((state) => state.setSession);
-  return useMutation({
-    mutationFn: async (payload: { username: string; password: string }) => {
-      const response = await api.post('/auth/login', payload);
-      const parsed = loginSchema.parse(response.data);
-      setSession({ token: parsed.token, user: parsed.user });
-      return parsed;
-    }
-  });
 };
 
 export const useKpiTodayQuery = () => {
@@ -515,7 +503,80 @@ export const useJobHistoryQuery = (id: string, options?: { enabled?: boolean }) 
           note?: string | null;
           contact?: { id: string; name: string | null; role?: string | null } | null;
         }>;
+        notes: Array<{
+          id: string;
+          content: string;
+          createdAt: string;
+          updatedAt: string;
+          user?: {
+            id: string;
+            email?: string | null;
+          } | null;
+        }>;
       };
+    }
+  });
+};
+
+export const useCreateJobNoteMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ jobId, content }: { jobId: string; content: string }) => {
+      const { data } = await api.post(`/jobs/${jobId}/notes`, { content });
+      return data as JobNote;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      toast.success('Note added');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useUpdateJobNoteMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ jobId, noteId, content }: { jobId: string; noteId: string; content: string }) => {
+      const { data } = await api.patch(`/jobs/${jobId}/notes/${noteId}`, { content });
+      return data as JobNote;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      toast.success('Note updated');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
+export const useDeleteJobNoteMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ jobId, noteId }: { jobId: string; noteId: string }) => {
+      await api.delete(`/jobs/${jobId}/notes/${noteId}`);
+      return { jobId, noteId };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId, 'history'] });
+      toast.success('Note deleted');
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
     }
   });
 };

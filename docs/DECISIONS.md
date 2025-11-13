@@ -1,5 +1,11 @@
 # Decisions
 
+## 2025-02-14 – Database-backed email/password auth
+- **Context:** Sharing builds with more than one operator required real user records, expirations, and safer storage than the env-managed admin switch that bootstrapped the project.
+- **Decision:** Introduce `/auth/register` + `/auth/login` endpoints that hash passwords with bcrypt, mint 7-day JWTs, and enforce request rate limits. Tokens flow through the existing global guard, while OAuth controllers/providers were stubbed behind a feature flag for future SSO work.
+- **Alternatives considered:** (a) Keep env-driven admin credentials and gate multi-user work behind feature flags, (b) ship OAuth-only sign-in. Both left us without a simple self-serve flow or would have blocked testing in air-gapped setups.
+- **Consequences:** The `User` table now stores `email` and hashed passwords, seeds rely on `ADMIN_EMAIL/ADMIN_PASSWORD`, and frontend clients persist tokens locally with decode-on-load logout. Future OAuth work can implement the provider interface without reshaping the rest of the stack.
+
 ## 2025-11-09 – Env-managed single admin
 - **Context:** Early users only needed a personal mission-control view, so multi-user auth would have added onboarding friction and schema changes.
 - **Decision:** Keep one env-backed admin identity. `AuthService` validates credentials from `ADMIN_USERNAME/ADMIN_PASSWORD`, upserts a Prisma `User` row for auditing, and issues JWTs.

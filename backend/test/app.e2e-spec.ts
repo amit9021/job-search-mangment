@@ -1,6 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
@@ -101,16 +101,21 @@ describe('App e2e (happy path smoke tests)', () => {
 
   it('POST /auth/login returns token for valid credentials', async () => {
     const password = '123123zz';
-    const passwordHash = await argon2.hash(password);
-    prisma.user.findUnique.mockResolvedValue({ id: 'user_1', username: 'admin', password });
+    const passwordHash = await bcrypt.hash(password, 12);
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user_1',
+      email: 'admin@example.com',
+      passwordHash,
+      createdAt: new Date()
+    });
 
     const response = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ username: 'admin', password });
+      .send({ email: 'admin@example.com', password });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('token');
-    expect(response.body.user.username).toBe('admin');
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('accessToken');
+    expect(response.body).toHaveProperty('exp');
   });
 
   it('GET /kpis/today returns KPI snapshot structure', async () => {

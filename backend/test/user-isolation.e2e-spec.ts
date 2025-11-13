@@ -22,7 +22,7 @@ type TaskRecord = {
 
 type UserRecord = {
   id: string;
-  username: string;
+  email: string;
 };
 
 class TenantAwarePrismaStub {
@@ -121,8 +121,8 @@ describe('User isolation (tasks)', () => {
     jwtService = app.get(JwtService);
 
     prismaStub.seedUsers([
-      { id: 'userA', username: 'alpha' },
-      { id: 'userB', username: 'bravo' }
+      { id: 'userA', email: 'alpha@example.com' },
+      { id: 'userB', email: 'bravo@example.com' }
     ]);
 
     prismaStub.seedTasks([
@@ -152,8 +152,8 @@ describe('User isolation (tasks)', () => {
       }
     ]);
 
-    tokenUserA = await jwtService.signAsync({ sub: 'userA', username: 'alpha' });
-    tokenUserB = await jwtService.signAsync({ sub: 'userB', username: 'bravo' });
+    tokenUserA = await jwtService.signAsync({ sub: 'userA', email: 'alpha@example.com' });
+    tokenUserB = await jwtService.signAsync({ sub: 'userB', email: 'bravo@example.com' });
   });
 
   afterAll(async () => {

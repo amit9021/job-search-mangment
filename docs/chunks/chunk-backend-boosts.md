@@ -2,7 +2,7 @@
 id: chunk-backend-boosts
 title: Backend · Boost Tasks
 module: backend-boosts
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-13T11:35:30.183Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/boosts/boosts.controller.ts","backend/src/modules/boosts/boosts.service.ts"]
 exports: ["BoostsController","BoostsService"]

@@ -33,33 +33,18 @@ const contactCreateSchema = z.object({
   companyName: emptyToUndefined(z.string())
 });
 
-export const createJobOutreachSchema = z
-  .object({
-    contactId: z.string().cuid().optional(),
-    contactCreate: contactCreateSchema.optional(),
-    channel: z.nativeEnum(OutreachChannel),
-    messageType: z.string().min(1),
-    personalizationScore: scoreSchema,
-    outcome: z.nativeEnum(OutreachOutcome).optional(),
-    content: z.string().optional(),
-    context: z.nativeEnum(OutreachContext).optional(),
-    createFollowUp: z.boolean().optional().default(true),
-    followUpNote: z.string().optional()
-  })
-  .superRefine((value, ctx) => {
-    if (!value.contactId && !value.contactCreate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Provide either contactId or contactCreate',
-        path: ['contactId']
-      });
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Provide either contactId or contactCreate',
-        path: ['contactCreate']
-      });
-    }
-  });
+export const createJobOutreachSchema = z.object({
+  contactId: z.string().cuid().optional(),
+  contactCreate: contactCreateSchema.optional(),
+  channel: z.nativeEnum(OutreachChannel),
+  messageType: z.string().min(1),
+  personalizationScore: scoreSchema,
+  outcome: z.nativeEnum(OutreachOutcome).optional(),
+  content: z.string().optional(),
+  context: z.nativeEnum(OutreachContext).optional(),
+  createFollowUp: z.boolean().optional().default(true),
+  followUpNote: z.string().optional()
+});
 
 export class CreateJobOutreachDto extends createZodDto(createJobOutreachSchema) {}
 

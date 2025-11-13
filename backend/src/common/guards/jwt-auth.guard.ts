@@ -25,7 +25,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: unknown, user: { id?: string; username?: string } | null, info: unknown, ctx: ExecutionContext) {
+  handleRequest(
+    err: unknown,
+    user: { id?: string; email?: string } | null,
+    info: unknown,
+    ctx: ExecutionContext
+  ) {
     const result = super.handleRequest(err, user, info, ctx);
     if (!result || typeof result.id !== 'string') {
       throw err ?? new UnauthorizedException('User context missing');

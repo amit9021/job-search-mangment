@@ -3,8 +3,11 @@ import { z } from 'zod';
 import { createZodDto } from '../../../utils/create-zod-dto';
 
 const schema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1)
+  email: z
+    .string()
+    .min(1, 'Email required')
+    .email('Enter a valid email'),
+  password: z.string().min(8, 'Minimum 8 characters')
 });
 
 export class LoginDto extends createZodDto(schema) {}

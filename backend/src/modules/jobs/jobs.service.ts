@@ -7,7 +7,13 @@ import { ContactsService } from '../contacts/contacts.service';
 import { FollowupsService } from '../followups/followups.service';
 import { OutreachService } from '../outreach/outreach.service';
 
-import { CreateJobDto, AddApplicationDto, UpdateJobStageDto } from './dto';
+import {
+  CreateJobDto,
+  AddApplicationDto,
+  UpdateJobStageDto,
+  CreateJobNoteDto,
+  UpdateJobNoteDto
+} from './dto';
 import { CreateJobOutreachInput } from './dto/create-job-outreach.dto';
 import { loadHeatRules, HeatRules } from './heat-rules.loader';
 
@@ -137,13 +143,19 @@ export class JobsService {
   async create(data: InferDto<typeof CreateJobDto>) {
     const createdJob = await this.prisma.$transaction(async (tx) => {
       const stage = data.stage ?? JobStage.APPLIED;
+      const initialApplicationSentAt = data.initialApplication
+        ? data.initialApplication.dateSent
+          ? new Date(data.initialApplication.dateSent)
+          : new Date()
+        : null;
       const job = await tx.job.create({
         data: {
           company: data.company,
           role: data.role,
           sourceUrl: data.sourceUrl ?? null,
           heat: data.heat ?? 0,
-          stage
+          stage,
+          ...(initialApplicationSentAt ? { lastTouchAt: initialApplicationSentAt } : {})
         }
       });
 
@@ -155,22 +167,14 @@ export class JobsService {
         }
       });
 
-      if (data.initialApplication) {
-        const sentAt = data.initialApplication.dateSent
-          ? new Date(data.initialApplication.dateSent)
-          : new Date();
+      if (data.initialApplication && initialApplicationSentAt) {
         await tx.jobApplication.create({
           data: {
             jobId: job.id,
-            dateSent: sentAt,
+            dateSent: initialApplicationSentAt,
             tailoringScore: data.initialApplication.tailoringScore,
             cvVersionId: data.initialApplication.cvVersionId ?? null
           }
-        });
-
-        await tx.job.update({
-          where: { id: job.id },
-          data: { lastTouchAt: sentAt }
         });
       }
 
@@ -252,6 +256,7 @@ export class JobsService {
         await tx.outreach.deleteMany({ where: { jobId } });
         await tx.jobApplication.deleteMany({ where: { jobId } });
         await tx.jobStatusHistory.deleteMany({ where: { jobId } });
+        await tx.jobNote.deleteMany({ where: { jobId } });
         await tx.referral.updateMany({
           where: { jobId },
           data: { jobId: null }
@@ -387,6 +392,55 @@ export class JobsService {
     };
   }
 
+  async addNote(
+    jobId: string,
+    data: InferDto<typeof CreateJobNoteDto>,
+    userId?: string
+  ) {
+    await this.ensureJobExists(jobId);
+    return this.prisma.jobNote.create({
+      data: {
+        jobId,
+        content: data.content,
+        userId: userId ?? undefined
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
+    });
+  }
+
+  async updateNote(
+    jobId: string,
+    noteId: string,
+    data: InferDto<typeof UpdateJobNoteDto>
+  ) {
+    await this.assertNoteBelongsToJob(jobId, noteId);
+    return this.prisma.jobNote.update({
+      where: { id: noteId },
+      data: { content: data.content },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
+    });
+  }
+
+  async deleteNote(jobId: string, noteId: string) {
+    await this.assertNoteBelongsToJob(jobId, noteId);
+    await this.prisma.jobNote.delete({ where: { id: noteId } });
+    return { deletedId: noteId };
+  }
+
   async getHistory(jobId: string) {
     const job = await this.prisma.job.findUnique({
       where: { id: jobId },
@@ -410,6 +464,17 @@ export class JobsService {
               }
             }
           }
+        },
+        notes: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true
+              }
+            }
+          }
         }
       }
     });
@@ -423,6 +488,15 @@ export class JobsService {
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job) {
       throw new NotFoundException('Job not found');
+    }
+  }
+
+  private async assertNoteBelongsToJob(jobId: string, noteId: string) {
+    const note = await this.prisma.jobNote.findFirst({
+      where: { id: noteId, jobId }
+    });
+    if (!note) {
+      throw new NotFoundException('Job note not found');
     }
   }
 

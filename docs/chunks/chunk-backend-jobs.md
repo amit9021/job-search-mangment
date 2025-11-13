@@ -2,12 +2,12 @@
 id: chunk-backend-jobs
 title: Backend · Jobs Controller & Service
 module: backend-jobs
-generated_at: 2025-11-09T08:03:21.008Z
+generated_at: 2025-11-13T11:35:30.183Z
 tags: ["api","service","db"]
 source_paths: ["backend/src/modules/jobs/jobs.controller.ts","backend/src/modules/jobs/jobs.service.ts"]
 exports: ["JobsController","JobsService"]
-imports: ["../../common/dto/id-param.dto","../../prisma/prisma.service","../../utils/create-zod-dto","../contacts/contacts.service","../followups/followups.service","../outreach/outreach.service","./dto","./dto/create-job-outreach.dto","./heat-rules.loader","./jobs.service","@nestjs/common","@prisma/client"]
-tokens_est: 737
+imports: ["../../common/decorators/user.decorator","../../common/dto/id-param.dto","../../prisma/prisma.service","../../utils/create-zod-dto","../contacts/contacts.service","../followups/followups.service","../outreach/outreach.service","./dto","./dto/create-job-outreach.dto","./heat-rules.loader","./jobs.service","@nestjs/common","@prisma/client"]
+tokens_est: 795
 ---
 
 ### Summary
@@ -57,9 +57,27 @@ export class JobsController {
       return this.jobsService.create(body);
     }
 
+  @Post(':id/notes')
+    async addNote(
+      @Param() params: IdParamDto,
+      @Body() body: CreateJobNoteDto,
+      @CurrentUser() user?: { id?: string | null }
+    ) {
+      return this.jobsService.addNote(params.id, body, user?.id ?? undefined);
+    }
+
   @Patch(':id')
     async update(@Param() params: IdParamDto, @Body() body: UpdateJobDto) {
       return this.jobsService.update(params.id, body);
+    }
+
+  @Patch(':id/notes/:noteId')
+    async updateNote(
+      @Param() params: IdParamDto,
+      @Param('noteId') noteId: string,
+      @Body() body: UpdateJobNoteDto
+    ) {
+      return this.jobsService.updateNote(params.id, noteId, body);
     }
 
   @Delete(':id')
@@ -67,6 +85,11 @@ export class JobsController {
       const hardDelete =
         typeof hard === 'string' ? ['true', '1', 'yes', 'on'].includes(hard.toLowerCase()) : false;
       return this.jobsService.delete(params.id, { hard: hardDelete });
+    }
+
+  @Delete(':id/notes/:noteId')
+    async deleteNote(@Param() params: IdParamDto, @Param('noteId') noteId: string) {
+      return this.jobsService.deleteNote(params.id, noteId);
     }
 
   @Post(':id/applications')
@@ -128,12 +151,7 @@ export class JobsService {
         const term = query.trim();
         where.OR = [
           { company: { contains: term, mode: 'insensitive' } },
-          { role: { contains: term, mode: 'insensitive' } }
-        ];
-      }
-  
-      const normalizedPageSize = pageSize && pageSize > 0 ? Math.min(pageSize, 200) : undefined;
-      const normalizedP
+          { role: { conta
     /* ... truncated ... */
 
   async getById(jobId: string) {
@@ -159,32 +177,19 @@ export class JobsService {
   async create(data: InferDto<typeof CreateJobDto>) {
       const createdJob = await this.prisma.$transaction(async (tx) => {
         const stage = data.stage ?? JobStage.APPLIED;
+        const initialApplicationSentAt = data.initialApplication
+          ? data.initialApplication.dateSent
+            ? new Date(data.initialApplication.dateSent)
+            : new Date()
+          : null;
         const job = await tx.job.create({
           data: {
             company: data.company,
             role: data.role,
             sourceUrl: data.sourceUrl ?? null,
             heat: data.heat ?? 0,
-            stage
-          }
-        });
-  
-        await tx.jobStatusHistory.create({
-          data: {
-            jobId: job.id,
             stage,
-            note: 'Job created'
-          }
-        });
-  
-        if (data.initialApplication) {
-          const sentAt = data.initialApplication.dateSent
-            ? new Date(data.initialApplication.dateSent)
-            : new Date();
-          await tx.jobApplication.create({
-            data: {
-              jobId: job.id,
-              dateSent:
+            ...(initialApplicationSentAt ? { lastTouchAt: initialApplicationSentAt }
     /* ... truncated ... */
 
   async update(
@@ -236,10 +241,22 @@ export class JobsService {
         });
   
         await this.followupsService.markDormantForJob(jobId);
-        await this.recalculateHeat(jobId);
+        await this.recalculateHeat(j
+    /* ... truncated ... */
+
+  async addApplication(jobId: string, dto: InferDto<typeof AddApplicationDto>) {
+      await this.ensureJobExists(jobId);
+      const application = await this.prisma.jobApplication.create({
+        data: {
+          jobId,
+          dateSent: new Date(dto.dateSent),
+          tailoringScore: dto.tailoringScore,
+          cvVersionId: dto.cvVersionId ?? null
+        }
+      });
   
-        this.logger.log(`job.delete soft jobId=${jobId}`);
-        return { succ
+      await this.touchJob(jobId);
+      await t
 ```
 
 ### Related
