@@ -316,8 +316,8 @@ export const AddOutreachDialog = ({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-900/40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold text-slate-900">{dialogTitle}</Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">{dialogDescription}</Dialog.Description>
 
