@@ -5,16 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-
-type MiddlewareParams = {
-  model?: string;
-  action: string;
-  args?: Record<string, unknown>;
-};
-
-type MiddlewareNext = (params: MiddlewareParams) => Promise<unknown>;
-type PrismaMiddleware = (params: MiddlewareParams, next: MiddlewareNext) => Promise<unknown>;
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { RequestContextService } from '../common/context/request-context.service';
 
@@ -50,7 +41,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor(private readonly requestContext: RequestContextService) {
     ensureDatabaseUrl();
     super();
-    (this as PrismaClient & { $use?: (fn: PrismaMiddleware) => void }).$use?.(
+    (this as PrismaClient & { $use?: (fn: Prisma.Middleware) => void }).$use?.(
       this.enforceUserIsolation
     );
   }
@@ -70,7 +61,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     });
   }
 
-  private enforceUserIsolation: PrismaMiddleware = async (params, next) => {
+  private enforceUserIsolation: Prisma.Middleware = async (params, next) => {
     if (!params.model || !this.multiTenantModels.has(params.model)) {
       return next(params);
     }
