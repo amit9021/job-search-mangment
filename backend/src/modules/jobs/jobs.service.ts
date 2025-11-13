@@ -256,6 +256,7 @@ export class JobsService {
         await tx.outreach.deleteMany({ where: { jobId } });
         await tx.jobApplication.deleteMany({ where: { jobId } });
         await tx.jobStatusHistory.deleteMany({ where: { jobId } });
+        await tx.jobNote.deleteMany({ where: { jobId } });
         await tx.referral.updateMany({
           where: { jobId },
           data: { jobId: null }

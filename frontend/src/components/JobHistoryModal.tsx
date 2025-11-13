@@ -337,9 +337,16 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <Dialog.Title className="text-lg font-semibold text-slate-900">Timeline</Dialog.Title>
-          <Dialog.Description className="text-sm text-slate-500">{jobTitle}</Dialog.Description>
+        <Dialog.Content className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <Dialog.Close
+              className="absolute right-4 top-4 rounded-full border border-slate-200 p-2 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+              aria-label="Close timeline"
+            >
+              ✕
+            </Dialog.Close>
+            <Dialog.Title className="text-lg font-semibold text-slate-900 pr-8">Timeline</Dialog.Title>
+            <Dialog.Description className="text-sm text-slate-500">{jobTitle}</Dialog.Description>
 
           {data && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -410,16 +417,16 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             </form>
           )}
 
-          {isLoading && <p className="mt-4 text-sm text-slate-500">Loading timeline…</p>}
+            {isLoading && <p className="mt-4 text-sm text-slate-500">Loading timeline…</p>}
 
-          {!isLoading && timeline.length === 0 && (
-            <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-              No history recorded yet. Once you add applications, outreach, or status changes they will appear here.
-            </p>
-          )}
+            {!isLoading && timeline.length === 0 && (
+              <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                No history recorded yet. Once you add applications, outreach, or status changes they will appear here.
+              </p>
+            )}
 
-          {!isLoading && timeline.length > 0 && (
-            <div className="mt-5 space-y-6">
+            {!isLoading && timeline.length > 0 && (
+              <div className="mt-5 space-y-6">
               {groupedTimeline.map((group) => {
                 const dayDate = new Date(group.day);
                 const dayLabel = Number.isNaN(dayDate.getTime())
@@ -685,20 +692,15 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             </div>
           )}
 
-          <div className="mt-6 flex justify-end">
-            <Dialog.Close asChild>
-              <button className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">Close</button>
-            </Dialog.Close>
+            {jobId && data && (
+              <UpdateJobStageDialog
+                jobId={jobId}
+                currentStage={data.stage}
+                open={stageDialogOpen}
+                onOpenChange={(open) => setStageDialogOpen(open)}
+              />
+            )}
           </div>
-
-          {jobId && data && (
-            <UpdateJobStageDialog
-              jobId={jobId}
-              currentStage={data.stage}
-              open={stageDialogOpen}
-              onOpenChange={(open) => setStageDialogOpen(open)}
-            />
-          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -44,7 +44,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     'GrowthReview',
     'GrowthEvent',
     'GrowthBoostTask',
-    'ProjectHighlight'
+    'ProjectHighlight',
+    'JobNote'
   ]);
 
   constructor(private readonly requestContext: RequestContextService) {
