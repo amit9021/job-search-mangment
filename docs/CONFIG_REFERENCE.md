@@ -10,9 +10,13 @@ This table documents every knob referenced in code so new environments can be pr
 | `PORT` | `3001` | NestHTTP listen port; also used by docker-compose and proxy rules. |
 | `BACKEND_ALLOWED_ORIGINS` | `http://localhost:5174` | Comma-delimited list of browser origins allowed through CORS. |
 | `JWT_SECRET` | `replace-with-long-random-secret` | Symmetric key for `@nestjs/jwt` token signing. |
-| `JWT_EXPIRES_IN` | `12h` | Passed to `JwtService.signAsync` to cap session lifetime. |
-| `ADMIN_USERNAME` | `admin` | Env-managed credential for the single admin account (also seeded into the DB). |
-| `ADMIN_PASSWORD` | `change_me` | Pairing secret for `ADMIN_USERNAME`. |
+| `JWT_EXPIRES_IN` | `7d` | Passed to `JwtService.signAsync` to cap session lifetime (frontend uses `exp` claim for auto-logout). |
+| `BCRYPT_ROUNDS` | `12` | Cost factor passed to `bcryptjs` when hashing passwords. |
+| `RATE_LIMIT_WINDOW` | `60000` | In-memory window (ms) for the auth rate-limit guard. |
+| `RATE_LIMIT_MAX` | `5` | Max register/login attempts allowed per IP within the window. |
+| `AUTH_OAUTH_ENABLED` | `false` | Feature flag that keeps the OAuth controller stub dormant until providers are implemented. |
+| `ADMIN_EMAIL` | `founder@example.com` | Seed helper that ensures demo data owns a user row; change for non-demo seeds. |
+| `ADMIN_PASSWORD` | `change_me` | Password used by the seed helper to hash the bootstrap account. |
 
 ## Database & Prisma
 | Variable | Default / Example | Effect |

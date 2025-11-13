@@ -2,7 +2,7 @@
 id: chunk-backend-kpi
 title: Backend · KPI API
 module: backend-kpi
-generated_at: 2025-11-09T09:09:06.471Z
+generated_at: 2025-11-13T07:15:08.035Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/kpi/kpi.controller.ts","backend/src/modules/kpi/kpi.service.ts"]
 exports: ["KpiController","KpiService"]

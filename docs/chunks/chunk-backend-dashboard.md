@@ -2,7 +2,7 @@
 id: chunk-backend-dashboard
 title: Backend · Dashboard Aggregator
 module: backend-dashboard
-generated_at: 2025-11-09T09:09:06.471Z
+generated_at: 2025-11-13T07:15:08.035Z
 tags: ["api","service","cache"]
 source_paths: ["backend/src/modules/dashboard/dashboard.controller.ts","backend/src/modules/dashboard/dashboard.service.ts"]
 exports: ["DashboardController","DashboardService"]

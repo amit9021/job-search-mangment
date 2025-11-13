@@ -1,13 +1,17 @@
 # API Surface
 
-Generated: 2025-11-09T09:09:06.471Z
+Generated: 2025-11-13T07:15:08.035Z
 
 ## HTTP Routes
 
 | Method | Path | Handler | Request | Response |
 | --- | --- | --- | --- | --- |
 | POST | `/auth/login` | `login` (backend/src/modules/auth/auth.controller.ts) | body: LoginDto | unknown |
-| GET | `/auth/me` | `me` (backend/src/modules/auth/auth.controller.ts) | user: { username: string } | unknown |
+| POST | `/auth/logout` | `logout` (backend/src/modules/auth/auth.controller.ts) | — | unknown |
+| GET | `/auth/me` | `me` (backend/src/modules/auth/auth.controller.ts) | user: AuthProfile | unknown |
+| GET | `/auth/oauth/:provider` | `authorize` (backend/src/modules/auth/oauth/oauth.controller.ts) | provider: string | unknown |
+| GET | `/auth/oauth/:provider/callback` | `callback` (backend/src/modules/auth/oauth/oauth.controller.ts) | provider: string, code: string | unknown |
+| POST | `/auth/register` | `register` (backend/src/modules/auth/auth.controller.ts) | body: RegisterDto | unknown |
 | POST | `/automation/outreach-created` | `outreachCreated` (backend/src/modules/tasks/automation.controller.ts) | body: OutreachAutomationDto | unknown |
 | GET | `/boosts` | `list` (backend/src/modules/boosts/boosts.controller.ts) | — | unknown |
 | POST | `/boosts` | `create` (backend/src/modules/boosts/boosts.controller.ts) | body: CreateBoostTaskDto | unknown |
@@ -93,8 +97,10 @@ Generated: 2025-11-09T09:09:06.471Z
 Source: `backend/src/modules/auth/auth.service.ts`
 
 ```ts
-async validateUser(username: string, password: string)
-async login(username: string, password: string)
+async register(email: string, password: string): Promise<AuthProfile>
+async login(email: string, password: string): Promise<AuthTokens>
+logout()
+toProfile(user: { id: string; email: string; createdAt: Date }): AuthProfile
 ```
 
 ### BoostsService
@@ -265,6 +271,14 @@ async toggleSpotlight(id: string)
 async delete(id: string)
 ```
 
+### RateLimitService
+
+Source: `backend/src/common/rate-limit/rate-limit.service.ts`
+
+```ts
+hit(key: string, maxOverride?: number, windowOverride?: number): RateLimitHit
+```
+
 ### RecommendationService
 
 Source: `backend/src/modules/recommendation/recommendation.service.ts`
@@ -288,7 +302,7 @@ Source: `backend/src/common/context/request-context.service.ts`
 
 ```ts
 run(callback: () => void, seed?: Partial<RequestStore>)
-setUser(user: { id: string; username?: string })
+setUser(user: { id: string; email?: string; username?: string })
 getUserId()
 getRequestId()
 ```
@@ -334,17 +348,17 @@ async handleOutreachAutomation(payload: OutreachAutomationInput)
 
 Fields:
 - `id           String   @id @default(cuid())`
-- `username     String   @unique`
+- `email        String   @unique`
 - `passwordHash String`
 - `createdAt    DateTime @default(now())`
 - `updatedAt    DateTime @updatedAt`
-- `companies        Company[]`
-- `contacts         Contact[]`
-- `jobs             Job[]`
-- `tasks            Task[]`
-- `growthReviews    GrowthReview[]`
-- `growthEvents     GrowthEvent[]`
-- `growthBoostTasks GrowthBoostTask[]`
+- `companies         Company[]`
+- `contacts          Contact[]`
+- `jobs              Job[]`
+- `tasks             Task[]`
+- `growthReviews     GrowthReview[]`
+- `growthEvents      GrowthEvent[]`
+- `growthBoostTasks  GrowthBoostTask[]`
 - `projectHighlights ProjectHighlight[]`
 
 ### Company

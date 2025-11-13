@@ -2,7 +2,7 @@
 id: chunk-backend-grow
 title: Backend · Grow API
 module: backend-grow
-generated_at: 2025-11-09T09:09:06.471Z
+generated_at: 2025-11-13T07:15:08.035Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/grow/grow.controller.ts","backend/src/modules/grow/grow.service.ts"]
 exports: ["GrowController","GrowService"]

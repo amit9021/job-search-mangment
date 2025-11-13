@@ -2,12 +2,12 @@
 id: chunk-frontend-shell
 title: Frontend · Shell & Session
 module: frontend-shell
-generated_at: 2025-11-09T09:09:06.471Z
+generated_at: 2025-11-13T07:15:08.035Z
 tags: ["ui","state"]
 source_paths: ["frontend/src/App.tsx","frontend/src/layouts/ShellLayout.tsx","frontend/src/stores/session.ts"]
 exports: ["SessionUser","ShellLayout","useSessionStore"]
-imports: ["../api/hooks","../components/NextActionCard","../stores/session","./layouts/ShellLayout","./pages/ContactsPage","./pages/DashboardPage","./pages/GrowPage","./pages/JobsPage","./pages/LoginPage","./pages/TasksPage","./stores/session","react-router-dom","zustand","zustand/middleware"]
-tokens_est: 153
+imports: ["../api/hooks","../components/NextActionCard","../components/UserStatus","./layouts/ShellLayout","./pages/ContactsPage","./pages/DashboardPage","./pages/GrowPage","./pages/JobsPage","./pages/LoginPage","./pages/TasksPage","./routes/ProtectedRoute","react-router-dom","zustand","zustand/middleware"]
+tokens_est: 138
 ---
 
 ### Summary
@@ -33,13 +33,9 @@ tokens_est: 153
 
 ```ts
 export default function App() {
-  const token = useSessionStore((state) => state.token);
-
-  if (!token) {
-    return (
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />}
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />}
 ```
 
 #### frontend/src/layouts/ShellLayout.tsx
@@ -53,7 +49,8 @@ export default function App() {
 ```ts
 export type SessionUser = {
   id: string;
-  username: string;
+  email: string;
+  createdAt: string;
 };
 ```
 

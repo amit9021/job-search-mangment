@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common';
 type RequestStore = {
   requestId: string;
   userId?: string;
+  email?: string;
   username?: string;
 };
 
@@ -20,6 +21,9 @@ export class RequestContextService {
     if (seed?.userId) {
       context.userId = seed.userId;
     }
+    if (seed?.email) {
+      context.email = seed.email;
+    }
     if (seed?.username) {
       context.username = seed.username;
     }
@@ -33,11 +37,16 @@ export class RequestContextService {
     return randomUUID();
   }
 
-  setUser(user: { id: string; username?: string }) {
+  setUser(user: { id: string; email?: string; username?: string }) {
     const store = this.storage.getStore();
     if (store) {
       store.userId = user.id;
-      store.username = user.username;
+      if (user.email) {
+        store.email = user.email;
+      }
+      if (user.username) {
+        store.username = user.username;
+      }
     }
   }
 

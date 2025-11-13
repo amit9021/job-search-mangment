@@ -2,12 +2,12 @@
 id: chunk-backend-auth
 title: Backend · Auth HTTP + Service
 module: backend-auth
-generated_at: 2025-11-09T09:09:06.471Z
+generated_at: 2025-11-13T07:15:08.035Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/auth/auth.controller.ts","backend/src/modules/auth/auth.service.ts"]
-exports: ["AuthController","AuthService"]
-imports: ["../../common/decorators/public.decorator","../../common/decorators/user.decorator","../../prisma/prisma.service","./auth.service","./dto/login.dto","@nestjs/common","@nestjs/config","@nestjs/jwt"]
-tokens_est: 308
+exports: ["AuthController","AuthProfile","AuthService","AuthTokens"]
+imports: ["../../common/decorators/public.decorator","../../common/decorators/user.decorator","../../common/rate-limit/rate-limit.decorator","../../common/rate-limit/rate-limit.guard","../../prisma/prisma.service","./auth.service","./dto/login.dto","./dto/register.dto","@nestjs/common","@nestjs/config","@nestjs/jwt","bcryptjs"]
+tokens_est: 367
 ---
 
 ### Summary
@@ -20,29 +20,47 @@ tokens_est: 308
 ### Operational Notes
 
 **Invariants**
-- Only the admin credentials defined via env/ConfigService are accepted; no multi-user state.
-- Prisma upsert guarantees the backing User row exists for audit/logging.
+- Passwords are hashed with bcrypt using the configured rounds; JWTs expire after ~7 days.
+- Rate limit guard throttles register/login per IP to mitigate brute-force.
 
 **Failure modes**
-- Invalid credentials raise UnauthorizedException, surfacing as HTTP 401.
-- Missing JWT secret or expires-in configuration will produce unsigned/short-lived tokens.
+- Invalid credentials raise UnauthorizedException (401).
+- Missing JWT secret/expiry or misconfigured bcrypt rounds will break token issuance.
 
 **Extension tips**
-- Add new login flows by expanding AuthService and wiring additional DTO validation.
-- Keep JwtStrategy/guards aligned with any changes to the session payload.
+- Implement OAuth providers by honoring AuthProvider interface and flipping AUTH_OAUTH_ENABLED.
+- Add refresh tokens/blacklists by extending AuthService + controller responses.
 
 #### backend/src/modules/auth/auth.controller.ts
 
 ```ts
 export class AuthController {
   @Public()
+    @UseGuards(RateLimitGuard)
+    @RateLimit({ keyPrefix: 'auth:register' })
+    @Post('register')
+    @HttpCode(HttpStatus.CREATED)
+    register(@Body() body: RegisterDto) {
+      return this.authService.register(body.email, body.password);
+    }
+
+  @Public()
+    @UseGuards(RateLimitGuard)
+    @RateLimit({ keyPrefix: 'auth:login' })
     @Post('login')
+    @HttpCode(HttpStatus.OK)
     async login(@Body() body: LoginDto) {
-      return this.authService.login(body.username, body.password);
+      return this.authService.login(body.email, body.password);
+    }
+
+  @Post('logout')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async logout() {
+      await this.authService.logout();
     }
 
   @Get('me')
-    me(@CurrentUser() user: { username: string }) {
+    me(@CurrentUser() user: AuthProfile) {
       return user;
     }
 }
@@ -51,48 +69,56 @@ export class AuthController {
 #### backend/src/modules/auth/auth.service.ts
 
 ```ts
+export type AuthProfile = {
+  id: string;
+  email: string;
+  createdAt: Date;
+};
+
+export type AuthTokens = {
+  accessToken: string;
+  exp: number;
+};
+
 export class AuthService {
-  async validateUser(username: string, password: string) {
-      const adminUsername = (
-        this.configService.get<string>('ADMIN_USERNAME') ??
-        process.env.ADMIN_USERNAME ??
-        'admin'
-      ).trim();
-      const adminPassword = (
-        this.configService.get<string>('ADMIN_PASSWORD') ??
-        process.env.ADMIN_PASSWORD ??
-        'change_me'
-      ).trim();
-  
-      if (username.trim() !== adminUsername || password.trim() !== adminPassword) {
-        throw new UnauthorizedException('Invalid credentials');
+  async register(email: string, password: string): Promise<AuthProfile> {
+      const normalizedEmail = this.normalizeEmail(email);
+      const existing = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+      if (existing) {
+        throw new ConflictException('Email already registered');
       }
-  
-      // Ensure backing record exists for analytics/auditing purposes
-      const user = await this.prisma.user.upsert({
-        where: { username: adminUsername },
-        update: { passwordHash: 'env_managed' },
-        create: {
-          username: adminUsername,
-          passwordHash: 'env_managed'
+      const passwordHash = await this.hashPassword(password);
+      const user = await this.prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          passwordHash
         }
       });
-  
-      return user;
+      return this.toProfile(user);
     }
 
-  async login(username: string, password: string) {
-      const user = await this.validateUser(username, password);
-      await this.claimOrphanedRecords(user.id);
-      const payload = { sub: user.id, username: user.username };
-      const token = await this.jwtService.signAsync(payload);
+  async login(email: string, password: string): Promise<AuthTokens> {
+      const normalizedEmail = this.normalizeEmail(email);
+      const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      return this.issueTokens(user.id, user.email);
+    }
+
+  logout() {
+      return Promise.resolve();
+    }
+
+  toProfile(user: { id: string; email: string; createdAt: Date }): AuthProfile {
       return {
-        token,
-        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '12h'),
-        user: {
-          id: user.id,
-          username: user.username
-        }
+        id: user.id,
+        email: user.email,
+        createdAt: user.createdAt
       };
     }
 }

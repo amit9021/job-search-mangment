@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-09T09:09:06.471Z",
+  "generated_at": "2025-11-13T07:15:08.035Z",
   "chunks": [
     {
       "id": "chunk-backend-auth",
@@ -12,19 +12,25 @@
       "module": "backend-auth",
       "exports": [
         "AuthController",
-        "AuthService"
+        "AuthProfile",
+        "AuthService",
+        "AuthTokens"
       ],
       "imports": [
         "../../common/decorators/public.decorator",
         "../../common/decorators/user.decorator",
+        "../../common/rate-limit/rate-limit.decorator",
+        "../../common/rate-limit/rate-limit.guard",
         "../../prisma/prisma.service",
         "./auth.service",
         "./dto/login.dto",
+        "./dto/register.dto",
         "@nestjs/common",
         "@nestjs/config",
-        "@nestjs/jwt"
+        "@nestjs/jwt",
+        "bcryptjs"
       ],
-      "tokens_est": 308,
+      "tokens_est": 367,
       "tags": [
         "api",
         "service"
@@ -577,7 +583,6 @@
         "useJobsQuery",
         "useKpiTodayQuery",
         "useKpiWeekQuery",
-        "useLoginMutation",
         "useMarkFollowupMutation",
         "useNetworkStarsQuery",
         "useNextActionQuery",
@@ -601,11 +606,9 @@
       ],
       "imports": [
         "../components/ToastProvider",
-        "../stores/session",
         "./ApiProvider",
         "@tanstack/react-query",
-        "axios",
-        "zod"
+        "axios"
       ],
       "tokens_est": 814,
       "tags": [
@@ -630,7 +633,7 @@
       "imports": [
         "../api/hooks",
         "../components/NextActionCard",
-        "../stores/session",
+        "../components/UserStatus",
         "./layouts/ShellLayout",
         "./pages/ContactsPage",
         "./pages/DashboardPage",
@@ -638,12 +641,12 @@
         "./pages/JobsPage",
         "./pages/LoginPage",
         "./pages/TasksPage",
-        "./stores/session",
+        "./routes/ProtectedRoute",
         "react-router-dom",
         "zustand",
         "zustand/middleware"
       ],
-      "tokens_est": 153,
+      "tokens_est": 138,
       "tags": [
         "ui",
         "state"

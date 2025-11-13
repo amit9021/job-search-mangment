@@ -5,7 +5,7 @@ echo "=== Docker Entrypoint Debug ==="
 echo "DATABASE_URL: $DATABASE_URL"
 echo "DATABASE_URL_DEV: $DATABASE_URL_DEV"
 echo "NODE_ENV: $NODE_ENV"
-echo "ADMIN_USERNAME: $ADMIN_USERNAME"
+echo "ADMIN_EMAIL: $ADMIN_EMAIL"
 echo "ADMIN_PASSWORD: [hidden]"
 echo "=============================="
 

@@ -1,18 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ShellLayout } from '../ShellLayout';
-import { useSessionStore } from '../../stores/session';
 
 vi.mock('../../api/hooks', () => ({
   useNextActionQuery: () => ({ data: { title: 'Call Beta HR', action: 'Confirm technical interview slot' } })
 }));
 
-describe('ShellLayout', () => {
-  beforeEach(() => {
-    useSessionStore.setState({ token: 'test', user: { id: '1', username: 'admin' } } as any);
-  });
+vi.mock('../../features/auth/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: '1', email: 'admin@example.com', createdAt: new Date().toISOString() },
+    logout: vi.fn(),
+    logoutStatus: 'idle',
+    isAuthenticated: true,
+    isLoading: false,
+    token: 'token'
+  })
+}));
 
+describe('ShellLayout', () => {
   it('renders next best action data from API hook', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
