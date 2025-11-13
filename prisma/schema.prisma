@@ -24,6 +24,7 @@ model User {
   growthEvents      GrowthEvent[]
   growthBoostTasks  GrowthBoostTask[]
   projectHighlights ProjectHighlight[]
+  jobNotes          JobNote[]
 }
 
 model Company {
@@ -66,6 +67,7 @@ model Job {
   followups     FollowUp[]
   referrals     Referral[]
   notifications Notification[]
+  notes         JobNote[]
 
   userId String?
   user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -102,6 +104,20 @@ model JobStatusHistory {
   stage JobStage
   at    DateTime @default(now())
   note  String?
+}
+
+model JobNote {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([userId])
 }
 
 model Contact {

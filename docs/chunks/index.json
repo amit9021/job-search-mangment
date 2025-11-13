@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2025-11-13T07:15:08.035Z",
+  "generated_at": "2025-11-13T11:35:30.183Z",
   "chunks": [
     {
       "id": "chunk-backend-auth",
@@ -49,6 +49,7 @@
         "JobsService"
       ],
       "imports": [
+        "../../common/decorators/user.decorator",
         "../../common/dto/id-param.dto",
         "../../prisma/prisma.service",
         "../../utils/create-zod-dto",
@@ -62,7 +63,7 @@
         "@nestjs/common",
         "@prisma/client"
       ],
-      "tokens_est": 737,
+      "tokens_est": 795,
       "tags": [
         "api",
         "service",
@@ -545,6 +546,7 @@
         "GrowthBoostTask",
         "GrowthEvent",
         "GrowthReview",
+        "JobNote",
         "JobOutreachPayload",
         "ParsedApiError",
         "ProjectHighlight",
@@ -568,11 +570,13 @@
         "useCreateGrowthEventMutation",
         "useCreateGrowthReviewMutation",
         "useCreateJobMutation",
+        "useCreateJobNoteMutation",
         "useCreateJobOutreachMutation",
         "useCreateProjectHighlightMutation",
         "useDashboardSummary",
         "useDeleteContactMutation",
         "useDeleteJobMutation",
+        "useDeleteJobNoteMutation",
         "useDeleteOutreachMutation",
         "useEventsQuery",
         "useFollowupsQuery",
@@ -599,6 +603,7 @@
         "useUpdateContactMutation",
         "useUpdateGrowthBoostTaskMutation",
         "useUpdateJobMutation",
+        "useUpdateJobNoteMutation",
         "useUpdateJobStageMutation",
         "useUpdateOutreachMutation",
         "useUpdateProjectHighlightMutation",
@@ -610,7 +615,7 @@
         "@tanstack/react-query",
         "axios"
       ],
-      "tokens_est": 814,
+      "tokens_est": 843,
       "tags": [
         "client",
         "ui"

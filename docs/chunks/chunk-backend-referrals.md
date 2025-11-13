@@ -2,7 +2,7 @@
 id: chunk-backend-referrals
 title: Backend · Referrals API
 module: backend-referrals
-generated_at: 2025-11-13T07:15:08.035Z
+generated_at: 2025-11-13T11:35:30.183Z
 tags: ["api","service"]
 source_paths: ["backend/src/modules/referrals/referrals.controller.ts","backend/src/modules/referrals/referrals.service.ts"]
 exports: ["ReferralsController","ReferralsService"]

@@ -1,6 +1,6 @@
 # Module Summary
 
-Generated: 2025-11-13T07:15:08.035Z
+Generated: 2025-11-13T11:35:30.183Z
 
 Each section summarizes responsibilities, key artifacts, and guardrails for extending the module.
 
@@ -127,22 +127,22 @@ Each section summarizes responsibilities, key artifacts, and guardrails for exte
 
 **Key files**
 - `backend/src/modules/jobs/dto/add-application.dto.ts` — DTO or schema definition for request/response validation.
+- `backend/src/modules/jobs/dto/create-job-note.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/modules/jobs/dto/create-job-outreach.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/modules/jobs/dto/create-job.dto.ts` — DTO or schema definition for request/response validation.
 - `backend/src/modules/jobs/dto/list-jobs-query.dto.ts` — DTO or schema definition for request/response validation.
-- `backend/src/modules/jobs/dto/update-job-stage.dto.ts` — DTO or schema definition for request/response validation.
 
 **Important types/functions**
 - `AddApplicationDto`
+- `CreateJobNoteDto`
 - `CreateJobOutreachDto`
 - `CreateJobOutreachInput`
 - `createJobOutreachSchema`
 - `CreateJobDto`
 - `ListJobsQueryDto`
 - `UpdateJobDto`
+- `UpdateJobNoteDto`
 - `UpdateJobStageDto`
-- `HeatRules`
-- `loadHeatRules`
 
 **Invariants & contracts**
 - Every create/update records stage history and recalculates heat rules.

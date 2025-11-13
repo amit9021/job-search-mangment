@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-13T07:15:08.035Z",
+  "generated_at": "2025-11-13T11:35:30.183Z",
   "files": [
     {
       "path": ".editorconfig",
@@ -142,8 +142,8 @@
     {
       "path": "backend/package-lock.json",
       "language": "json",
-      "lines": 11432,
-      "bytes": 423116,
+      "lines": 11450,
+      "bytes": 422165,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -154,7 +154,7 @@
       "path": "backend/package.json",
       "language": "json",
       "lines": 76,
-      "bytes": 2901,
+      "bytes": 2879,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -1655,10 +1655,28 @@
       ]
     },
     {
+      "path": "backend/src/modules/jobs/dto/create-job-note.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 313,
+      "module": "backend:jobs",
+      "exports": [
+        "CreateJobNoteDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
       "path": "backend/src/modules/jobs/dto/create-job-outreach.dto.ts",
       "language": "ts",
-      "lines": 67,
-      "bytes": 2152,
+      "lines": 52,
+      "bytes": 1711,
       "module": "backend:jobs",
       "exports": [
         "CreateJobOutreachDto",
@@ -1698,15 +1716,17 @@
     {
       "path": "backend/src/modules/jobs/dto/index.ts",
       "language": "ts",
-      "lines": 7,
-      "bytes": 341,
+      "lines": 9,
+      "bytes": 457,
       "module": "backend:jobs",
       "exports": [
         "AddApplicationDto",
         "CreateJobDto",
+        "CreateJobNoteDto",
         "CreateJobOutreachDto",
         "ListJobsQueryDto",
         "UpdateJobDto",
+        "UpdateJobNoteDto",
         "UpdateJobStageDto"
       ],
       "imports": [],
@@ -1727,6 +1747,24 @@
       "imports": [
         "../../../utils/create-zod-dto",
         "@prisma/client",
+        "zod"
+      ],
+      "purpose": "DTO or schema definition for request/response validation.",
+      "tags": [
+        "api"
+      ]
+    },
+    {
+      "path": "backend/src/modules/jobs/dto/update-job-note.dto.ts",
+      "language": "ts",
+      "lines": 14,
+      "bytes": 313,
+      "module": "backend:jobs",
+      "exports": [
+        "UpdateJobNoteDto"
+      ],
+      "imports": [
+        "../../../utils/create-zod-dto",
         "zod"
       ],
       "purpose": "DTO or schema definition for request/response validation.",
@@ -1807,13 +1845,14 @@
     {
       "path": "backend/src/modules/jobs/jobs.controller.ts",
       "language": "ts",
-      "lines": 78,
-      "bytes": 2188,
+      "lines": 104,
+      "bytes": 2951,
       "module": "backend:jobs",
       "exports": [
         "JobsController"
       ],
       "imports": [
+        "../../common/decorators/user.decorator",
         "../../common/dto/id-param.dto",
         "./dto",
         "./jobs.service",
@@ -1867,8 +1906,8 @@
     {
       "path": "backend/src/modules/jobs/jobs.service.ts",
       "language": "ts",
-      "lines": 821,
-      "bytes": 23900,
+      "lines": 894,
+      "bytes": 25572,
       "module": "backend:jobs",
       "exports": [
         "JobsService"
@@ -3256,8 +3295,8 @@
     {
       "path": "docs/API_SURFACE.md",
       "language": "md",
-      "lines": 785,
-      "bytes": 30253,
+      "lines": 811,
+      "bytes": 31596,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3385,7 +3424,7 @@
       "path": "docs/MODULE_SUMMARY.md",
       "language": "md",
       "lines": 1004,
-      "bytes": 37608,
+      "bytes": 37617,
       "module": "docs",
       "exports": [],
       "imports": [],
@@ -3681,8 +3720,8 @@
     {
       "path": "frontend/src/api/hooks.ts",
       "language": "ts",
-      "lines": 1419,
-      "bytes": 41493,
+      "lines": 1504,
+      "bytes": 44092,
       "module": "frontend:api",
       "exports": [
         "BoostSuggestion",
@@ -3691,6 +3730,7 @@
         "GrowthBoostTask",
         "GrowthEvent",
         "GrowthReview",
+        "JobNote",
         "JobOutreachPayload",
         "ParsedApiError",
         "ProjectHighlight",
@@ -3711,10 +3751,12 @@
         "useCreateGrowthEventMutation",
         "useCreateGrowthReviewMutation",
         "useCreateJobMutation",
+        "useCreateJobNoteMutation",
         "useCreateJobOutreachMutation",
         "useCreateProjectHighlightMutation",
         "useDeleteContactMutation",
         "useDeleteJobMutation",
+        "useDeleteJobNoteMutation",
         "useDeleteOutreachMutation",
         "useEventsQuery",
         "useFollowupsQuery",
@@ -3741,6 +3783,7 @@
         "useUpdateContactMutation",
         "useUpdateGrowthBoostTaskMutation",
         "useUpdateJobMutation",
+        "useUpdateJobNoteMutation",
         "useUpdateJobStageMutation",
         "useUpdateOutreachMutation",
         "useUpdateProjectHighlightMutation"
@@ -4497,8 +4540,8 @@
     {
       "path": "frontend/src/components/JobHistoryModal.tsx",
       "language": "tsx",
-      "lines": 521,
-      "bytes": 22878,
+      "lines": 707,
+      "bytes": 29557,
       "module": "frontend:components",
       "exports": [
         "JobHistoryModal"
@@ -4536,8 +4579,8 @@
     {
       "path": "frontend/src/components/JobWizardModal.tsx",
       "language": "tsx",
-      "lines": 621,
-      "bytes": 28999,
+      "lines": 630,
+      "bytes": 28972,
       "module": "frontend:components",
       "exports": [
         "JobWizardModal"
@@ -5289,8 +5332,8 @@
     {
       "path": "package-lock.json",
       "language": "json",
-      "lines": 407,
-      "bytes": 14593,
+      "lines": 409,
+      "bytes": 14644,
       "module": "root",
       "exports": [],
       "imports": [],
@@ -5430,6 +5473,17 @@
       "tags": []
     },
     {
+      "path": "prisma/migrations/20251113090000_job_notes/migration.sql",
+      "language": "text",
+      "lines": 21,
+      "bytes": 745,
+      "module": "root",
+      "exports": [],
+      "imports": [],
+      "purpose": "Source file.",
+      "tags": []
+    },
+    {
       "path": "prisma/migrations/migration_lock.toml",
       "language": "toml",
       "lines": 3,
@@ -5443,8 +5497,8 @@
     {
       "path": "prisma/schema.prisma",
       "language": "text",
-      "lines": 390,
-      "bytes": 9431,
+      "lines": 406,
+      "bytes": 9867,
       "module": "root",
       "exports": [],
       "imports": [],
