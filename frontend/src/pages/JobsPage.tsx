@@ -1,8 +1,8 @@
 import { differenceInCalendarDays, formatDistanceToNow, isSameDay, startOfDay } from 'date-fns';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useMemo, useState, KeyboardEvent, useEffect, useCallback } from 'react';
+import { useMemo, useState, KeyboardEvent, useEffect, useCallback, type DragEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useJobsQuery, useDeleteJobMutation } from '../api/hooks';
+import { useJobsQuery, useDeleteJobMutation, useUpdateJobStageMutation } from '../api/hooks';
 import { HeatBadge } from '../components/HeatBadge';
 import { JobWizardModal } from '../components/JobWizardModal';
 import { JobHistoryModal } from '../components/JobHistoryModal';
@@ -133,6 +133,7 @@ export const JobsPage = () => {
     heat: heatFilter
   });
   const deleteJob = useDeleteJobMutation();
+  const updateJobStage = useUpdateJobStageMutation();
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [jobPendingDelete, setJobPendingDelete] = useState<{
@@ -151,6 +152,8 @@ export const JobsPage = () => {
   const [focusContactId, setFocusContactId] = useState<string | null>(null);
   const [contactDrawerOpen, setContactDrawerOpen] = useState(false);
   const [actionsJob, setActionsJob] = useState<JobListItem | null>(null);
+  const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
+  const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
 
   const handleOpenContact = (contactId?: string | null) => {
     if (!contactId) {
@@ -285,7 +288,7 @@ export const JobsPage = () => {
     return pieces.join(' · ');
   };
 
-  const renderJobCard = (job: JobListItem) => (
+  const renderJobCard = (job: JobListItem, options?: { draggable?: boolean }) => (
     (() => {
       const palette = heatPalette[job.heat] ?? heatPalette[0];
       const stageIndex = stageOrder.indexOf(job.stage);
@@ -299,14 +302,40 @@ export const JobsPage = () => {
         ? formatFollowUpCountdown(job.nextFollowUpAt)
         : null;
 
+      const isDraggable = Boolean(options?.draggable);
+      const isCurrentDragging = draggingJobId === job.id;
+
       return (
         <article
           key={job.id}
-          className={`group relative flex cursor-pointer flex-col gap-3 rounded-2xl border ${palette.border} ${palette.base} p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-blue-400 focus:outline-none`}
+          className={`group relative flex cursor-pointer flex-col gap-3 rounded-2xl border ${palette.border} ${palette.base} p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-blue-400 focus:outline-none ${isCurrentDragging ? 'opacity-70' : ''}`}
           role="button"
           tabIndex={0}
-          onClick={() => openJobActions(job)}
-          onKeyDown={(event) => handleCardKeyDown(event, job)}
+          onClick={() => {
+            if (draggingJobId) {
+              return;
+            }
+            openJobActions(job);
+          }}
+          onKeyDown={(event) => {
+            if (draggingJobId) {
+              return;
+            }
+            handleCardKeyDown(event, job);
+          }}
+          draggable={isDraggable}
+          onDragStart={(event) => {
+            if (!isDraggable) {
+              return;
+            }
+            handleDragStart(event, job.id);
+          }}
+          onDragEnd={() => {
+            if (!isDraggable) {
+              return;
+            }
+            handleDragEnd();
+          }}
           style={{ backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.75))' }}
         >
           <div className="flex items-start justify-between gap-3">
@@ -415,8 +444,72 @@ export const JobsPage = () => {
   );
 
   const jobs = allJobs ?? [];
+  const jobMap = useMemo(() => {
+    const map = new Map<string, JobListItem>();
+    jobs.forEach((job) => map.set(job.id, job));
+    return map;
+  }, [jobs]);
   const hasActiveFilter = heatFilter !== undefined || Boolean(followupsFilter);
   const visibleActiveJobs = filteredActiveJobs;
+
+  const handleDragStart = (event: DragEvent<HTMLElement>, jobId: string) => {
+    event.dataTransfer.setData('text/plain', jobId);
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggingJobId(jobId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingJobId(null);
+    setDropTargetStage(null);
+  };
+
+  const handleDragOverStage = (event: DragEvent<HTMLDivElement>, stage: string) => {
+    if (!draggingJobId || updateJobStage.isPending) {
+      return;
+    }
+    const job = jobMap.get(draggingJobId);
+    if (!job || job.stage === stage) {
+      if (dropTargetStage === stage) {
+        setDropTargetStage(null);
+      }
+      return;
+    }
+    event.preventDefault();
+    if (dropTargetStage !== stage) {
+      setDropTargetStage(stage);
+    }
+  };
+
+  const handleDragLeaveStage = (event: DragEvent<HTMLDivElement>, stage: string) => {
+    if (!draggingJobId) {
+      return;
+    }
+    const nextTarget = event.relatedTarget as Node | null;
+    if (nextTarget && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+    if (dropTargetStage === stage) {
+      setDropTargetStage(null);
+    }
+  };
+
+  const handleDropOnStage = (event: DragEvent<HTMLDivElement>, stage: string) => {
+    if (updateJobStage.isPending) {
+      return;
+    }
+    const draggedId = event.dataTransfer.getData('text/plain') || draggingJobId;
+    event.preventDefault();
+    setDropTargetStage(null);
+    setDraggingJobId(null);
+    if (!draggedId) {
+      return;
+    }
+    const job = jobMap.get(draggedId);
+    if (!job || job.stage === stage) {
+      return;
+    }
+    updateJobStage.mutate({ jobId: draggedId, stage });
+  };
 
   return (
     <div className="space-y-6">
@@ -530,13 +623,22 @@ export const JobsPage = () => {
             {columns.map((column) => {
               const stageJobs = visibleActiveJobs.filter((job) => job.stage === column.stage);
               return (
-                <div key={column.stage} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div
+                  key={column.stage}
+                  className={`rounded-2xl border p-4 transition-colors ${
+                    dropTargetStage === column.stage ? 'border-blue-400 bg-blue-50/70' : 'border-slate-200 bg-slate-50'
+                  }`}
+                  onDragEnter={(event) => handleDragOverStage(event, column.stage)}
+                  onDragOver={(event) => handleDragOverStage(event, column.stage)}
+                  onDragLeave={(event) => handleDragLeaveStage(event, column.stage)}
+                  onDrop={(event) => handleDropOnStage(event, column.stage)}
+                >
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-700">{column.title}</h3>
                     <span className="text-xs text-slate-400">{stageJobs.length}</span>
                   </div>
                   <div className="mt-3 space-y-3">
-                    {stageJobs.map((job) => renderJobCard(job))}
+                    {stageJobs.map((job) => renderJobCard(job, { draggable: true }))}
                     {stageJobs.length === 0 && (
                       <p className="rounded-lg border border-dashed border-slate-200 bg-white/60 p-4 text-xs text-slate-400">
                         No items yet.

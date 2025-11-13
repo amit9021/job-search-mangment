@@ -9,7 +9,6 @@ import {
   useUpdateJobNoteMutation,
   useDeleteJobNoteMutation
 } from '../api/hooks';
-import { UpdateJobStageDialog } from './UpdateJobStageDialog';
 
 interface JobHistoryModalProps {
   jobId: string | null;
@@ -74,7 +73,6 @@ type TimelineItem =
 
 export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: JobHistoryModalProps) => {
   const { data, isLoading } = useJobHistoryQuery(jobId ?? '', { enabled: open && Boolean(jobId) });
-  const [stageDialogOpen, setStageDialogOpen] = useState(false);
   const updateOutreach = useUpdateOutreachMutation();
   const deleteOutreach = useDeleteOutreachMutation();
   const createNote = useCreateJobNoteMutation();
@@ -348,21 +346,12 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             <Dialog.Title className="text-lg font-semibold text-slate-900 pr-8">Timeline</Dialog.Title>
             <Dialog.Description className="text-sm text-slate-500">{jobTitle}</Dialog.Description>
 
-          {data && (
-            <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div>
+            {data && (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Current stage</p>
                 <p className="text-sm font-semibold text-slate-800 capitalize">{data.stage.toLowerCase()}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setStageDialogOpen(true)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-blue-400 hover:text-blue-600"
-              >
-                Update stage
-              </button>
-            </div>
-          )}
+            )}
 
           {linkedContacts.length > 0 && (
             <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
@@ -692,14 +681,6 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
             </div>
           )}
 
-            {jobId && data && (
-              <UpdateJobStageDialog
-                jobId={jobId}
-                currentStage={data.stage}
-                open={stageDialogOpen}
-                onOpenChange={(open) => setStageDialogOpen(open)}
-              />
-            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>
