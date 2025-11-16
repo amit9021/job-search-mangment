@@ -16,6 +16,7 @@ type JobContact = {
   role?: string | null;
 };
 
+const followupTypeValues = ['APPOINTMENT', 'STANDARD'] as const;
 const appointmentModeValues = ['MEETING', 'ZOOM', 'PHONE', 'ON_SITE', 'OTHER'] as const;
 const appointmentModeOptions: Array<{ value: (typeof appointmentModeValues)[number]; label: string }> = [
   { value: 'MEETING', label: 'In-person meeting' },
@@ -46,6 +47,7 @@ interface ScheduleAppointmentDialogProps {
 }
 
 const scheduleSchema = z.object({
+  type: z.enum(followupTypeValues).default('APPOINTMENT'),
   contactId: z.string().optional(),
   dueAt: z.string().min(1, 'Select a date and time'),
   note: z
@@ -85,20 +87,24 @@ export const ScheduleAppointmentDialog = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors }
   } = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleSchema),
     defaultValues: {
+      type: 'APPOINTMENT',
       contactId: job?.contacts?.[0]?.id,
       dueAt: '',
       note: '',
       appointmentMode: 'MEETING'
     }
   });
+  const selectedType = watch('type');
 
   useEffect(() => {
     if (open) {
       reset({
+        type: appointment ? 'APPOINTMENT' : 'APPOINTMENT',
         contactId: appointment?.contactId ?? job?.contacts?.[0]?.id,
         dueAt: appointment ? toInputDateTime(appointment.dueAt) : '',
         note: appointment?.note ?? '',
@@ -110,6 +116,7 @@ export const ScheduleAppointmentDialog = ({
   const handleClose = (next: boolean) => {
     if (!next) {
       reset({
+        type: appointment ? 'APPOINTMENT' : 'APPOINTMENT',
         contactId: appointment?.contactId ?? job?.contacts?.[0]?.id,
         dueAt: appointment ? toInputDateTime(appointment.dueAt) : '',
         note: appointment?.note ?? '',
@@ -128,10 +135,11 @@ export const ScheduleAppointmentDialog = ({
       return;
     }
     const payload = {
+      type: values.type,
       contactId: values.contactId && values.contactId.length > 0 ? values.contactId : undefined,
       dueAt: dueDate.toISOString(),
       note: values.note?.trim() ? values.note.trim() : undefined,
-      appointmentMode: values.appointmentMode
+      appointmentMode: values.type === 'APPOINTMENT' ? values.appointmentMode : undefined
     };
     try {
       if (appointment) {
@@ -163,13 +171,30 @@ export const ScheduleAppointmentDialog = ({
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/30" />
         <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold text-slate-900">
-            {appointment ? 'Edit appointment' : 'Schedule appointment'}
+            {appointment ? 'Edit follow-up' : 'Schedule follow-up'}
           </Dialog.Title>
           <Dialog.Description className="text-sm text-slate-500">
-            {job ? `${job.company} — ${job.role}` : 'Select a job to schedule an appointment.'}
+            {job ? `${job.company} — ${job.role}` : 'Select a job to schedule a follow-up.'}
           </Dialog.Description>
 
           <form className="mt-4 space-y-4" onSubmit={onSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">Follow-up type</label>
+              <div className="mt-2 flex gap-3">
+                {followupTypeValues.map((type) => (
+                  <label key={type} className="flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="radio"
+                      value={type}
+                      {...register('type')}
+                      disabled={Boolean(appointment)}
+                    />
+                    {type === 'APPOINTMENT' ? 'Appointment (meeting)' : 'Reminder only'}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700">Contact</label>
               <select
@@ -215,19 +240,21 @@ export const ScheduleAppointmentDialog = ({
               {errors.note && <p className="mt-1 text-xs text-red-600">{errors.note.message}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Meeting type</label>
-              <select
-                {...register('appointmentMode')}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              >
-                {appointmentModeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {selectedType === 'APPOINTMENT' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Meeting format</label>
+                <select
+                  {...register('appointmentMode')}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {appointmentModeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Dialog.Close asChild>
@@ -264,7 +291,11 @@ export const ScheduleAppointmentDialog = ({
                       return;
                     }
                     try {
-                      await deleteFollowup.mutateAsync({ id: appointment.id, jobId: job.id });
+                      await deleteFollowup.mutateAsync({
+                        id: appointment.id,
+                        jobId: job.id,
+                        contactId: appointment.contactId ?? undefined
+                      });
                       handleClose(false);
                     } catch {
                       // toast handled

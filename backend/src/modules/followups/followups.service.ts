@@ -13,6 +13,8 @@ type FollowupContext = {
   jobId?: string;
   contactId?: string;
   note?: string | null;
+  type?: FollowUpType;
+  appointmentMode?: FollowUpAppointmentMode | null;
 };
 
 @Injectable()
@@ -60,7 +62,7 @@ export class FollowupsService {
       appointmentMode?: FollowUpAppointmentMode | null;
     }
   ) {
-    return this.prisma.followUp.create({
+    const followup = await this.prisma.followUp.create({
       data: {
         jobId: params.jobId ?? null,
         contactId: params.contactId ?? null,
@@ -71,6 +73,8 @@ export class FollowupsService {
         appointmentMode: params.appointmentMode ?? null
       }
     });
+    await this.syncFollowupTask(followup.id);
+    return followup;
   }
 
   async scheduleCustomFollowup(data: InferDto<typeof CreateFollowupDto>) {
@@ -78,16 +82,19 @@ export class FollowupsService {
     if (Number.isNaN(dueAt.getTime())) {
       throw new BadRequestException('Invalid due date');
     }
+    const followupType = data.type ?? FollowUpType.APPOINTMENT;
     const followup = await this.createFollowup({
       jobId: data.jobId,
       contactId: data.contactId,
       note: data.note ?? null,
       attemptNo: 1,
       dueAt,
-      type: FollowUpType.APPOINTMENT,
-      appointmentMode: data.appointmentMode ?? FollowUpAppointmentMode.MEETING
+      type: followupType,
+      appointmentMode:
+        followupType === FollowUpType.APPOINTMENT
+          ? data.appointmentMode ?? FollowUpAppointmentMode.MEETING
+          : null
     });
-    await this.syncAppointmentTask(followup.id);
     return followup;
   }
 
@@ -125,11 +132,7 @@ export class FollowupsService {
       where: { id },
       data: update
     });
-    if (updated.type === FollowUpType.APPOINTMENT) {
-      await this.syncAppointmentTask(updated.id);
-    } else {
-      await this.deleteAppointmentTask(updated.id);
-    }
+    await this.syncFollowupTask(updated.id);
     return updated;
   }
 
@@ -142,13 +145,11 @@ export class FollowupsService {
       throw new BadRequestException('Completed follow-ups cannot be deleted');
     }
     await this.prisma.followUp.delete({ where: { id } });
-    if (followup.type === FollowUpType.APPOINTMENT) {
-      await this.deleteAppointmentTask(followup.id);
-    }
+    await this.deleteFollowupTask(followup.id);
     return { deletedId: id };
   }
 
-  private async syncAppointmentTask(followUpId: string) {
+  private async syncFollowupTask(followUpId: string) {
     const followup = await this.prisma.followUp.findUnique({
       where: { id: followUpId },
       include: {
@@ -156,13 +157,15 @@ export class FollowupsService {
         contact: { select: { id: true, name: true } }
       }
     });
-    if (!followup || followup.type !== FollowUpType.APPOINTMENT) {
+    if (!followup) {
       return;
     }
-    const titleBase =
-      followup.appointmentMode && followup.appointmentMode !== 'OTHER'
+    const isAppointment = followup.type === FollowUpType.APPOINTMENT;
+    const titleBase = isAppointment
+      ? followup.appointmentMode && followup.appointmentMode !== 'OTHER'
         ? followup.appointmentMode.replace(/_/g, ' ').toLowerCase()
-        : 'appointment';
+        : 'appointment'
+      : `follow-up attempt ${followup.attemptNo}`;
     const titleCompany = followup.job?.company ? ` · ${followup.job.company}` : '';
     const title = `${titleBase.charAt(0).toUpperCase()}${titleBase.slice(1)}${titleCompany}`;
     const descriptionParts: string[] = [];
@@ -186,9 +189,9 @@ export class FollowupsService {
         description: descriptionParts.length > 0 ? descriptionParts.join('\n') : null,
         dueAt: followup.dueAt,
         startAt: followup.dueAt,
-        priority: 'High',
+        priority: isAppointment ? 'High' : 'Med',
         status: 'Todo',
-        source: 'Appointment',
+        source: isAppointment ? 'Appointment' : 'Follow-up',
         links: links as Prisma.JsonObject,
         userId: followup.job?.userId ?? null,
         followUpId
@@ -204,7 +207,7 @@ export class FollowupsService {
     });
   }
 
-  private async deleteAppointmentTask(followUpId: string) {
+  private async deleteFollowupTask(followUpId: string) {
     await this.prisma.task.deleteMany({
       where: { followUpId }
     });
@@ -235,6 +238,10 @@ export class FollowupsService {
       data: { sentAt: new Date(), note: note ?? followup.note }
     });
 
+    await this.deleteFollowupTask(followup.id);
+    if (followup.type === FollowUpType.APPOINTMENT) {
+      return updated;
+    }
     if (followup.attemptNo === 1) {
       await this.createFollowup({
         jobId: followup.jobId ?? undefined,

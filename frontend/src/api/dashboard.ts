@@ -34,7 +34,15 @@ export type DashboardSummary = {
     type: DashboardQueueItemType;
     title: string;
     dueAt: string | null;
-    context: { jobId?: string; contactId?: string; followupId?: string; taskId?: string; outreachId?: string };
+    context: {
+      jobId?: string;
+      contactId?: string;
+      followupId?: string;
+      followupType?: string;
+      appointmentMode?: string | null;
+      taskId?: string;
+      outreachId?: string;
+    };
     ctaLink: string;
   }>;
   weeklySnapshot: {

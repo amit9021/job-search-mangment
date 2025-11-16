@@ -203,19 +203,23 @@ const formatDue = (iso: string | null) => {
 
 const handleComplete = async (
   item: DashboardSummaryResponse['todayQueue'][number],
-  completeFollowup: (params: { id: string; note?: string }) => Promise<unknown>,
+  completeFollowup: (params: { id: string; note?: string; jobId?: string; contactId?: string }) => Promise<unknown>,
   completeTask: (params: { id: string; updates: Record<string, unknown> }) => Promise<unknown>
 ) => {
   if (item.type === 'follow_up') {
-    const followupId = extractQueryValue(item.ctaLink, 'followupId');
+    const followupId = item.context?.followupId ?? extractQueryValue(item.ctaLink, 'followupId');
     if (followupId) {
-      await completeFollowup({ id: followupId });
+      await completeFollowup({
+        id: followupId,
+        jobId: item.context?.jobId,
+        contactId: item.context?.contactId
+      });
     }
     return;
   }
 
   if (item.type === 'task') {
-    const taskId = extractQueryValue(item.ctaLink, 'highlight');
+    const taskId = item.context?.taskId ?? extractQueryValue(item.ctaLink, 'highlight');
     if (taskId) {
       await completeTask({ id: taskId, updates: { status: 'Done' } });
     }

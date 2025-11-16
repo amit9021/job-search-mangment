@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { DashboardSummaryResponse } from '../../api/useDashboard';
+import { useMarkFollowupMutation, useTaskUpdateMutation } from '../../api/hooks';
 
 type QueueItem = DashboardSummaryResponse['todayQueue'][number];
 type NotificationItem = DashboardSummaryResponse['notifications'][number];
@@ -20,6 +22,104 @@ export const ActionCenterTabs = ({ queue, notifications, loading, degraded }: Pr
   const [activeTab, setActiveTab] = useState<TabKey>('queue');
   const queueItems = useMemo(() => queue.slice(0, MAX_ITEMS), [queue]);
   const notificationItems = useMemo(() => notifications.slice(0, MAX_ITEMS), [notifications]);
+  const markFollowup = useMarkFollowupMutation();
+  const updateTask = useTaskUpdateMutation();
+  const [processingKey, setProcessingKey] = useState<string | null>(null);
+  const [noteDialog, setNoteDialog] = useState<{
+    id: string;
+    title: string;
+    appointmentMode?: string | null;
+  } | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+
+  const completeFollowup = useCallback(
+    async ({
+      id,
+      jobId,
+      contactId,
+      note
+    }: {
+      id: string;
+      jobId?: string;
+      contactId?: string;
+      note?: string;
+    }) => {
+      setProcessingKey(id);
+      try {
+        await markFollowup.mutateAsync({ id, jobId, contactId, note });
+      } finally {
+        setProcessingKey((current) => (current === id ? null : current));
+      }
+    },
+    [markFollowup]
+  );
+
+  const completeTask = useCallback(
+    async (id: string) => {
+      setProcessingKey(id);
+      try {
+        await updateTask.mutateAsync({ id, updates: { status: 'Done' } });
+      } finally {
+        setProcessingKey((current) => (current === id ? null : current));
+      }
+    },
+    [updateTask]
+  );
+
+  const handleMarkDone = useCallback(
+    async (item: QueueItem) => {
+      if (item.type === 'follow_up') {
+        const followupId = item.context?.followupId;
+        if (!followupId) {
+          return;
+        }
+        if ((item.context?.followupType ?? '').toUpperCase() === 'APPOINTMENT') {
+          setNoteDialog({
+            id: followupId,
+            title: item.title,
+            appointmentMode: item.context?.appointmentMode ?? null,
+            jobId: item.context?.jobId,
+            contactId: item.context?.contactId
+          });
+          setNoteDraft('');
+          return;
+        }
+        await completeFollowup({
+          id: followupId,
+          jobId: item.context?.jobId,
+          contactId: item.context?.contactId
+        });
+        return;
+      }
+      if (item.type === 'task') {
+        const taskId = item.context?.taskId;
+        if (!taskId) {
+          return;
+        }
+        await completeTask(taskId);
+      }
+    },
+    [completeFollowup, completeTask]
+  );
+
+  const handleDialogSubmit = useCallback(async () => {
+    if (!noteDialog) {
+      return;
+    }
+    await completeFollowup({
+      id: noteDialog.id,
+      jobId: noteDialog.jobId,
+      contactId: noteDialog.contactId,
+      note: noteDraft.trim() || undefined
+    });
+    setNoteDialog(null);
+    setNoteDraft('');
+  }, [completeFollowup, noteDialog, noteDraft]);
+
+  const handleDialogClose = useCallback(() => {
+    setNoteDialog(null);
+    setNoteDraft('');
+  }, []);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -35,14 +135,14 @@ export const ActionCenterTabs = ({ queue, notifications, loading, degraded }: Pr
         window.open(queueItems[0].ctaLink, '_blank');
       } else if (event.key === ' ') {
         event.preventDefault();
-        window.open(appendParam(queueItems[0].ctaLink, 'complete', '1'), '_blank');
+        void handleMarkDone(queueItems[0]);
       }
     };
     window.addEventListener('keydown', handler);
     return () => {
       window.removeEventListener('keydown', handler);
     };
-  }, [activeTab, queueItems]);
+  }, [activeTab, queueItems, handleMarkDone]);
 
   const renderList = () => {
     if (loading) {
@@ -55,18 +155,50 @@ export const ActionCenterTabs = ({ queue, notifications, loading, degraded }: Pr
       }
       return (
         <ul className="space-y-2">
-          {queueItems.map((item, index) => (
-            <li key={`${item.type}-${item.ctaLink}-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-800">{item.title}</p>
-                <p className="truncate text-[11px] text-slate-500">{formatDue(item.dueAt)}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <ActionButton label="Open" href={item.ctaLink} />
-                <ActionButton label="Mark done" href={appendParam(item.ctaLink, 'complete', '1')} variant="ghost" />
-              </div>
-            </li>
-          ))}
+          {queueItems.map((item, index) => {
+            const completable =
+              (item.type === 'follow_up' && Boolean(item.context?.followupId)) ||
+              (item.type === 'task' && Boolean(item.context?.taskId));
+            const processing =
+              processingKey !== null &&
+              (processingKey === item.context?.followupId || processingKey === item.context?.taskId);
+            const isAppointment =
+              item.type === 'follow_up' && item.context?.followupType === 'APPOINTMENT';
+            return (
+              <li
+                key={`${item.type}-${item.ctaLink}-${index}`}
+                className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-slate-200/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      {queueBadgeLabel(item)}
+                    </span>
+                    <span className="text-[11px] text-slate-400">{formatDue(item.dueAt)}</span>
+                  </div>
+                  <p className="truncate text-sm font-semibold text-slate-800">{item.title}</p>
+                  {isAppointment && (
+                    <p className="truncate text-[11px] font-medium text-violet-600">
+                      {appointmentLabel(item.context?.appointmentMode)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <ActionButton label="Open" href={item.ctaLink} />
+                  {completable && (
+                    <button
+                      type="button"
+                      onClick={() => void handleMarkDone(item)}
+                      disabled={processing}
+                      className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isAppointment ? 'Add notes' : 'Mark done'}
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       );
     }
@@ -93,24 +225,34 @@ export const ActionCenterTabs = ({ queue, notifications, loading, degraded }: Pr
   const viewAllLink = activeTab === 'queue' ? '/tasks?view=today' : '/notifications';
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-        <div className="flex rounded-full border border-slate-200 bg-slate-50 p-1">
-          <TabButton active={activeTab === 'queue'} label={`Queue (${queue.length})`} onClick={() => setActiveTab('queue')} />
-          <TabButton active={activeTab === 'notifications'} label={`Notifications (${notifications.length})`} onClick={() => setActiveTab('notifications')} />
+    <>
+      <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+          <div className="flex rounded-full border border-slate-200 bg-slate-50 p-1">
+            <TabButton active={activeTab === 'queue'} label={`Queue (${queue.length})`} onClick={() => setActiveTab('queue')} />
+            <TabButton active={activeTab === 'notifications'} label={`Notifications (${notifications.length})`} onClick={() => setActiveTab('notifications')} />
+          </div>
+          {degraded && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Partial</span>}
         </div>
-        {degraded && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Partial</span>}
+        <div className="mt-2 flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto pr-1">{renderList()}</div>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
+          <span>Enter → open · Space → mark done</span>
+          <Link to={viewAllLink} className="font-semibold text-brand hover:underline">
+            View all
+          </Link>
+        </div>
       </div>
-      <div className="mt-2 flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto pr-1">{renderList()}</div>
-      </div>
-      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-        <span>Enter → open · Space → mark done</span>
-        <Link to={viewAllLink} className="font-semibold text-brand hover:underline">
-          View all
-        </Link>
-      </div>
-    </div>
+      <AppointmentNoteDialog
+        pending={noteDialog}
+        note={noteDraft}
+        onNoteChange={setNoteDraft}
+        onCancel={handleDialogClose}
+        onSubmit={handleDialogSubmit}
+        busy={Boolean(noteDialog && processingKey === noteDialog.id)}
+      />
+    </>
   );
 };
 
@@ -126,16 +268,12 @@ const TabButton = ({ active, label, onClick }: { active: boolean; label: string;
   </button>
 );
 
-const ActionButton = ({ label, href, variant }: { label: string; href: string; variant?: 'ghost' }) => (
+const ActionButton = ({ label, href }: { label: string; href: string }) => (
   <a
     href={href}
     target="_blank"
     rel="noreferrer"
-    className={`rounded-md px-2 py-1 text-xs font-semibold transition ${
-      variant === 'ghost'
-        ? 'border border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-white'
-        : 'bg-brand text-white hover:bg-brand-dark'
-    }`}
+    className="rounded-md bg-brand px-2 py-1 text-xs font-semibold text-white transition hover:bg-brand-dark"
   >
     {label}
   </a>
@@ -194,13 +332,94 @@ const notificationTone = (severity: NotificationItem['severity']) => {
   }
 };
 
-const appendParam = (href: string, key: string, value: string) => {
-  try {
-    const url = new URL(href, window.location.origin);
-    url.searchParams.set(key, value);
-    return url.pathname + url.search + url.hash;
-  } catch (error) {
-    const separator = href.includes('?') ? '&' : '?';
-    return `${href}${separator}${key}=${value}`;
+const queueBadgeLabel = (item: QueueItem) => {
+  if (item.type === 'follow_up') {
+    return item.context?.followupType === 'APPOINTMENT' ? 'Appointment' : 'Follow-up';
+  }
+  if (item.type === 'task') {
+    return 'Task';
+  }
+  return 'Stale outreach';
+};
+
+const appointmentLabel = (mode?: string | null) => {
+  switch (mode) {
+    case 'ZOOM':
+      return 'Zoom call';
+    case 'MEETING':
+      return 'Meeting';
+    case 'PHONE':
+      return 'Phone call';
+    case 'ON_SITE':
+      return 'On-site';
+    default:
+      return 'Appointment';
   }
 };
+
+const AppointmentNoteDialog = ({
+  pending,
+  note,
+  onNoteChange,
+  onCancel,
+  onSubmit,
+  busy
+}: {
+  pending: { id: string; title: string; appointmentMode?: string | null; jobId?: string; contactId?: string } | null;
+  note: string;
+  onNoteChange: (value: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+  busy: boolean;
+}) => (
+  <Dialog.Root open={Boolean(pending)} onOpenChange={(open) => !open && onCancel()}>
+    <Dialog.Portal>
+      <Dialog.Overlay className="fixed inset-0 bg-slate-900/40" />
+      <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Dialog.Title className="text-base font-semibold text-slate-900">
+              Wrap up appointment
+            </Dialog.Title>
+            {pending && (
+              <Dialog.Description className="text-sm text-slate-500">
+                {appointmentLabel(pending.appointmentMode)} · {pending.title}
+              </Dialog.Description>
+            )}
+          </div>
+          <Dialog.Close className="rounded-full border border-slate-200 p-1 text-slate-500 hover:bg-slate-50">
+            ✕
+          </Dialog.Close>
+        </div>
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Notes (optional)
+        </label>
+        <textarea
+          value={note}
+          onChange={(event) => onNoteChange(event.target.value)}
+          rows={4}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          placeholder="Capture what was discussed or next steps…"
+        />
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            disabled={busy}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={busy}
+            className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : 'Mark done'}
+          </button>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+);

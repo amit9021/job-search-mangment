@@ -107,15 +107,21 @@ export const TodayQueue = ({ items, loading, onRefresh }: TodayQueueProps) => {
   const refreshing = isMarkingFollowup || isMarkingTask || isSnoozingTask;
 
   const handlePrimaryAction = async (item: DashboardSummary['todayQueue'][number]) => {
-    if (item.type === 'follow_up' && item.context.followupId) {
-      await markFollowup({ id: item.context.followupId, note: undefined });
+    const context = item.context ?? {};
+    if (item.type === 'follow_up' && context.followupId) {
+      await markFollowup({
+        id: context.followupId,
+        jobId: context.jobId,
+        contactId: context.contactId,
+        note: undefined
+      });
       await onRefresh?.();
       return;
     }
 
-    if (item.type === 'task' && item.context.taskId) {
+    if (item.type === 'task' && context.taskId) {
       await markTaskDone({
-        id: item.context.taskId,
+        id: context.taskId,
         updates: { status: 'Done' }
       });
       await onRefresh?.();
@@ -123,8 +129,9 @@ export const TodayQueue = ({ items, loading, onRefresh }: TodayQueueProps) => {
   };
 
   const handleSnooze = async (item: DashboardSummary['todayQueue'][number]) => {
-    if (item.type === 'task' && item.context.taskId) {
-      await snoozeTask({ id: item.context.taskId, preset: 'tomorrow' });
+    const context = item.context ?? {};
+    if (item.type === 'task' && context.taskId) {
+      await snoozeTask({ id: context.taskId, preset: 'tomorrow' });
       await onRefresh?.();
     }
   };
@@ -174,10 +181,11 @@ export const TodayQueue = ({ items, loading, onRefresh }: TodayQueueProps) => {
       </header>
       <ul>
         {items.map((item) => {
+          const context = item.context ?? ({} as NonNullable<typeof item.context>);
           const itemKey =
-            item.context.taskId ||
-            item.context.followupId ||
-            item.context.outreachId ||
+            context.taskId ||
+            context.followupId ||
+            context.outreachId ||
             `${item.type}-${item.ctaLink}`;
           return (
             <li key={itemKey} className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 last:border-b-0">
@@ -199,7 +207,7 @@ export const TodayQueue = ({ items, loading, onRefresh }: TodayQueueProps) => {
                 >
                   Open
                 </button>
-                {(item.type === 'follow_up' && item.context.followupId) || (item.type === 'task' && item.context.taskId) ? (
+                {(item.type === 'follow_up' && context.followupId) || (item.type === 'task' && context.taskId) ? (
                   <button
                     type="button"
                     className="rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
@@ -209,7 +217,7 @@ export const TodayQueue = ({ items, loading, onRefresh }: TodayQueueProps) => {
                     Mark done
                   </button>
                 ) : null}
-                {item.type === 'task' && item.context.taskId ? (
+                {item.type === 'task' && context.taskId ? (
                   <button
                     type="button"
                     className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"

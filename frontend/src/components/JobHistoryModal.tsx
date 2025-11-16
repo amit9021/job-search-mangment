@@ -7,7 +7,9 @@ import {
   useDeleteOutreachMutation,
   useCreateJobNoteMutation,
   useUpdateJobNoteMutation,
-  useDeleteJobNoteMutation
+  useDeleteJobNoteMutation,
+  useMarkFollowupMutation,
+  useDeleteFollowupMutation
 } from '../api/hooks';
 
 interface JobHistoryModalProps {
@@ -52,9 +54,12 @@ type TimelineItem =
       date: string;
       kind: 'followup';
       followup: {
+        id: string;
         attemptNo: number;
         sentAt?: string | null;
         note?: string | null;
+        type?: string;
+        appointmentMode?: string | null;
       };
       contact?: { id: string; name: string | null };
     }
@@ -71,6 +76,21 @@ type TimelineItem =
       };
     };
 
+const describeAppointment = (mode?: string | null) => {
+  switch (mode) {
+    case 'ZOOM':
+      return 'Zoom call';
+    case 'MEETING':
+      return 'Meeting';
+    case 'PHONE':
+      return 'Phone call';
+    case 'ON_SITE':
+      return 'On-site';
+    default:
+      return 'Appointment';
+  }
+};
+
 export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: JobHistoryModalProps) => {
   const { data, isLoading } = useJobHistoryQuery(jobId ?? '', { enabled: open && Boolean(jobId) });
   const updateOutreach = useUpdateOutreachMutation();
@@ -78,8 +98,11 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
   const createNote = useCreateJobNoteMutation();
   const updateNote = useUpdateJobNoteMutation();
   const removeNote = useDeleteJobNoteMutation();
+  const markFollowup = useMarkFollowupMutation();
+  const deleteFollowup = useDeleteFollowupMutation();
   const [noteDraft, setNoteDraft] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [followupActionId, setFollowupActionId] = useState<string | null>(null);
 
   const handleOutcomeChange = async (outreachId: string, outcome: string) => {
     try {
@@ -100,6 +123,34 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
       await deleteOutreach.mutateAsync({ id: outreachId });
     } catch {
       // toast handled in mutation
+    }
+  };
+
+  const handleFollowupComplete = async (followupId: string, contactId?: string) => {
+    if (!jobId) {
+      return;
+    }
+    setFollowupActionId(followupId);
+    try {
+      await markFollowup.mutateAsync({ id: followupId, jobId, contactId });
+    } finally {
+      setFollowupActionId(null);
+    }
+  };
+
+  const handleFollowupDelete = async (followupId: string, contactId?: string) => {
+    if (!jobId) {
+      return;
+    }
+    const confirmed = window.confirm('Delete this follow-up?');
+    if (!confirmed) {
+      return;
+    }
+    setFollowupActionId(followupId);
+    try {
+      await deleteFollowup.mutateAsync({ id: followupId, jobId, contactId });
+    } finally {
+      setFollowupActionId(null);
     }
   };
 
@@ -264,9 +315,12 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
         date: parsed.toISOString(),
         kind: 'followup',
         followup: {
+          id: followup.id,
           attemptNo: followup.attemptNo,
           sentAt: followup.sentAt ?? null,
-          note: followup.note ?? null
+          note: followup.note ?? null,
+          type: followup.type ?? undefined,
+          appointmentMode: followup.appointmentMode ?? null
         },
         contact: followup.contact
           ? { id: followup.contact.id, name: followup.contact.name ?? null }
@@ -437,6 +491,8 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                           ? ''
                           : format(parsedDate, 'p');
 
+                        const isAppointmentFollowup =
+                          item.kind === 'followup' && item.followup.type === 'APPOINTMENT';
                         const meta =
                           item.kind === 'outreach'
                             ? {
@@ -448,11 +504,17 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                               }
                             : item.kind === 'followup'
                               ? {
-                                  icon: '⏰',
-                                  label: 'Follow-up',
-                                  title: `Follow-up attempt ${item.followup.attemptNo}`,
-                                  chip: 'border border-amber-200 bg-amber-50 text-amber-700',
-                                  iconTone: 'border border-amber-200 bg-amber-50 text-amber-700'
+                                  icon: isAppointmentFollowup ? '📅' : '⏰',
+                                  label: isAppointmentFollowup ? 'Appointment' : 'Follow-up',
+                                  title: isAppointmentFollowup
+                                    ? describeAppointment(item.followup.appointmentMode)
+                                    : `Follow-up attempt ${item.followup.attemptNo}`,
+                                  chip: isAppointmentFollowup
+                                    ? 'border border-violet-200 bg-violet-50 text-violet-700'
+                                    : 'border border-amber-200 bg-amber-50 text-amber-700',
+                                  iconTone: isAppointmentFollowup
+                                    ? 'border border-violet-200 bg-violet-50 text-violet-700'
+                                    : 'border border-amber-200 bg-amber-50 text-amber-700'
                                 }
                               : item.kind === 'stage'
                                 ? {
@@ -575,6 +637,20 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
 
                               {item.kind === 'followup' && (
                                 <div className="space-y-2 text-xs text-slate-600">
+                                  {item.followup.type === 'APPOINTMENT' ? (
+                                    <div className="flex flex-wrap items-center gap-2 text-violet-700">
+                                      <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                        Appointment
+                                      </span>
+                                      <span className="font-semibold">
+                                        {describeAppointment(item.followup.appointmentMode)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <p className="font-semibold text-slate-700">
+                                      Attempt {item.followup.attemptNo}
+                                    </p>
+                                  )}
                                   {(() => {
                                     const dueDate = new Date(item.date);
                                     const dueLabel = Number.isNaN(dueDate.getTime())
@@ -604,6 +680,36 @@ export const JobHistoryModal = ({ jobId, open, onOpenChange, onOpenContact }: Jo
                                   {item.followup.note && (
                                     <p className="text-xs text-slate-500">{item.followup.note}</p>
                                   )}
+                                  <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                                    {!item.followup.sentAt && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleFollowupComplete(
+                                            item.followup.id,
+                                            item.contact?.id ?? undefined
+                                          )
+                                        }
+                                        disabled={followupActionId === item.followup.id}
+                                        className="rounded border border-emerald-300 px-2 py-0.5 font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-60"
+                                      >
+                                        {followupActionId === item.followup.id ? 'Marking…' : 'Mark done'}
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleFollowupDelete(
+                                          item.followup.id,
+                                          item.contact?.id ?? undefined
+                                        )
+                                      }
+                                      disabled={followupActionId === item.followup.id}
+                                      className="rounded border border-slate-200 px-2 py-0.5 font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-60"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
                                 </div>
                               )}
 

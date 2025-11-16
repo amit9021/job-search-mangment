@@ -1,3 +1,4 @@
+import { FollowUpType, FollowUpAppointmentMode } from '@prisma/client';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -349,6 +350,7 @@ export class DashboardService {
       params;
     const items: DashboardQueueItem[] = [];
     const seen = new Set<string>();
+    const scheduledFollowupIds = new Set<string>();
 
     const pushItem = (id: string, item: DashboardQueueItem) => {
       if (seen.has(id)) {
@@ -359,8 +361,10 @@ export class DashboardService {
     };
 
     const mapFollowup = (followup: FollowupItem): DashboardQueueItem => {
-      const titleBase = followup.contact?.name ?? followup.job?.company ?? 'Follow-up';
-      const title = `Follow up with ${titleBase}`;
+      const counterpart = followup.contact?.name ?? followup.job?.company ?? 'contact';
+      const isAppointment = followup.type === FollowUpType.APPOINTMENT;
+      const appointmentLabel = this.describeAppointment(followup.appointmentMode);
+      const title = isAppointment ? `${appointmentLabel} with ${counterpart}` : `Follow up with ${counterpart}`;
 
       const followupScope = overdueFollowupIds.has(followup.id) ? 'overdue' : 'today';
       let ctaLink = followup.jobId
@@ -375,12 +379,20 @@ export class DashboardService {
         type: 'follow_up',
         title,
         dueAt: followup.dueAt ? new Date(followup.dueAt).toISOString() : null,
-        ctaLink
+        ctaLink,
+        context: {
+          followupId: followup.id,
+          jobId: followup.jobId ?? undefined,
+          contactId: followup.contactId ?? undefined,
+          followupType: followup.type,
+          appointmentMode: followup.appointmentMode ?? null
+        }
       };
     };
 
     [...followupsOverdue, ...followupsToday].forEach((followup) => {
       pushItem(followup.id, mapFollowup(followup));
+      scheduledFollowupIds.add(followup.id);
     });
 
     const mapTask = (task: {
@@ -388,6 +400,8 @@ export class DashboardService {
       title: string;
       dueAt: Date | null;
       links: Record<string, unknown>;
+      followupType?: FollowUpType | null;
+      appointmentMode?: FollowUpAppointmentMode | null;
     }): DashboardQueueItem => {
       let ctaLink = `/tasks?highlight=${task.id}`;
       if (typeof task.links.jobId === 'string') {
@@ -396,18 +410,61 @@ export class DashboardService {
       if (typeof task.links.contactId === 'string') {
         ctaLink = `/contacts?focus=${task.links.contactId}`;
       }
+      const followupId =
+        typeof task.links.followUpId === 'string' ? (task.links.followUpId as string) : undefined;
+      if (followupId) {
+        const followupType = task.followupType ?? FollowUpType.STANDARD;
+        const isAppointment = followupType === FollowUpType.APPOINTMENT;
+        const title = isAppointment
+          ? `${this.describeAppointment(task.appointmentMode)} reminder`
+          : task.title;
+        return {
+          type: 'follow_up',
+          title,
+          dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
+          ctaLink,
+          context: {
+            followupId,
+            followupType,
+            appointmentMode: task.appointmentMode ?? null,
+            jobId: typeof task.links.jobId === 'string' ? task.links.jobId : undefined,
+            contactId:
+              typeof task.links.contactId === 'string' ? task.links.contactId : undefined
+          }
+        };
+      }
       return {
         type: 'task',
         title: task.title,
         dueAt: task.dueAt ? new Date(task.dueAt).toISOString() : null,
-        ctaLink
+        ctaLink,
+        context: {
+          taskId: task.id,
+          jobId: typeof task.links.jobId === 'string' ? task.links.jobId : undefined,
+          contactId: typeof task.links.contactId === 'string' ? task.links.contactId : undefined
+        }
       };
     };
 
-    actionableTasks.overdue.forEach((task) => pushItem(`task-${task.id}`, mapTask(task)));
-    actionableTasks.dueToday.forEach((task) => pushItem(`task-today-${task.id}`, mapTask(task)));
+    const shouldSkipTask = (task: { links: Record<string, unknown> }) => {
+      const followUpId = typeof task.links.followUpId === 'string' ? task.links.followUpId : undefined;
+      return followUpId ? scheduledFollowupIds.has(followUpId) : false;
+    };
 
-    staleOutreach.forEach((entry) => {
+    actionableTasks.overdue.forEach((task) => {
+      if (shouldSkipTask(task)) {
+        return;
+      }
+      pushItem(`task-${task.id}`, mapTask(task));
+    });
+    actionableTasks.dueToday.forEach((task) => {
+      if (shouldSkipTask(task)) {
+        return;
+      }
+      pushItem(`task-today-${task.id}`, mapTask(task));
+    });
+
+      staleOutreach.forEach((entry) => {
       const name = entry.contact?.name ?? entry.job?.company ?? 'contact';
       let ctaLink = entry.jobId
         ? `/jobs?focus=${entry.jobId}&section=outreach&view=table`
@@ -420,11 +477,31 @@ export class DashboardService {
         type: 'stale_outreach',
         title: `Nudge ${name}`,
         dueAt: entry.sentAt ? new Date(entry.sentAt).toISOString() : null,
-        ctaLink
+        ctaLink,
+        context: {
+          outreachId: entry.id,
+          jobId: entry.jobId ?? undefined,
+          contactId: entry.contactId ?? undefined
+        }
       });
     });
 
     return items;
+  }
+
+  private describeAppointment(mode?: string | null) {
+    switch (mode) {
+      case 'ZOOM':
+        return 'Zoom call';
+      case 'MEETING':
+        return 'Meeting';
+      case 'PHONE':
+        return 'Phone call';
+      case 'ON_SITE':
+        return 'On-site';
+      default:
+        return 'Appointment';
+    }
   }
 
   private buildNotifications(params: {

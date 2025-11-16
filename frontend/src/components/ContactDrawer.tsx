@@ -12,6 +12,8 @@ import {
   useDeleteContactMutation,
   useUpdateOutreachMutation,
   useDeleteOutreachMutation,
+  useMarkFollowupMutation,
+  useDeleteFollowupMutation,
   parseApiError
 } from '../api/hooks';
 import { CompanySelect } from './CompanySelect';
@@ -20,6 +22,7 @@ import { StrengthBadge } from './StrengthBadge';
 import { ContactEngagementBadge } from './ContactEngagementBadge';
 import { LinkJobDialog } from './LinkJobDialog';
 import { AddOutreachDialog } from './AddOutreachDialog';
+import { ContactOutreachDialog } from './ContactOutreachDialog';
 import { useToast } from './ToastProvider';
 
 const contactSchema = z.object({
@@ -62,6 +65,21 @@ const isValidOutreachContext = (
 const humanizeMessageType = (value?: string | null) =>
   value ? value.replace(/_/g, ' ') : '';
 
+const describeAppointment = (mode?: string | null) => {
+  switch (mode) {
+    case 'ZOOM':
+      return 'Zoom call';
+    case 'MEETING':
+      return 'Meeting';
+    case 'PHONE':
+      return 'Phone call';
+    case 'ON_SITE':
+      return 'On-site';
+    default:
+      return 'Appointment';
+  }
+};
+
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 interface ContactDrawerProps {
@@ -80,8 +98,11 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
   const deleteContact = useDeleteContactMutation();
   const updateOutreach = useUpdateOutreachMutation();
   const deleteOutreach = useDeleteOutreachMutation();
+  const markFollowup = useMarkFollowupMutation();
+  const deleteFollowup = useDeleteFollowupMutation();
   const toast = useToast();
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [contactOutreachOpen, setContactOutreachOpen] = useState(false);
   const [pendingOutreachJob, setPendingOutreachJob] = useState<{
     id: string;
     company: string;
@@ -94,6 +115,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
     id: string;
     value: (typeof outreachContextOptions)[number];
   } | null>(null);
+  const [followupActionId, setFollowupActionId] = useState<string | null>(null);
 
   const startEditingContext = (outreachId: string, currentValue: string) => {
     setEditingContext({
@@ -137,6 +159,44 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
       await updateOutreach.mutateAsync({ id: outreachId, outcome });
     } catch {
       // handled by toast
+    }
+  };
+
+  const handleFollowupComplete = async ({
+    id,
+    jobId,
+    contactId
+  }: {
+    id: string;
+    jobId?: string;
+    contactId?: string;
+  }) => {
+    setFollowupActionId(id);
+    try {
+      await markFollowup.mutateAsync({ id, jobId, contactId });
+    } finally {
+      setFollowupActionId(null);
+    }
+  };
+
+  const handleFollowupDelete = async ({
+    id,
+    jobId,
+    contactId
+  }: {
+    id: string;
+    jobId?: string;
+    contactId?: string;
+  }) => {
+    const confirmed = window.confirm('Delete this follow-up?');
+    if (!confirmed) {
+      return;
+    }
+    setFollowupActionId(id);
+    try {
+      await deleteFollowup.mutateAsync({ id, jobId, contactId });
+    } finally {
+      setFollowupActionId(null);
     }
   };
 
@@ -479,7 +539,7 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                               </div>
                             </div>
                           )}
-                          <div className="mt-3 flex gap-2">
+                          <div className="mt-3 flex flex-wrap gap-2">
                             <button
                               type="button"
                               onClick={() => setLinkDialogOpen(true)}
@@ -489,6 +549,16 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                 <path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 010-2h4V5a1 1 0 011-1z" />
                               </svg>
                               Link job
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setContactOutreachOpen(true)}
+                              className="inline-flex items-center gap-2 rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                            >
+                              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                                <path d="M4 4h12a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 2v8h12V6H4zm3 2h2v4H7V8zm4 0h2v4h-2V8z" />
+                              </svg>
+                              Log contact outreach
                             </button>
                           </div>
                         </>
@@ -725,20 +795,32 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                     <Tabs.Content value="timeline" className="flex-1 overflow-y-auto p-6">
                       {timelineDisplay.length > 0 ? (
                         <div className="space-y-4">
-                          {timelineDisplay.map((entry, index) =>
-                            entry.kind === 'heading' ? (
-                              <p
-                                key={`heading-${entry.label}-${index}`}
-                                className="text-[11px] font-semibold uppercase tracking-wide text-slate-400"
-                              >
-                                {entry.label}
-                              </p>
+                          {timelineDisplay.map((entry, index) => {
+                            if (entry.kind === 'heading') {
+                              return (
+                                <p
+                                  key={`heading-${entry.label}-${index}`}
+                                  className="text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+                                >
+                                  {entry.label}
+                                </p>
+                              );
+                            }
+                            const isAppointmentEntry =
+                              entry.item.type === 'followup' &&
+                              entry.item.data?.type === 'APPOINTMENT';
+                            const itemIcon = isAppointmentEntry ? (
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100">
+                                <svg className="h-4 w-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-13 9h16a1 1 0 001-1V7a1 1 0 00-1-1H5a1 1 0 00-1 1v12a1 1 0 001 1z" />
+                                </svg>
+                              </div>
                             ) : (
-                              <div
-                                key={`${entry.item.type}-${entry.item.date}-${index}`}
-                                className="flex gap-4"
-                              >
-                                {getTimelineIcon(entry.item.type)}
+                              getTimelineIcon(entry.item.type)
+                            );
+                            return (
+                              <div key={`${entry.item.type}-${entry.item.date}-${index}`} className="flex gap-4">
+                                {itemIcon}
                                 <div className="flex-1">
                                   <div className="flex items-center justify-between">
                                     <div className="font-medium text-gray-900 capitalize">{entry.item.type}</div>
@@ -865,9 +947,23 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                     )}
                                     {entry.item.type === 'followup' && (
                                       <div className="space-y-1 text-xs">
-                                        <div className="font-medium text-slate-600">
-                                          Due {formatDate(entry.item.data.dueAt)}
-                                        </div>
+                                        {entry.item.data.type === 'APPOINTMENT' ? (
+                                          <>
+                                            <div className="flex items-center gap-2 text-violet-600">
+                                              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                                Appointment
+                                              </span>
+                                              <span className="font-semibold">{describeAppointment(entry.item.data.appointmentMode)}</span>
+                                            </div>
+                                            <div className="font-medium text-slate-600">
+                                              Scheduled for {formatDate(entry.item.data.dueAt)}
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div className="font-medium text-slate-600">
+                                            Due {formatDate(entry.item.data.dueAt)}
+                                          </div>
+                                        )}
                                         {entry.item.data.job && (
                                           <div className="text-slate-500">
                                             Related to {entry.item.data.job.company}
@@ -876,11 +972,45 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
                                         )}
                                       </div>
                                     )}
+                                    {entry.item.type === 'followup' && (
+                                      <div className="flex flex-wrap gap-2 pt-1 text-[11px]">
+                                        {!entry.item.data.sentAt && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleFollowupComplete({
+                                                id: entry.item.data.id,
+                                                jobId: entry.item.data.job?.id,
+                                                contactId: contact?.id
+                                              })
+                                            }
+                                            disabled={followupActionId === entry.item.data.id}
+                                            className="rounded border border-emerald-300 px-2 py-0.5 font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-60"
+                                          >
+                                            {followupActionId === entry.item.data.id ? 'Marking…' : 'Mark done'}
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleFollowupDelete({
+                                              id: entry.item.data.id,
+                                              jobId: entry.item.data.job?.id,
+                                              contactId: contact?.id
+                                            })
+                                          }
+                                          disabled={followupActionId === entry.item.data.id}
+                                          className="rounded border border-slate-200 px-2 py-0.5 font-semibold text-slate-500 hover:bg-slate-100 disabled:opacity-60"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
-                            )
-                          )}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-12">
@@ -1002,6 +1132,17 @@ export const ContactDrawer = ({ contactId, mode, open, onClose, onCreated }: Con
               }}
             />
           )}
+          <ContactOutreachDialog
+            contact={{
+              id: contact.id,
+              name: contact.name,
+              role: contact.role,
+              email: contact.email,
+              company: contact.company?.name
+            }}
+            open={contactOutreachOpen}
+            onOpenChange={(open) => setContactOutreachOpen(open)}
+          />
         </>
       )}
     </>

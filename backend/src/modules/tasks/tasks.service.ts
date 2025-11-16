@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, FollowUpType, FollowUpAppointmentMode } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import dayjs from '../../utils/dayjs';
@@ -41,6 +41,19 @@ type TaskContext = {
   job?: { id: string; company: string; role: string | null } | null;
   contact?: { id: string; name: string | null } | null;
   grow?: { type: string; id?: string | null } | null;
+};
+
+const priorityWeight = (priority?: string | null) => {
+  switch (priority) {
+    case 'High':
+      return 3;
+    case 'Med':
+      return 2;
+    case 'Low':
+      return 1;
+    default:
+      return 0;
+  }
 };
 
 // Unused but kept for future use
@@ -208,7 +221,7 @@ export class TasksService {
     const jobMap = new Map(jobs.map((job) => [job.id, job]));
     const contactMap = new Map(contacts.map((contact) => [contact.id, contact]));
 
-    return tasks.map((task, index) => {
+    const enriched = tasks.map((task, index) => {
       const links = parsedLinks[index];
       const context: TaskContext = {};
       if (links.jobId) {
@@ -227,6 +240,23 @@ export class TasksService {
         context
       };
     });
+
+    if (view === 'today') {
+      enriched.sort((a, b) => {
+        const weightDelta = priorityWeight(b.priority) - priorityWeight(a.priority);
+        if (weightDelta !== 0) {
+          return weightDelta;
+        }
+        const aDue = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
+        if (aDue !== bDue) {
+          return aDue - bDue;
+        }
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+    }
+
+    return enriched;
   }
 
   async create(payload: CreateTaskInput) {
@@ -262,6 +292,7 @@ export class TasksService {
     if (payload.tags !== undefined) {
       data.tags = payload.tags;
     }
+    const links = extractLinks(existing.links);
     if (payload.dueAt !== undefined) {
       data.dueAt = payload.dueAt ?? null;
     }
@@ -290,19 +321,41 @@ export class TasksService {
       }
     }
 
-    return this.prisma.task.update({
+    const updated = await this.prisma.task.update({
       where: { id },
       data
     });
+
+    if (payload.dueAt !== undefined && links.followUpId) {
+      await this.prisma.followUp.update({
+        where: { id: links.followUpId },
+        data: { dueAt: payload.dueAt ?? null }
+      });
+    }
+
+    return updated;
   }
 
   async delete(id: string) {
-    const existing = await this.prisma.task.findUnique({ where: { id }, select: { id: true } });
+    const existing = await this.prisma.task.findUnique({
+      where: { id },
+      select: { id: true, links: true }
+    });
     if (!existing) {
       throw new NotFoundException('Task not found');
     }
 
     await this.prisma.task.delete({ where: { id } });
+    const links = extractLinks(existing.links);
+    if (links.followUpId) {
+      const followup = await this.prisma.followUp.findUnique({
+        where: { id: links.followUpId },
+        select: { id: true, sentAt: true }
+      });
+      if (followup && !followup.sentAt) {
+        await this.prisma.followUp.delete({ where: { id: followup.id } });
+      }
+    }
     return { deletedId: id };
   }
 
@@ -393,7 +446,10 @@ export class TasksService {
   }
 
   async snooze(id: string, preset: SnoozePreset) {
-    const task = await this.prisma.task.findUnique({ where: { id }, select: { status: true } });
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      select: { status: true, links: true }
+    });
     if (!task) {
       throw new NotFoundException('Task not found');
     }
@@ -401,10 +457,18 @@ export class TasksService {
       throw new BadRequestException('Completed tasks cannot be snoozed');
     }
     const dueAt = computeSnoozedDueAt(preset, { timezone: this.timezone });
-    return this.prisma.task.update({
+    const updated = await this.prisma.task.update({
       where: { id },
       data: { dueAt }
     });
+    const followUpId = extractLinks(task.links).followUpId;
+    if (followUpId) {
+      await this.prisma.followUp.update({
+        where: { id: followUpId },
+        data: { dueAt }
+      });
+    }
+    return updated;
   }
 
   async getActionableTasks(limitPerBucket = 25) {
@@ -416,7 +480,8 @@ export class TasksService {
       id: true,
       title: true,
       dueAt: true,
-      links: true
+      links: true,
+      priority: true
     } satisfies Prisma.TaskSelect;
 
     const [dueTodayRaw, overdueRaw] = await Promise.all([
@@ -448,6 +513,7 @@ export class TasksService {
       title: string;
       dueAt: Date | null;
       links: Prisma.JsonValue;
+      priority: string;
     }) => {
       const links = extractLinks(task.links);
       if (links.jobId) {
@@ -460,12 +526,48 @@ export class TasksService {
         id: task.id,
         title: task.title,
         dueAt: task.dueAt,
-        links
+        links,
+        priority: task.priority
       };
     };
 
     const dueTodayMapped = dueTodayRaw.map((task) => normalize(task));
     const overdueMapped = overdueRaw.map((task) => normalize(task));
+
+    const followupIds = new Set<string>();
+    const collectFollowupId = (task: ReturnType<typeof normalize>) => {
+      const followupId =
+        typeof task.links.followUpId === 'string' ? (task.links.followUpId as string) : undefined;
+      if (followupId) {
+        followupIds.add(followupId);
+      }
+    };
+    dueTodayMapped.forEach(collectFollowupId);
+    overdueMapped.forEach(collectFollowupId);
+
+    const followupMeta = followupIds.size
+      ? await this.prisma.followUp.findMany({
+          where: { id: { in: Array.from(followupIds) } },
+          select: { id: true, type: true, appointmentMode: true }
+        })
+      : [];
+    const followupMetaMap = new Map(followupMeta.map((entry) => [entry.id, entry]));
+    const withMeta = (task: ReturnType<typeof normalize>) => {
+      const followupId =
+        typeof task.links.followUpId === 'string' ? (task.links.followUpId as string) : undefined;
+      if (!followupId) {
+        return task;
+      }
+      const meta = followupMetaMap.get(followupId);
+      if (!meta) {
+        return task;
+      }
+      return {
+        ...task,
+        followupType: meta.type,
+        appointmentMode: meta.appointmentMode
+      };
+    };
 
     const jobs = jobIds.size
       ? await this.prisma.job.findMany({
@@ -501,9 +603,20 @@ export class TasksService {
       return true;
     };
 
+    const sortByPriority = (list: Array<ReturnType<typeof normalize>>) =>
+      list.sort((a, b) => {
+        const weightDelta = priorityWeight(b.priority) - priorityWeight(a.priority);
+        if (weightDelta !== 0) {
+          return weightDelta;
+        }
+        const aDue = a.dueAt ? a.dueAt.getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.dueAt ? b.dueAt.getTime() : Number.POSITIVE_INFINITY;
+        return aDue - bDue;
+      });
+
     return {
-      dueToday: dueTodayMapped.filter(filterTask),
-      overdue: overdueMapped.filter(filterTask)
+      dueToday: sortByPriority(dueTodayMapped.filter(filterTask)).map(withMeta),
+      overdue: sortByPriority(overdueMapped.filter(filterTask)).map(withMeta)
     };
   }
 

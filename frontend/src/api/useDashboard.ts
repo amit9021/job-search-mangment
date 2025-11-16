@@ -25,6 +25,15 @@ export type DashboardSummaryResponse = {
     title: string;
     dueAt: string | null;
     ctaLink: string;
+    context?: {
+      jobId?: string;
+      contactId?: string;
+      taskId?: string;
+      followupId?: string;
+      followupType?: string;
+      appointmentMode?: string | null;
+      outreachId?: string;
+    };
   }>;
 };
 

@@ -424,6 +424,61 @@ export const useCreateJobOutreachMutation = () => {
   });
 };
 
+export type ContactOutreachPayload = {
+  contactId: string;
+  channel: string;
+  messageType: string;
+  personalizationScore?: number;
+  outcome?: string;
+  content?: string;
+  context?: string;
+  createFollowUp?: boolean;
+  followUpNote?: string;
+  contactName?: string | null;
+};
+
+export const useCreateContactOutreachMutation = () => {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: async ({ contactId, contactName: _contactName, ...payload }: ContactOutreachPayload) => {
+      const { data } = await api.post(`/contacts/${contactId}/outreach`, {
+        channel: payload.channel,
+        messageType: payload.messageType,
+        personalizationScore: payload.personalizationScore ?? 70,
+        outcome: payload.outcome,
+        content: payload.content,
+        context: payload.context,
+        createFollowUp: payload.createFollowUp ?? true,
+        followUpNote: payload.followUpNote
+      });
+      return data as {
+        id: string;
+        contactId: string;
+        sentAt: string;
+        channel: string;
+        messageType: string;
+        personalizationScore: number;
+        outcome: string;
+        context: string;
+      };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts', variables.contactId] });
+      const trimmed = variables.contactName?.trim() ?? '';
+      const name = trimmed.length > 0 ? trimmed : 'contact';
+      toast.success('Outreach logged', `Captured touchpoint with ${name}`);
+    },
+    onError: (error) => {
+      const parsed = parseApiError(error);
+      const { title, description } = getErrorToastContent(parsed);
+      toast.error(title, description);
+    }
+  });
+};
+
 export const useUpdateJobStageMutation = () => {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -483,20 +538,23 @@ export const useScheduleFollowupMutation = () => {
       contactId,
       dueAt,
       note,
-      appointmentMode
+      appointmentMode,
+      type
     }: {
       jobId: string;
       contactId?: string;
       dueAt: string;
       note?: string;
       appointmentMode?: (typeof appointmentModes)[number];
+      type?: 'APPOINTMENT' | 'STANDARD';
     }) => {
       const payload = {
         jobId,
         contactId,
         dueAt,
         note,
-        appointmentMode
+        appointmentMode,
+        type
       };
       const { data } = await api.post('/followups', payload);
       return data;
@@ -508,7 +566,11 @@ export const useScheduleFollowupMutation = () => {
       if (variables.contactId) {
         queryClient.invalidateQueries({ queryKey: ['contacts', variables.contactId] });
       }
-      toast.success('Appointment scheduled');
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Follow-up scheduled');
     },
     onError: (error) => {
       const parsed = parseApiError(error);
@@ -576,15 +638,22 @@ export const useDeleteFollowupMutation = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   return useMutation({
-    mutationFn: async ({ id, jobId }: { id: string; jobId: string }) => {
+    mutationFn: async ({ id, jobId, contactId }: { id: string; jobId?: string; contactId?: string }) => {
       const { data } = await api.delete(`/followups/${id}`);
-      return { ...data, jobId };
+      return { ...data, jobId, contactId };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId] });
-      queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'history'] });
-      toast.success('Appointment deleted');
+      if (result.jobId) {
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'history'] });
+      }
+      if (result.contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', result.contactId] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      toast.success('Follow-up deleted');
     },
     onError: (error) => {
       const parsed = parseApiError(error);
@@ -861,6 +930,9 @@ export const useFollowupsQuery = (due: 'today' | 'upcoming' | 'overdue' = 'today
         id: string;
         dueAt: string;
         attemptNo: number;
+        type: string;
+        appointmentMode?: string | null;
+        note?: string | null;
         job?: { id: string; company: string };
         contact?: { id: string; name: string };
       }>;
@@ -888,12 +960,35 @@ export const useMarkFollowupMutation = () => {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, note }: { id: string; note?: string }) => {
+    mutationFn: async ({
+      id,
+      note,
+      jobId,
+      contactId
+    }: {
+      id: string;
+      note?: string;
+      jobId?: string;
+      contactId?: string;
+    }) => {
       await api.patch(`/followups/${id}/send`, { note });
+      return { jobId, contactId };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['followups'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kpis'] });
+      if (result?.jobId) {
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId] });
+        queryClient.invalidateQueries({ queryKey: ['jobs', result.jobId, 'history'] });
+      }
+      if (result?.contactId) {
+        queryClient.invalidateQueries({ queryKey: ['contacts', result.contactId] });
+      }
     }
   });
 };
